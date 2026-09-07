@@ -124,7 +124,9 @@ function SemesterFolder({ semester }: { semester: Semester }) {
 function SemesterMenu({ semester }: { semester: Semester }) {
   const [open, setOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [name, setName] = useState(semester.name);
+  const [counts, setCounts] = useState({ materials: 0, deadlines: 0, messages: 0 });
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -150,7 +152,29 @@ function SemesterMenu({ semester }: { semester: Semester }) {
     setOpen(false);
   }
 
-  async function del() {
+  async function openDeleteModal() {
+    setOpen(false);
+    const subjectIds = await db.subjects
+      .where('semesterId')
+      .equals(semester.id)
+      .primaryKeys();
+    const materialsCount = await db.materials
+      .where('subjectId')
+      .anyOf(subjectIds)
+      .count();
+    const messagesCount = await db.messages
+      .where('subjectId')
+      .anyOf(subjectIds)
+      .count();
+    const deadlinesCount = await db.deadlines
+      .where('folderId')
+      .equals(semester.id)
+      .count();
+    setCounts({ materials: materialsCount, deadlines: deadlinesCount, messages: messagesCount });
+    setShowDeleteModal(true);
+  }
+
+  async function confirmDelete() {
     const subjectIds = await db.subjects
       .where('semesterId')
       .equals(semester.id)
@@ -169,8 +193,8 @@ function SemesterMenu({ semester }: { semester: Semester }) {
       .equals(semester.id)
       .delete();
     await db.semesters.delete(semester.id);
+    setShowDeleteModal(false);
     setView({ kind: 'home' });
-    setOpen(false);
   }
 
   if (renaming) {
@@ -206,52 +230,83 @@ function SemesterMenu({ semester }: { semester: Semester }) {
   }
 
   return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen(!open);
-        }}
-        className="p-1 rounded-md hover:bg-paper-200 text-ink-400 hover:text-ink-600 transition-colors"
-      >
-        <MoreVertical className="w-3.5 h-3.5" />
-      </button>
-      {open && (
-        <div className="absolute right-0 top-full bg-white rounded-xl border border-paper-300 shadow-lifted py-1 min-w-[150px] z-50 animate-scale-in">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              togglePin();
-            }}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-ink-600 hover:bg-paper-100 transition-colors text-left"
-          >
-            <Pin className="w-3.5 h-3.5" />
-            {semester.pinned ? 'Unpin from top' : 'Pin to top'}
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setRenaming(true);
-            }}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-ink-600 hover:bg-paper-100 transition-colors text-left"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-            Rename
-          </button>
-          <div className="border-t border-paper-200 my-1" />
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              del();
-            }}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-crimson-500 hover:bg-red-50 transition-colors text-left"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            Delete
-          </button>
+    <>
+      <div ref={ref} className="relative">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpen(!open);
+          }}
+          className="p-1 rounded-md hover:bg-paper-200 text-ink-400 hover:text-ink-600 transition-colors"
+        >
+          <MoreVertical className="w-3.5 h-3.5" />
+        </button>
+        {open && (
+          <div className="absolute right-0 top-full bg-white rounded-xl border border-paper-300 shadow-lifted py-1 min-w-[150px] z-50 animate-scale-in">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                togglePin();
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-ink-600 hover:bg-paper-100 transition-colors text-left"
+            >
+              <Pin className="w-3.5 h-3.5" />
+              {semester.pinned ? 'Unpin from top' : 'Pin to top'}
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setRenaming(true);
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-ink-600 hover:bg-paper-100 transition-colors text-left"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              Rename
+            </button>
+            <div className="border-t border-paper-200 my-1" />
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                openDeleteModal();
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-crimson-500 hover:bg-red-50 transition-colors text-left"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-800/40 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl border border-paper-300 shadow-lifted max-w-md w-full p-6 animate-scale-in">
+            <h3 className="font-serif text-lg font-bold text-ink-800 mb-2">
+              Delete Semester "{semester.name}"?
+            </h3>
+            <p className="text-sm text-ink-500 mb-4 leading-relaxed">
+              This will delete <strong className="text-ink-700">{counts.materials} study materials</strong>,{' '}
+              <strong className="text-ink-700">{counts.deadlines} deadlines</strong>, and{' '}
+              <strong className="text-ink-700">{counts.messages} chat messages</strong>. This action cannot be undone.
+            </p>
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 text-sm font-medium text-ink-600 hover:bg-paper-200 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-crimson-500 hover:bg-crimson-600 rounded-xl shadow-soft transition-colors"
+              >
+                Delete Semester
+              </button>
+            </div>
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -289,7 +344,9 @@ function SubjectLink({ subject }: { subject: Subject }) {
 function SubjectMenu({ subject }: { subject: Subject }) {
   const [open, setOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [name, setName] = useState(subject.name);
+  const [counts, setCounts] = useState({ materials: 0, deadlines: 0, messages: 0 });
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -315,13 +372,22 @@ function SubjectMenu({ subject }: { subject: Subject }) {
     setOpen(false);
   }
 
-  async function del() {
+  async function openDeleteModal() {
+    setOpen(false);
+    const materialsCount = await db.materials.where('subjectId').equals(subject.id).count();
+    const messagesCount = await db.messages.where('subjectId').equals(subject.id).count();
+    const deadlinesCount = await db.deadlines.where('subjectId').equals(subject.id).count();
+    setCounts({ materials: materialsCount, deadlines: deadlinesCount, messages: messagesCount });
+    setShowDeleteModal(true);
+  }
+
+  async function confirmDelete() {
     await db.materials.where('subjectId').equals(subject.id).delete();
     await db.messages.where('subjectId').equals(subject.id).delete();
     await db.deadlines.where('subjectId').equals(subject.id).delete();
     await db.subjects.delete(subject.id);
+    setShowDeleteModal(false);
     setView({ kind: 'semester', semesterId: subject.semesterId });
-    setOpen(false);
   }
 
   if (renaming) {
@@ -357,52 +423,83 @@ function SubjectMenu({ subject }: { subject: Subject }) {
   }
 
   return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen(!open);
-        }}
-        className="p-1 rounded-md hover:bg-paper-200 text-ink-400 hover:text-ink-600 transition-colors"
-      >
-        <MoreVertical className="w-3.5 h-3.5" />
-      </button>
-      {open && (
-        <div className="absolute right-0 top-full bg-white rounded-xl border border-paper-300 shadow-lifted py-1 min-w-[150px] z-50 animate-scale-in">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              togglePin();
-            }}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-ink-600 hover:bg-paper-100 transition-colors text-left"
-          >
-            <Pin className="w-3.5 h-3.5" />
-            {subject.pinned ? 'Unpin from top' : 'Pin to top'}
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setRenaming(true);
-            }}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-ink-600 hover:bg-paper-100 transition-colors text-left"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-            Rename
-          </button>
-          <div className="border-t border-paper-200 my-1" />
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              del();
-            }}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-crimson-500 hover:bg-red-50 transition-colors text-left"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            Delete
-          </button>
+    <>
+      <div ref={ref} className="relative">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpen(!open);
+          }}
+          className="p-1 rounded-md hover:bg-paper-200 text-ink-400 hover:text-ink-600 transition-colors"
+        >
+          <MoreVertical className="w-3.5 h-3.5" />
+        </button>
+        {open && (
+          <div className="absolute right-0 top-full bg-white rounded-xl border border-paper-300 shadow-lifted py-1 min-w-[150px] z-50 animate-scale-in">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                togglePin();
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-ink-600 hover:bg-paper-100 transition-colors text-left"
+            >
+              <Pin className="w-3.5 h-3.5" />
+              {subject.pinned ? 'Unpin from top' : 'Pin to top'}
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setRenaming(true);
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-ink-600 hover:bg-paper-100 transition-colors text-left"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              Rename
+            </button>
+            <div className="border-t border-paper-200 my-1" />
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                openDeleteModal();
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-crimson-500 hover:bg-red-50 transition-colors text-left"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-800/40 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl border border-paper-300 shadow-lifted max-w-md w-full p-6 animate-scale-in">
+            <h3 className="font-serif text-lg font-bold text-ink-800 mb-2">
+              Delete Subject "{subject.name}"?
+            </h3>
+            <p className="text-sm text-ink-500 mb-4 leading-relaxed">
+              This will delete <strong className="text-ink-700">{counts.materials} study materials</strong>,{' '}
+              <strong className="text-ink-700">{counts.deadlines} deadlines</strong>, and{' '}
+              <strong className="text-ink-700">{counts.messages} chat messages</strong>. This action cannot be undone.
+            </p>
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 text-sm font-medium text-ink-600 hover:bg-paper-200 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-crimson-500 hover:bg-crimson-600 rounded-xl shadow-soft transition-colors"
+              >
+                Delete Subject
+              </button>
+            </div>
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
