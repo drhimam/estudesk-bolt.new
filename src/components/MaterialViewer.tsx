@@ -2,9 +2,20 @@ import { useState } from 'react';
 import { ArrowLeft, Trash2, Download, RotateCw, Check, X, MoreVertical, Pencil } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 import { db } from '@/db/database';
 import { COLOR_HEX, COLOR_LIGHT, COLOR_TEXT } from '@/utils/colors';
 import type { StudyMaterial, SubjectColor, Flashcard, QuizQuestion, PresentationSlide } from '@/types';
+
+function MathFormula({ formula, display = true }: { formula: string; display?: boolean }) {
+  try {
+    const html = katex.renderToString(formula, { displayMode: display, throwOnError: false });
+    return <div className="my-2 overflow-x-auto text-center" dangerouslySetInnerHTML={{ __html: html }} />;
+  } catch (err) {
+    return <code className="block bg-paper-100 p-2 rounded text-xs font-mono">{formula}</code>;
+  }
+}
 
 interface Props {
   material: StudyMaterial;
