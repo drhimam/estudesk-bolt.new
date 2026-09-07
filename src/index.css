@@ -1,0 +1,244 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: #f5f1ea;
+    color: #1c1c19;
+    line-height: 1.6;
+    font-size: 16px;
+  }
+
+  ::selection {
+    background-color: rgba(58, 128, 104, 0.18);
+  }
+}
+
+@layer components {
+  .font-serif {
+    font-family: 'Fraunces', Georgia, serif;
+    font-optical-sizing: auto;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #d0d0cc transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #c4b8a4;
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: #a8a8a2;
+  }
+
+  .glass {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .card-hover {
+    transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-2px);
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, #2a2a26 0%, #3a8068 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+/* Markdown rendered content */
+.prose-studesk {
+  line-height: 1.75;
+}
+
+.prose-studesk h1 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #1c1c19;
+  margin-top: 0;
+  margin-bottom: 1.25rem;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.prose-studesk h2 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1c1c19;
+  margin-top: 2rem;
+  margin-bottom: 0.875rem;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
+}
+
+.prose-studesk h3 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #1c1c19;
+  margin-top: 1.5rem;
+  margin-bottom: 0.625rem;
+  line-height: 1.35;
+}
+
+.prose-studesk p {
+  margin-bottom: 1rem;
+  color: #1c1c19;
+  font-size: 1.0625rem;
+}
+
+.prose-studesk ul,
+.prose-studesk ol {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.prose-studesk li {
+  margin-bottom: 0.4rem;
+  color: #1c1c19;
+  font-size: 1.0625rem;
+}
+
+.prose-studesk ul > li::marker {
+  color: #3a3a35;
+}
+
+.prose-studesk ol > li::marker {
+  color: #7a7a73;
+  font-weight: 600;
+}
+
+.prose-studesk strong {
+  font-weight: 700;
+  color: #1c1c19;
+}
+
+.prose-studesk code {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.875em;
+  background-color: #f5f1ea;
+  padding: 0.15em 0.35em;
+  border-radius: 0.25rem;
+  color: #2a2a26;
+}
+
+.prose-studesk pre {
+  background-color: #f5f1ea;
+  padding: 1rem;
+  border-radius: 0.625rem;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.prose-studesk pre code {
+  background: none;
+  padding: 0;
+}
+
+.prose-studesk blockquote {
+  border-left: 3px solid #84bda3;
+  padding: 0.5rem 0 0.5rem 1rem;
+  margin: 1.25rem 0;
+  color: #2a2a26;
+  font-style: italic;
+  font-size: 1.0625rem;
+  background: linear-gradient(90deg, rgba(240, 247, 244, 0.5) 0%, transparent 100%);
+  border-radius: 0 0.375rem 0.375rem 0;
+}
+
+.prose-studesk table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0;
+  font-size: 0.9rem;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.prose-studesk th {
+  text-align: left;
+  font-weight: 600;
+  color: #1c1c19;
+  padding: 0.625rem 0.875rem;
+  background-color: #f5f1ea;
+  border-bottom: 2px solid #d9d0c1;
+}
+
+.prose-studesk td {
+  padding: 0.625rem 0.875rem;
+  border-bottom: 1px solid #ebe5da;
+  color: #1c1c19;
+  font-size: 1rem;
+}
+
+.prose-studesk tr:last-child td {
+  border-bottom: none;
+}
+
+.prose-studesk tr:hover td {
+  background-color: rgba(245, 241, 234, 0.5);
+}
+
+.prose-studesk hr {
+  border: none;
+  border-top: 1px solid #ebe5da;
+  margin: 2rem 0;
+}
+
+.prose-studesk a {
+  color: #2c664f;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 500;
+}
+
+/* Callout boxes */
+.callout {
+  border-radius: 0.625rem;
+  padding: 0.875rem 1.125rem;
+  margin: 1.25rem 0;
+  font-size: 0.9rem;
+}
+
+.callout-mnemonic {
+  background-color: #f0f7f4;
+  border-left: 3px solid #569d80;
+}
+
+.callout-definition {
+  background-color: #faf8f4;
+  border-left: 3px solid #c08a3e;
+}

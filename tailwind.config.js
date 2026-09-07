@@ -1,0 +1,126 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  theme: {
+    extend: {
+      fontFamily: {
+        serif: ['Fraunces', 'Georgia', 'serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
+      colors: {
+        paper: {
+          50: '#fdfcfa',
+          100: '#faf8f4',
+          200: '#f5f1ea',
+          300: '#ebe5da',
+          400: '#d9d0c1',
+          500: '#c4b8a4',
+          600: '#a89880',
+        },
+        ink: {
+          50: '#f6f6f5',
+          100: '#e7e7e4',
+          200: '#d0d0cc',
+          300: '#52524c',
+          400: '#3a3a35',
+          500: '#2a2a26',
+          600: '#1c1c19',
+          700: '#161614',
+          800: '#121210',
+          900: '#0c0c0a',
+        },
+        accent: {
+          50: '#f0f7f4',
+          100: '#d9ebe2',
+          200: '#b3d7c6',
+          300: '#84bda3',
+          400: '#569d80',
+          500: '#3a8068',
+          600: '#2c664f',
+          700: '#234f3e',
+          800: '#1a3a2e',
+        },
+        subject: {
+          rose: '#c2546d',
+          amber: '#c08a3e',
+          teal: '#3d8a7e',
+          blue: '#4a7ab5',
+          violet: '#7a64b0',
+          emerald: '#4a9a5e',
+          crimson: '#b04545',
+          slate: '#5a6a80',
+          plum: '#8a5a7a',
+          ochre: '#a07840',
+        },
+      },
+      fontSize: {
+        'xs': ['0.875rem', { lineHeight: '1.4' }],
+        'sm': ['1rem', { lineHeight: '1.5' }],
+        'base': ['1.0625rem', { lineHeight: '1.6' }],
+        'lg': ['1.1875rem', { lineHeight: '1.5' }],
+        'xl': ['1.375rem', { lineHeight: '1.4' }],
+        '2xl': ['1.625rem', { lineHeight: '1.3' }],
+        '3xl': ['2rem', { lineHeight: '1.25' }],
+        '4xl': ['2.5rem', { lineHeight: '1.2' }],
+        '5xl': ['3.25rem', { lineHeight: '1.1' }],
+        '6xl': ['4rem', { lineHeight: '1.05' }],
+      },
+      spacing: {
+        '18': '4.5rem',
+        '88': '22rem',
+      },
+      borderRadius: {
+        'xl': '0.75rem',
+        '2xl': '1rem',
+        '3xl': '1.5rem',
+      },
+      boxShadow: {
+        'soft': '0 1px 3px rgba(28,28,25,0.04), 0 1px 2px rgba(28,28,25,0.03)',
+        'card': '0 2px 8px rgba(28,28,25,0.06), 0 1px 3px rgba(28,28,25,0.04)',
+        'lifted': '0 12px 32px rgba(28,28,25,0.10), 0 4px 12px rgba(28,28,25,0.06)',
+        'glow': '0 0 0 1px rgba(58,128,104,0.1), 0 4px 16px rgba(58,128,104,0.08)',
+        'inner-soft': 'inset 0 1px 2px rgba(28,28,25,0.04)',
+      },
+      keyframes: {
+        'fade-in': {
+          '0%': { opacity: '0', transform: 'translateY(4px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'slide-in-left': {
+          '0%': { opacity: '0', transform: 'translateX(-12px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        'slide-in-right': {
+          '0%': { opacity: '0', transform: 'translateX(12px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        'slide-up': {
+          '0%': { opacity: '0', transform: 'translateY(16px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'scale-in': {
+          '0%': { opacity: '0', transform: 'scale(0.96)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        'shimmer': {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+        'pulse-soft': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.6' },
+        },
+      },
+      animation: {
+        'fade-in': 'fade-in 0.25s ease-out',
+        'slide-in-left': 'slide-in-left 0.3s ease-out',
+        'slide-in-right': 'slide-in-right 0.3s ease-out',
+        'slide-up': 'slide-up 0.35s cubic-bezier(0.22, 1, 0.36, 1)',
+        'scale-in': 'scale-in 0.22s ease-out',
+        'shimmer': 'shimmer 2s linear infinite',
+        'pulse-soft': 'pulse-soft 2s ease-in-out infinite',
+      },
+    },
+  },
+  plugins: [],
+};
