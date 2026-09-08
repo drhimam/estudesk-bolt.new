@@ -37,7 +37,7 @@ import { useSubject } from '@/hooks/useQueries';
 import { COLOR_HEX, COLOR_LIGHT, COLOR_TEXT } from '@/utils/colors';
 import { exportMaterialAsPdf } from '@/utils/pdfExport';
 import { FocusTimer } from '@/components/FocusTimer';
-import { ambientAudio } from '@/utils/ambientAudio';
+import { ambientAudio, type AmbientSoundType } from '@/utils/ambientAudio';
 import type { StudyMaterial, SubjectColor, Flashcard, QuizQuestion, PresentationSlide } from '@/types';
 
 export function MathFormula({ formula, display = true }: { formula: string; display?: boolean }) {
@@ -71,7 +71,7 @@ export function MaterialViewer({ material, subjectColor, onBack, onRenamed }: Pr
   const [fontSize, setFontSize] = useState<number>(16);
   const [tocOpen, setTocOpen] = useState(false);
   const [ambientMenuOpen, setAmbientMenuOpen] = useState(false);
-  const [activeAmbient, setActiveAmbient] = useState<'off' | 'rain' | 'whitenoise' | 'waves'>('off');
+  const [activeAmbient, setActiveAmbient] = useState<AmbientSoundType>('off');
 
   // Lock body scroll when Focus Mode is active
   useEffect(() => {
@@ -105,13 +105,13 @@ export function MaterialViewer({ material, subjectColor, onBack, onRenamed }: Pr
   }, [material.contentMarkdown, material.sourceSnippet]);
 
   // Handle ambient sound toggle
-  function handleAmbientChange(type: 'off' | 'rain' | 'whitenoise' | 'waves') {
+  function handleAmbientChange(type: AmbientSoundType) {
     setActiveAmbient(type);
     setAmbientMenuOpen(false);
     if (type === 'off') {
       ambientAudio.stop();
     } else {
-      ambientAudio.play(type, 0.3);
+      ambientAudio.play(type, 0.35);
     }
   }
 
@@ -267,49 +267,72 @@ export function MaterialViewer({ material, subjectColor, onBack, onRenamed }: Pr
                     ? 'border-accent-400 bg-accent-50 text-accent-700'
                     : 'border-black/10 dark:border-white/10 bg-white/50 dark:bg-white/5 text-ink-600 dark:text-white/80'
                 }`}
-                title="Ambient Soundscapes"
+                title={
+                  activeAmbient === 'flute'
+                    ? 'Atmosphere: Melodious Flute'
+                    : activeAmbient === 'birds'
+                    ? 'Atmosphere: Morning Birds'
+                    : activeAmbient === 'alpha'
+                    ? 'Atmosphere: Alpha Waves (432Hz)'
+                    : activeAmbient === 'rain'
+                    ? 'Atmosphere: Gentle Rain'
+                    : 'Ambient Atmosphere'
+                }
               >
-                {activeAmbient !== 'off' ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                {activeAmbient !== 'off' ? <Volume2 className="w-3.5 h-3.5 animate-pulse text-accent-600" /> : <VolumeX className="w-3.5 h-3.5" />}
               </button>
 
               {ambientMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-30" onClick={() => setAmbientMenuOpen(false)} />
-                  <div className="absolute right-0 top-full mt-2 z-40 w-44 bg-white dark:bg-ink-900 rounded-2xl border border-paper-200 dark:border-ink-700 shadow-lifted p-1.5 space-y-1 text-xs">
+                  <div className="absolute right-0 top-full mt-2 z-40 w-56 bg-white dark:bg-ink-900 rounded-2xl border border-paper-200 dark:border-ink-700 shadow-lifted p-1.5 space-y-1 text-xs">
                     <p className="text-[10px] font-bold text-ink-400 dark:text-ink-300 px-2 py-1 uppercase tracking-wider">
                       Study Atmosphere
                     </p>
                     <button
-                      onClick={() => handleAmbientChange('off')}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-lg transition-colors ${
-                        activeAmbient === 'off' ? 'bg-paper-200 dark:bg-ink-800 font-bold' : 'hover:bg-paper-50 dark:hover:bg-ink-800/50'
+                      onClick={() => handleAmbientChange('flute')}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-lg transition-colors flex items-center justify-between ${
+                        activeAmbient === 'flute' ? 'bg-accent-50 text-accent-700 dark:bg-ink-800 dark:text-accent-300 font-bold' : 'hover:bg-paper-50 dark:hover:bg-ink-800/50'
                       }`}
                     >
-                      🔇 Off (Silent)
+                      <span>🪈 Melodious Flute & Zen</span>
+                      {activeAmbient === 'flute' && <span className="w-1.5 h-1.5 rounded-full bg-accent-500" />}
+                    </button>
+                    <button
+                      onClick={() => handleAmbientChange('birds')}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-lg transition-colors flex items-center justify-between ${
+                        activeAmbient === 'birds' ? 'bg-accent-50 text-accent-700 dark:bg-ink-800 dark:text-accent-300 font-bold' : 'hover:bg-paper-50 dark:hover:bg-ink-800/50'
+                      }`}
+                    >
+                      <span>🐦 Morning Birds & Forest</span>
+                      {activeAmbient === 'birds' && <span className="w-1.5 h-1.5 rounded-full bg-accent-500" />}
+                    </button>
+                    <button
+                      onClick={() => handleAmbientChange('alpha')}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-lg transition-colors flex items-center justify-between ${
+                        activeAmbient === 'alpha' ? 'bg-accent-50 text-accent-700 dark:bg-ink-800 dark:text-accent-300 font-bold' : 'hover:bg-paper-50 dark:hover:bg-ink-800/50'
+                      }`}
+                    >
+                      <span>🧠 Alpha Waves (432Hz)</span>
+                      {activeAmbient === 'alpha' && <span className="w-1.5 h-1.5 rounded-full bg-accent-500" />}
                     </button>
                     <button
                       onClick={() => handleAmbientChange('rain')}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-lg transition-colors ${
-                        activeAmbient === 'rain' ? 'bg-paper-200 dark:bg-ink-800 font-bold' : 'hover:bg-paper-50 dark:hover:bg-ink-800/50'
+                      className={`w-full text-left px-2.5 py-1.5 rounded-lg transition-colors flex items-center justify-between ${
+                        activeAmbient === 'rain' ? 'bg-accent-50 text-accent-700 dark:bg-ink-800 dark:text-accent-300 font-bold' : 'hover:bg-paper-50 dark:hover:bg-ink-800/50'
                       }`}
                     >
-                      🌧️ Gentle Rain
+                      <span>🌧️ Gentle Rain</span>
+                      {activeAmbient === 'rain' && <span className="w-1.5 h-1.5 rounded-full bg-accent-500" />}
                     </button>
+                    <div className="border-t border-paper-200 dark:border-ink-800 my-1" />
                     <button
-                      onClick={() => handleAmbientChange('waves')}
+                      onClick={() => handleAmbientChange('off')}
                       className={`w-full text-left px-2.5 py-1.5 rounded-lg transition-colors ${
-                        activeAmbient === 'waves' ? 'bg-paper-200 dark:bg-ink-800 font-bold' : 'hover:bg-paper-50 dark:hover:bg-ink-800/50'
+                        activeAmbient === 'off' ? 'bg-paper-200 dark:bg-ink-800 font-bold text-ink-600 dark:text-ink-300' : 'hover:bg-paper-50 dark:hover:bg-ink-800/50 text-ink-500'
                       }`}
                     >
-                      🌊 Ocean Waves
-                    </button>
-                    <button
-                      onClick={() => handleAmbientChange('whitenoise')}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-lg transition-colors ${
-                        activeAmbient === 'whitenoise' ? 'bg-paper-200 dark:bg-ink-800 font-bold' : 'hover:bg-paper-50 dark:hover:bg-ink-800/50'
-                      }`}
-                    >
-                      💨 White Noise
+                      🔇 Off (Silent)
                     </button>
                   </div>
                 </>

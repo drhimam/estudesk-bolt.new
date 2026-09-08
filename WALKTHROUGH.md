@@ -170,7 +170,12 @@ R2_BUCKET=estudesk-sources
     - 🌙 **OLED Dark** (`.focus-theme-dark`, deep `#090d16` with custom dark markdown prose styles)
     - 🍵 **Sage Eye-Care** (`.focus-theme-sage`, calming `#f1f6f3` green)
   - **Floating Pomodoro Widget**: Implemented in [`src/components/FocusTimer.tsx`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/components/FocusTimer.tsx) supporting 25-min Pomodoro, 5-min Short Break, and Stopwatch with audio chime on completion.
-  - **Native Ambient Soundscapes**: Implemented in [`src/utils/ambientAudio.ts`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/utils/ambientAudio.ts) using the Web Audio API (synthesizing gentle rain, ocean waves, and pink noise with zero external media files).
+  - **Native Ambient Soundscapes Engine**: Implemented in [`src/utils/ambientAudio.ts`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/utils/ambientAudio.ts) using procedural Web Audio API synthesis (zero external audio file dependencies, instant playback, zero network latency, loop-seamless):
+    - 🪈 **Melodious Flute & Zen Meditation**: Procedural Japanese Shakuhachi / Bansuri woodwind synthesis across a C-major pentatonic scale (`[261.63Hz - 880.00Hz]`) with a 5.2Hz gentle vibrato LFO, soft breath envelope attack, 2nd harmonic octave, and a warm root drone (`130.81Hz`).
+    - 🐦 **Melodious Bird Calls & Morning Forest**: Realistic FM pitch-sweep birdsong generator (`2600Hz - 4800Hz` warbles and randomized bursts) over a lowpass-filtered pink-noise woodland breeze (`450Hz`).
+    - 🧠 **Alpha Waves & Concentration Drone**: 432Hz harmonic fundamental with a 10Hz binaural stereo offset (432Hz Left ear vs 442Hz Right ear for cognitive flow and relaxed focus) layered over a 108Hz sub-harmonic drone.
+    - 🌧️ **Gentle Rain**: Dual-pole resonant lowpass-filtered rainfall acoustics.
+    - 🔇 **Off / Mute**: Instant clean cutoff of oscillators and timers.
   - **Table of Contents Slide-Out**: Auto-extracts Markdown headings (`h1`, `h2`, `h3`) for instant smooth scrolling navigation.
   - **Font Size Zooming**: Live scaling from `13px` to `24px` with instant visual feedback.
 
