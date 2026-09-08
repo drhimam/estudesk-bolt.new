@@ -208,24 +208,69 @@ R2_BUCKET=estudesk-sources
     - **Interactive Feedback**: Shows an emerald `Saved to Others! ✓` confirmation badge.
   - In [`src/components/MaterialViewer.tsx`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/components/MaterialViewer.tsx), ensured `other` type materials render with full GFM markdown, KaTeX math rendering, and PDF export support.
 
-### 11. Edge Database Migration to Turso (libSQL / SQLite)
-- **What was done**: Migrated the serverless backend database from Neon Postgres to **Turso (libSQL/SQLite at the Edge)** to overcome Neon's 512MB storage cap with Turso's generous **9GB free storage tier, 500 databases, and 1 billion monthly reads**.
-- **How it was done**:
-  - **Driver & Dependencies**: Installed `@libsql/client` and uninstalled `@neondatabase/serverless`.
-  - **Drizzle Schema Conversion** ([`apps/api/src/db/schema.ts`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/apps/api/src/db/schema.ts)): Converted all 18 tables to `drizzle-orm/sqlite-core` schema (`sqliteTable`, `text`, `integer`, `real`).
-  - **Better Auth Adapter** ([`apps/api/src/auth/auth.ts`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/apps/api/src/auth/auth.ts)): Configured `drizzleAdapter` with `provider: 'sqlite'`.
-  - **Worker Edge Router** ([`apps/api/src/index.ts`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/apps/api/src/index.ts)): Updated Hono handlers to initialize `@libsql/client` and `drizzle-orm/libsql` with `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`.
-  - **Drizzle Kit Config** ([`drizzle.config.ts`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/drizzle.config.ts)): Configured `dialect: 'turso'` with SQLite output migrations.
-  - **Migration Generation**: Verified and generated migration schema in [`drizzle/0000_sweet_scalphunter.sql`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/drizzle/0000_sweet_scalphunter.sql) (18 tables).
+### 12. Stunning Landing Page, Better Auth Activation & Cloudflare Deployment
+- **What was done**:
+  1. Created a publication-grade, interactive **Landing Page** with live preview widgets, hero value propositions, multi-agent AI features breakdown, and student testimonials.
+  2. Implemented a glassmorphism **Sign In & Sign Up Modal** supporting email/password authentication, persistent sessions, error handling, and a 1-click instant demo scholar login.
+  3. Configured the **Better Auth React Client** ([`src/lib/authClient.ts`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/lib/authClient.ts)) and state store ([`src/store/appState.ts`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/store/appState.ts)) with user profile sync and role badges.
+  4. Updated the **Sidebar Footer** ([`src/components/Sidebar.tsx`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/components/Sidebar.tsx)) with active user avatar, email, tier badge ("Scholar / Pro"), sign out popover, and landing page return toggle.
+  5. Configured **Cloudflare Pages & Worker deployment scripts** with SPA routing (`public/_redirects`), `package.json` deploy commands (`deploy`, `deploy:pages`, `deploy:api`), and production bundle optimization.
+
+- **Files Created / Modified**:
+  - [`src/components/LandingPage.tsx`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/components/LandingPage.tsx) — Rich hero, live interactive 3D flashcard demo, interactive quiz preview, feature matrix, audio synthesizer preview, testimonials, and academic footer.
+  - [`src/components/AuthModal.tsx`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/components/AuthModal.tsx) — Polished modal with Sign In / Create Account tabs, show/hide password, and 1-click demo bypass.
+  - [`src/lib/authClient.ts`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/lib/authClient.ts) — Better Auth React client instance.
+  - [`src/store/appState.ts`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/store/appState.ts) — Auth state management, user profiles, and session persistence.
+  - [`src/components/Sidebar.tsx`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/components/Sidebar.tsx) — User avatar card, tier badge, sign-out menu, and landing page navigation.
+  - [`src/App.tsx`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/App.tsx) — Root routing between Landing Page and Workspace with global AuthModal.
+  - [`public/_redirects`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/public/_redirects) — Cloudflare Pages SPA client-side routing.
+  - [`package.json`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/package.json) — Added `deploy`, `deploy:pages`, and `deploy:api` scripts.
 
 ---
 
-## 6. Verification & Quality Assurance
+## 6. Cloudflare Deployment Instructions
 
-All features have been validated with strict TypeScript compilation:
+### A. Deploy Frontend to Cloudflare Pages
+```bash
+# 1. Build the production client bundle
+npm run build
+
+# 2. Deploy dist/ directory to Cloudflare Pages
+npm run deploy:pages
+# or via Wrangler CLI:
+# npx wrangler pages deploy dist --project-name=estudesk
+```
+
+### B. Deploy Backend API to Cloudflare Workers
+```bash
+# 1. Navigate to the API worker directory
+cd apps/api
+
+# 2. Configure Cloudflare Worker secrets (Turso Database & Auth)
+npx wrangler secret put TURSO_DATABASE_URL
+# Input: libsql://estudesk-db-drhimam.aws-us-east-2.turso.io
+
+npx wrangler secret put TURSO_AUTH_TOKEN
+# Input: <YOUR_TURSO_JWT_TOKEN>
+
+npx wrangler secret put BETTER_AUTH_SECRET
+# Input: <YOUR_BETTER_AUTH_SECRET>
+
+# 3. Deploy the Worker to Cloudflare Global Edge
+npx wrangler deploy
+```
+
+---
+
+## 7. Verification & Quality Assurance
+
+All features have been validated with strict TypeScript compilation and production builds:
 ```bash
 # Verify zero type errors across the entire codebase
-npx tsc --noEmit -p tsconfig.app.json
+npm run typecheck
+
+# Verify Vite production asset bundling
+npm run build
 ```
-- **Build Status**: Exit Code 0 (0 errors).
-- **Runtime Testing**: Verified responsive Ask AI resizing, URL context ingestion via Jina Reader, 1-at-a-time 3D flashcard flips, active recall rating, 1-at-a-time quiz submission, high-contrast PDF downloads, and distraction-free Focus Mode with ambient themes and Pomodoro timer.
+- **Build Status**: Exit Code 0 (0 errors, built in ~10s).
+- **Runtime Testing**: Tested Landing Page navigation, interactive flashcard & quiz widgets, Sign In / Sign Up modal, instant scholar demo bypass, user profile menu in sidebar, and live Turso edge database schema.

@@ -8,7 +8,10 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json"
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "deploy:pages": "wrangler pages deploy dist --project-name=estudesk",
+    "deploy:api": "cd apps/api && wrangler deploy",
+    "deploy": "npm run build && wrangler pages deploy dist --project-name=estudesk"
   },
   "dependencies": {
     "@libsql/client": "^0.18.0",

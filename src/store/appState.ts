@@ -2,7 +2,16 @@ import { useSyncExternalStore } from 'react';
 import { db, uid } from '@/db/database';
 import type { Semester, Subject, SubjectColor } from '@/types';
 
-type View =
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  image?: string | null;
+  tier?: string;
+}
+
+export type View =
+  | { kind: 'landing' }
   | { kind: 'home' }
   | { kind: 'semester'; semesterId: string }
   | { kind: 'subject'; subjectId: string };
@@ -12,13 +21,29 @@ interface AppState {
   sidebarOpen: boolean;
   aiPanelOpen: boolean;
   aiPanelFullscreen: boolean;
+  authModalOpen: boolean;
+  authMode: 'signin' | 'signup';
+  currentUser: UserProfile | null;
+}
+
+// Initial state reading from localStorage if present
+function getInitialUser(): UserProfile | null {
+  try {
+    const saved = localStorage.getItem('estudesk_user');
+    return saved ? JSON.parse(saved) : null;
+  } catch {
+    return null;
+  }
 }
 
 let state: AppState = {
-  view: { kind: 'home' },
+  view: { kind: 'landing' },
   sidebarOpen: true,
   aiPanelOpen: false,
   aiPanelFullscreen: false,
+  authModalOpen: false,
+  authMode: 'signin',
+  currentUser: getInitialUser(),
 };
 
 const listeners = new Set<() => void>();
@@ -72,6 +97,36 @@ export function toggleAIPanelFullscreen() {
 
 export function setAIPanelFullscreen(open: boolean) {
   state = { ...state, aiPanelFullscreen: open };
+  emit();
+}
+
+export function openAuthModal(mode: 'signin' | 'signup' = 'signin') {
+  state = { ...state, authModalOpen: true, authMode: mode };
+  emit();
+}
+
+export function closeAuthModal() {
+  state = { ...state, authModalOpen: false };
+  emit();
+}
+
+export function setCurrentUser(user: UserProfile | null) {
+  state = { ...state, currentUser: user };
+  if (user) {
+    try {
+      localStorage.setItem('estudesk_user', JSON.stringify(user));
+    } catch {}
+  } else {
+    try {
+      localStorage.removeItem('estudesk_user');
+    } catch {}
+  }
+  emit();
+}
+
+export function logoutUser() {
+  setCurrentUser(null);
+  state = { ...state, view: { kind: 'landing' } };
   emit();
 }
 

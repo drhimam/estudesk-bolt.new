@@ -11,10 +11,17 @@ import {
   Pencil,
   Trash2,
   X,
+  User,
+  LogIn,
+  LogOut,
+  Sparkles,
+  Home,
+  Shield,
 } from 'lucide-react';
 import { db, uid } from '@/db/database';
 import { useSemesters, useSubjects } from '@/hooks/useQueries';
-import { setView, toggleSidebar, useAppState } from '@/store/appState';
+import { setView, toggleSidebar, useAppState, openAuthModal, logoutUser } from '@/store/appState';
+import { signOut } from '@/lib/authClient';
 import { COLOR_HEX } from '@/utils/colors';
 import type { SubjectColor, Semester, Subject } from '@/types';
 
@@ -601,10 +608,102 @@ function AddSemesterButton() {
 }
 
 function SidebarFooter() {
+  const { currentUser } = useAppState();
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    }
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showMenu]);
+
+  async function handleSignOut() {
+    try {
+      await signOut();
+    } catch {}
+    logoutUser();
+    setShowMenu(false);
+  }
+
   return (
-    <div className="px-4 py-3 border-t border-paper-300 flex items-center gap-2 text-xs text-ink-400">
-      <BookOpen className="w-3.5 h-3.5" />
-      <span>Chat stored locally on your device</span>
+    <div className="p-3 border-t border-paper-300 bg-paper-100/80 space-y-2">
+      {/* Return to Landing Page Button */}
+      <button
+        onClick={() => setView({ kind: 'landing' })}
+        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs text-ink-500 hover:text-ink-800 hover:bg-paper-200/70 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <Home className="w-3.5 h-3.5 text-ink-400" />
+          <span>Landing Overview</span>
+        </div>
+        <ChevronRight className="w-3 h-3 text-ink-400" />
+      </button>
+
+      {/* User profile section */}
+      {currentUser ? (
+        <div ref={menuRef} className="relative">
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="w-full flex items-center gap-2.5 p-2 rounded-xl bg-white border border-paper-300 shadow-soft hover:shadow-card hover:border-accent-300 transition-all text-left"
+          >
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-sm">
+              {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'S'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-ink-800 truncate block">
+                  {currentUser.name || 'Scholar'}
+                </span>
+                <span className="text-[9px] uppercase font-mono px-1 py-0.2 rounded bg-accent-100 text-accent-700 font-bold">
+                  {currentUser.tier || 'Scholar'}
+                </span>
+              </div>
+              <span className="text-[10px] text-ink-400 truncate block">{currentUser.email}</span>
+            </div>
+          </button>
+
+          {/* User Popover Menu */}
+          {showMenu && (
+            <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-2xl border border-paper-300 shadow-lifted p-2 z-50 animate-scale-in">
+              <div className="px-3 py-2 border-b border-paper-200">
+                <p className="text-xs font-bold text-ink-800">{currentUser.name}</p>
+                <p className="text-[10px] text-ink-400 truncate">{currentUser.email}</p>
+                <div className="mt-1.5 flex items-center gap-1 text-[10px] text-emerald-600 font-medium">
+                  <Shield className="w-3 h-3" />
+                  <span>Turso Cloud Active</span>
+                </div>
+              </div>
+
+              <div className="pt-1">
+                <button
+                  onClick={handleSignOut}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-crimson-600 hover:bg-crimson-50 transition-colors"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          <button
+            onClick={() => openAuthModal('signin')}
+            className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-xs font-semibold shadow-soft hover:shadow-card transition-all"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Sign In / Register</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
