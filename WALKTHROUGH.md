@@ -194,6 +194,16 @@ R2_BUCKET=estudesk-sources
     - 🖥️ **Presentation**: "Copy All Slides" bulk action + individual copy icons on every slide card.
   - **Material Viewer** ([`src/components/MaterialViewer.tsx`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/components/MaterialViewer.tsx)): Added a `Copy` icon button directly in both the standard header and the distraction-free Focus Mode floating toolbar.
 
+### 10. Direct "Save to Others" from Ask AI Outputs
+- **What was done**: Streamlined saving AI chat responses directly into the **"Others"** sub-tab of the subject's Study Materials page, with smart heading/title detection and multi-subject resolution.
+- **How it was done**:
+  - In [`src/components/AskAIPanel.tsx`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/components/AskAIPanel.tsx), enhanced `MessageBubble`:
+    - **Smart Title Extraction**: Auto-extracts clean titles from the first Markdown heading (`#`, `##`, `###`) or opening sentence, stripping syntax tokens.
+    - **Subject Routing**: If a context subject is attached or only 1 subject exists, saves directly to that subject's `Others` tab with 1 click. If multiple subjects exist without attached context, displays a sleek subject selector popup.
+    - **Standardized Object Shape**: Persists `type: 'other'`, `contentMarkdown: msg.content`, and `sourceSnippet: msg.content` to IndexedDB (`db.materials`).
+    - **Interactive Feedback**: Shows an emerald `Saved to Others! ✓` confirmation badge.
+  - In [`src/components/MaterialViewer.tsx`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/components/MaterialViewer.tsx), ensured `other` type materials render with full GFM markdown, KaTeX math rendering, and PDF export support.
+
 ---
 
 ## 6. Verification & Quality Assurance

@@ -1315,8 +1315,10 @@ function MaterialPicker({
 
 function MessageBubble({ msg }: { msg: ChatMessage }) {
   const isUser = msg.role === 'user';
-  const [showSave, setShowSave] = useState(false);
+  const allSubjects = useAllSubjects();
   const [copied, setCopied] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [showSubjectPicker, setShowSubjectPicker] = useState(false);
 
   async function handleCopy() {
     try {
@@ -1335,24 +1337,64 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
     }
   }
 
-  async function saveAsOther() {
+  async function handleSaveToSubject(targetSubjectId: string) {
+    // Generate clean title from first heading or sentence
+    const firstHeading = msg.content.match(/^#{1,3}\s+(.+)$/m);
+    let title = '';
+    if (firstHeading) {
+      title = firstHeading[1].replace(/[*_`]/g, '').trim();
+    } else {
+      const firstLine = msg.content.split('\n').find((l) => l.trim().length > 0) || '';
+      title = firstLine.replace(/^[-*•\d.]+\s*/, '').replace(/[*_`]/g, '').trim().slice(0, 50);
+    }
+    if (!title) {
+      title = `Ask AI Note — ${new Date().toLocaleDateString()}`;
+    }
+
     const material: StudyMaterial = {
       id: uid(),
-      subjectId: msg.contextSubjectIds?.[0] ?? '',
-      type: 'other',
-      title: msg.content.slice(0, 50) + (msg.content.length > 50 ? '...' : ''),
+      subjectId: targetSubjectId,
+      type: 'other', // Specifically saved to "Others" tab of study materials
+      title,
+      contentMarkdown: msg.content,
       sourceSnippet: msg.content,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
+
     await db.materials.add(material);
+    setShowSubjectPicker(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  }
+
+  function handleSaveClick() {
+    // If context subject is already attached to this message, save directly to it
+    const directSubjectId = msg.contextSubjectIds?.[0];
+    if (directSubjectId) {
+      handleSaveToSubject(directSubjectId);
+      return;
+    }
+
+    // If only 1 subject exists in workspace, save directly to it
+    if (allSubjects.length === 1) {
+      handleSaveToSubject(allSubjects[0].id);
+      return;
+    }
+
+    // If no subjects exist, save with empty subjectId
+    if (allSubjects.length === 0) {
+      handleSaveToSubject('');
+      return;
+    }
+
+    // If multiple subjects exist without attached context, prompt user to pick subject
+    setShowSubjectPicker((prev) => !prev);
   }
 
   return (
     <div
       className={`group flex gap-2.5 ${isUser ? 'flex-row-reverse' : ''} animate-slide-up`}
-      onMouseEnter={() => setShowSave(true)}
-      onMouseLeave={() => setShowSave(false)}
     >
       <div
         className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-xs font-medium shadow-soft ${
@@ -1408,7 +1450,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
           )}
         </div>
 
-        {/* Action bar (Copy + Save to materials) */}
+        {/* Action bar (Copy + Save to Others study material) */}
         <div className={`flex items-center gap-2 mt-1.5 ${isUser ? 'justify-end' : 'ml-1'}`}>
           <button
             onClick={handleCopy}
@@ -1432,15 +1474,58 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
             )}
           </button>
 
-          {!isUser && showSave && (
-            <button
-              onClick={saveAsOther}
-              className="flex items-center gap-1 text-xs text-ink-400 hover:text-ink-600 hover:bg-paper-100 px-1.5 py-0.5 rounded-md transition-colors"
-              title="Save as study material"
-            >
-              <Bookmark className="w-3 h-3" />
-              <span>Save</span>
-            </button>
+          {!isUser && (
+            <div className="relative">
+              <button
+                onClick={handleSaveClick}
+                disabled={saved}
+                className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md transition-colors ${
+                  saved
+                    ? 'text-emerald-600 bg-emerald-50 font-medium'
+                    : 'text-ink-400 hover:text-ink-600 hover:bg-paper-100'
+                }`}
+                title="Save response to Subject's Others study materials tab"
+              >
+                {saved ? (
+                  <>
+                    <Check className="w-3 h-3 text-emerald-500" />
+                    <span>Saved to Others!</span>
+                  </>
+                ) : (
+                  <>
+                    <Bookmark className="w-3 h-3" />
+                    <span>Save to Others</span>
+                  </>
+                )}
+              </button>
+
+              {showSubjectPicker && (
+                <>
+                  <div
+                    className="fixed inset-0 z-30"
+                    onClick={() => setShowSubjectPicker(false)}
+                  />
+                  <div className="absolute left-0 bottom-full mb-1.5 z-40 w-48 bg-white rounded-xl border border-paper-300 shadow-lifted p-1.5 space-y-1 text-xs animate-scale-in">
+                    <p className="text-[10px] font-bold text-ink-400 px-2 py-1 uppercase tracking-wider">
+                      Save to Subject &gt; Others
+                    </p>
+                    {allSubjects.map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => handleSaveToSubject(s.id)}
+                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-paper-100 transition-colors text-left"
+                      >
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ backgroundColor: COLOR_HEX[s.color] }}
+                        />
+                        <span className="truncate text-ink-700 font-medium">{s.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           )}
         </div>
       </div>

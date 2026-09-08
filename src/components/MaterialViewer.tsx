@@ -517,7 +517,7 @@ export function MaterialViewer({ material, subjectColor, onBack, onRenamed }: Pr
               {material.type === 'other' && (
                 <div className="prose-studesk max-w-none">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {material.sourceSnippet || ''}
+                    {material.contentMarkdown || material.sourceSnippet || ''}
                   </ReactMarkdown>
                 </div>
               )}
@@ -738,7 +738,7 @@ export function MaterialViewer({ material, subjectColor, onBack, onRenamed }: Pr
           {material.type === 'other' && (
             <div className="prose-studesk">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {material.sourceSnippet || ''}
+                {material.contentMarkdown || material.sourceSnippet || ''}
               </ReactMarkdown>
             </div>
           )}
