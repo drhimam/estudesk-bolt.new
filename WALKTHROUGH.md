@@ -74,19 +74,19 @@ estudesk-bolt.new/
 ## 4. Environment Variables Configuration
 
 ```env
-DATABASE_URL=postgresql://neondb_owner:npg_eyKRW9tJ1Bmn@ep-lively-smoke-aejtoqhq-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
-BETTER_AUTH_SECRET=estudesk_secret_key_8f3a9b2c1d4e5f6g7h8i9j
+DATABASE_URL=postgresql://user:password@your-neon-pooler-endpoint.aws.neon.tech/neondb?sslmode=require
+BETTER_AUTH_SECRET=your_better_auth_secret_32_characters_long
 BETTER_AUTH_URL=http://localhost:3000
 
-# Verified Active AI Provider (Xiaomi MiMo)
+# Active AI Provider Configuration
 AI_PROVIDER=custom
-AI_API_KEY=sk-sdj3mf8lollo3erf31u564gkjawwlpf3hzsxygqhz6ozrcld
+AI_API_KEY=your_ai_api_key_here
 AI_BASE_URL=https://api.xiaomimimo.com/v1
 AI_MODEL=mimo-v2.5-pro
 
 # Vite AI Client Keys
 VITE_AI_PROVIDER=custom
-VITE_AI_API_KEY=sk-sdj3mf8lollo3erf31u564gkjawwlpf3hzsxygqhz6ozrcld
+VITE_AI_API_KEY=your_ai_api_key_here
 VITE_AI_BASE_URL=https://api.xiaomimimo.com/v1
 VITE_AI_MODEL=mimo-v2.5-pro
 
