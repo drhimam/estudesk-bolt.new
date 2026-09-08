@@ -1,14 +1,16 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
-import { neon } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-http';
+import { createClient } from '@libsql/client';
+import { drizzle } from 'drizzle-orm/libsql';
 import * as schema from './db/schema';
 import { initBetterAuth } from './auth/auth';
 import { runAIRouter, GenerationRequest } from './ai/router';
 
 export type Bindings = {
-  DATABASE_URL: string;
+  TURSO_DATABASE_URL?: string;
+  TURSO_AUTH_TOKEN?: string;
+  DATABASE_URL?: string;
   BETTER_AUTH_SECRET: string;
   R2_BUCKET?: unknown;
   AI_PROVIDER?: string;
@@ -21,6 +23,15 @@ export type Bindings = {
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
+
+// Helper to initialize Turso libSQL client and Drizzle instance
+function getDb(env: Bindings) {
+  const url = env.TURSO_DATABASE_URL || env.DATABASE_URL || 'file:local.db';
+  const authToken = env.TURSO_AUTH_TOKEN;
+  const client = createClient({ url, authToken });
+  const db = drizzle(client, { schema });
+  return { client, db };
+}
 
 // Middleware
 app.use('*', logger());
@@ -37,13 +48,13 @@ app.get('/health', (c) => {
 
 app.get('/ready', async (c) => {
   try {
-    const dbUrl = c.env.DATABASE_URL;
-    if (!dbUrl) {
+    const url = c.env.TURSO_DATABASE_URL || c.env.DATABASE_URL;
+    if (!url) {
       return c.json({ status: 'degraded', db: 'unconfigured' }, 503);
     }
-    const sql = neon(dbUrl);
-    await sql`SELECT 1`;
-    return c.json({ status: 'ready', db: 'connected', timestamp: new Date().toISOString() });
+    const { client } = getDb(c.env);
+    await client.execute('SELECT 1');
+    return c.json({ status: 'ready', db: 'connected (turso)', timestamp: new Date().toISOString() });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     return c.json({ status: 'error', db: msg }, 500);
@@ -58,58 +69,57 @@ app.get('/metrics', (c) => {
 
 // Better Auth Route Handler
 app.on(['POST', 'GET'], '/api/auth/*', (c) => {
-  const sql = neon(c.env.DATABASE_URL || '');
-  const db = drizzle(sql, { schema });
+  const { db } = getDb(c.env);
   const auth = initBetterAuth(db, c.env.BETTER_AUTH_SECRET || 'default-secret');
   return auth.handler(c.req.raw);
 });
 
 // Folders / Semesters endpoints
 app.get('/api/folders', async (c) => {
-  const dbUrl = c.env.DATABASE_URL;
-  if (!dbUrl) {
-    return c.json({ data: [] });
+  try {
+    const { db } = getDb(c.env);
+    const result = await db.select().from(schema.folders);
+    return c.json({ data: result });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ data: [], error: msg });
   }
-  const sql = neon(dbUrl);
-  const db = drizzle(sql, { schema });
-  const result = await db.select().from(schema.folders);
-  return c.json({ data: result });
 });
 
 // Subjects endpoints
 app.get('/api/subjects', async (c) => {
-  const dbUrl = c.env.DATABASE_URL;
-  if (!dbUrl) {
-    return c.json({ data: [] });
+  try {
+    const { db } = getDb(c.env);
+    const result = await db.select().from(schema.subjects);
+    return c.json({ data: result });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ data: [], error: msg });
   }
-  const sql = neon(dbUrl);
-  const db = drizzle(sql, { schema });
-  const result = await db.select().from(schema.subjects);
-  return c.json({ data: result });
 });
 
 // Materials endpoints
 app.get('/api/materials', async (c) => {
-  const dbUrl = c.env.DATABASE_URL;
-  if (!dbUrl) {
-    return c.json({ data: [] });
+  try {
+    const { db } = getDb(c.env);
+    const result = await db.select().from(schema.materials);
+    return c.json({ data: result });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ data: [], error: msg });
   }
-  const sql = neon(dbUrl);
-  const db = drizzle(sql, { schema });
-  const result = await db.select().from(schema.materials);
-  return c.json({ data: result });
 });
 
 // Deadlines endpoints
 app.get('/api/deadlines', async (c) => {
-  const dbUrl = c.env.DATABASE_URL;
-  if (!dbUrl) {
-    return c.json({ data: [] });
+  try {
+    const { db } = getDb(c.env);
+    const result = await db.select().from(schema.deadlines);
+    return c.json({ data: result });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ data: [], error: msg });
   }
-  const sql = neon(dbUrl);
-  const db = drizzle(sql, { schema });
-  const result = await db.select().from(schema.deadlines);
-  return c.json({ data: result });
 });
 
 // AI Generation Endpoint

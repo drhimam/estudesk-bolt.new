@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^1.1.0",
+    "@libsql/client": "^0.18.0",
     "@supabase/supabase-js": "^2.57.4",
     "better-auth": "^1.7.3",
     "dexie": "^4.4.5",

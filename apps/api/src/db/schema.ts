@@ -1,100 +1,98 @@
 import {
-  pgTable,
-  uuid,
-  varchar,
+  sqliteTable,
   text,
-  boolean,
   integer,
-  decimal,
-  timestamp,
-  jsonb,
-  pgEnum,
-  time,
-  inet,
-} from 'drizzle-orm/pg-core';
+  real,
+} from 'drizzle-orm/sqlite-core';
+import { sql } from 'drizzle-orm';
 
-// --- Enums ---
-export const roleEnum = pgEnum('role_type', ['student', 'admin', 'owner']);
-export const generationTierEnum = pgEnum('generation_tier', ['free', 'premium', 'enterprise']);
-export const materialTypeEnum = pgEnum('material_type', [
-  'notes',
-  'cheatsheet',
-  'infographic',
-  'flashcards',
-  'quiz',
-  'assignment',
-  'presentation',
-]);
-export const sourceMaterialTypeEnum = pgEnum('source_material_type', [
-  'pdf',
-  'doc',
-  'docx',
-  'xls',
-  'xlsx',
-  'csv',
-  'md',
-  'txt',
-  'audio',
-  'video',
-  'url',
-  'youtube',
-  'image',
-  'pasted_text',
-]);
-export const weekdayEnum = pgEnum('weekday', [
-  'monday',
-  'tuesday',
-  'wednesday',
-  'thursday',
-  'friday',
-  'saturday',
-  'sunday',
-]);
-export const emailFormatEnum = pgEnum('email_format', ['html', 'plain']);
-export const notificationTypeEnum = pgEnum('notification_type', ['weekly_digest', 'deadline_alert']);
-export const notificationProviderEnum = pgEnum('notification_provider', ['ses', 'zeptomail']);
-export const notificationStatusEnum = pgEnum('notification_status', [
-  'queued',
-  'sent',
-  'delivered',
-  'bounced',
-  'complained',
-  'failed',
-]);
-export const chatRoleEnum = pgEnum('chat_role', ['user', 'assistant', 'system']);
-export const generationStatusEnum = pgEnum('generation_status', [
-  'success',
-  'retry',
-  'fallback',
-  'failed',
-]);
+// --- Type definitions ---
+export type RoleType = 'student' | 'admin' | 'owner';
+export type GenerationTier = 'free' | 'premium' | 'enterprise';
+export type MaterialType =
+  | 'notes'
+  | 'cheatsheet'
+  | 'infographic'
+  | 'flashcards'
+  | 'quiz'
+  | 'assignment'
+  | 'presentation'
+  | 'other';
+export type SourceMaterialType =
+  | 'pdf'
+  | 'doc'
+  | 'docx'
+  | 'xls'
+  | 'xlsx'
+  | 'csv'
+  | 'md'
+  | 'txt'
+  | 'audio'
+  | 'video'
+  | 'url'
+  | 'youtube'
+  | 'image'
+  | 'pasted_text';
+export type Weekday =
+  | 'monday'
+  | 'tuesday'
+  | 'wednesday'
+  | 'thursday'
+  | 'friday'
+  | 'saturday'
+  | 'sunday';
+export type EmailFormat = 'html' | 'plain';
+export type NotificationType = 'weekly_digest' | 'deadline_alert';
+export type NotificationProvider = 'ses' | 'zeptomail';
+export type NotificationStatus =
+  | 'queued'
+  | 'sent'
+  | 'delivered'
+  | 'bounced'
+  | 'complained'
+  | 'failed';
+export type ChatRole = 'user' | 'assistant' | 'system';
+export type GenerationStatus = 'success' | 'retry' | 'fallback' | 'failed';
 
-// --- Better Auth Core Tables ---
+// Helper for generating UUID v4 in JS/SQLite
+const randomId = () => crypto.randomUUID();
 
-export const user = pgTable('user', {
-  id: text('id').primaryKey(),
+// --- Better Auth Core Tables (SQLite) ---
+
+export const user = sqliteTable('user', {
+  id: text('id').primaryKey().$defaultFn(randomId),
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
-  emailVerified: boolean('email_verified').notNull().default(false),
+  emailVerified: integer('email_verified', { mode: 'boolean' }).default(false).notNull(),
   image: text('image'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
   // Extended eStudesk Profile Fields
-  generationTier: generationTierEnum('generation_tier').default('free').notNull(),
+  generationTier: text('generation_tier', { enum: ['free', 'premium', 'enterprise'] })
+    .default('free')
+    .notNull(),
   dailyGenerationCount: integer('daily_generation_count').default(0).notNull(),
   monthlyGenerationCount: integer('monthly_generation_count').default(0).notNull(),
-  dailyGenerationReset: timestamp('daily_generation_reset'),
-  monthlyGenerationReset: timestamp('monthly_generation_reset'),
-  timezone: varchar('timezone', { length: 50 }).default('UTC').notNull(),
-  deletedAt: timestamp('deleted_at'),
+  dailyGenerationReset: integer('daily_generation_reset', { mode: 'timestamp_ms' }),
+  monthlyGenerationReset: integer('monthly_generation_reset', { mode: 'timestamp_ms' }),
+  timezone: text('timezone').default('UTC').notNull(),
+  deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }),
 });
 
-export const session = pgTable('session', {
-  id: text('id').primaryKey(),
-  expiresAt: timestamp('expires_at').notNull(),
+export const session = sqliteTable('session', {
+  id: text('id').primaryKey().$defaultFn(randomId),
+  expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
   token: text('token').notNull().unique(),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
   ipAddress: text('ip_address'),
   userAgent: text('user_agent'),
   userId: text('user_id')
@@ -102,8 +100,8 @@ export const session = pgTable('session', {
     .references(() => user.id, { onDelete: 'cascade' }),
 });
 
-export const account = pgTable('account', {
-  id: text('id').primaryKey(),
+export const account = sqliteTable('account', {
+  id: text('id').primaryKey().$defaultFn(randomId),
   accountId: text('account_id').notNull(),
   providerId: text('provider_id').notNull(),
   userId: text('user_id')
@@ -112,234 +110,291 @@ export const account = pgTable('account', {
   accessToken: text('access_token'),
   refreshToken: text('refresh_token'),
   idToken: text('id_token'),
-  accessTokenExpiresAt: timestamp('access_token_expires_at'),
-  refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
+  accessTokenExpiresAt: integer('access_token_expires_at', { mode: 'timestamp_ms' }),
+  refreshTokenExpiresAt: integer('refresh_token_expires_at', { mode: 'timestamp_ms' }),
   scope: text('scope'),
   password: text('password'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
 });
 
-export const verification = pgTable('verification', {
-  id: text('id').primaryKey(),
+export const verification = sqliteTable('verification', {
+  id: text('id').primaryKey().$defaultFn(randomId),
   identifier: text('identifier').notNull(),
   value: text('value').notNull(),
-  expiresAt: timestamp('expires_at').notNull(),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).default(sql`(CURRENT_TIMESTAMP)`),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).default(sql`(CURRENT_TIMESTAMP)`),
 });
 
 // --- Role-Based Access Control ---
 
-export const userRoles = pgTable('user_roles', {
-  id: uuid('id').defaultRandom().primaryKey(),
+export const userRoles = sqliteTable('user_roles', {
+  id: text('id').primaryKey().$defaultFn(randomId),
   userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
-  role: roleEnum('role').default('student').notNull(),
+  role: text('role', { enum: ['student', 'admin', 'owner'] }).default('student').notNull(),
   assignedBy: text('assigned_by').references(() => user.id),
-  assignedAt: timestamp('assigned_at').defaultNow().notNull(),
+  assignedAt: integer('assigned_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
 });
 
-export const auditLogs = pgTable('audit_logs', {
-  id: uuid('id').defaultRandom().primaryKey(),
+export const auditLogs = sqliteTable('audit_logs', {
+  id: text('id').primaryKey().$defaultFn(randomId),
   actorId: text('actor_id').references(() => user.id, { onDelete: 'set null' }),
-  action: varchar('action', { length: 100 }).notNull(),
-  resourceType: varchar('resource_type', { length: 50 }).notNull(),
-  resourceId: uuid('resource_id'),
-  beforeState: jsonb('before_state'),
-  afterState: jsonb('after_state'),
-  ipAddress: inet('ip_address'),
+  action: text('action').notNull(),
+  resourceType: text('resource_type').notNull(),
+  resourceId: text('resource_id'),
+  beforeState: text('before_state', { mode: 'json' }),
+  afterState: text('after_state', { mode: 'json' }),
+  ipAddress: text('ip_address'),
   userAgent: text('user_agent'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
 });
 
 // --- Organizational Hierarchy (Semesters & Subjects) ---
 
-export const folders = pgTable('folders', {
-  id: uuid('id').defaultRandom().primaryKey(),
+export const folders = sqliteTable('folders', {
+  id: text('id').primaryKey().$defaultFn(randomId),
   userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
-  name: varchar('name', { length: 100 }).notNull(),
-  color: varchar('color', { length: 7 }).default('#4F46E5').notNull(),
+  name: text('name').notNull(),
+  color: text('color').default('#4F46E5').notNull(),
   sortOrder: integer('sort_order').default(0).notNull(),
-  isPinned: boolean('is_pinned').default(false).notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  isPinned: integer('is_pinned', { mode: 'boolean' }).default(false).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
 });
 
-export const subjects = pgTable('subjects', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  folderId: uuid('folder_id')
+export const subjects = sqliteTable('subjects', {
+  id: text('id').primaryKey().$defaultFn(randomId),
+  folderId: text('folder_id')
     .notNull()
     .references(() => folders.id, { onDelete: 'cascade' }),
   userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
-  name: varchar('name', { length: 100 }).notNull(),
-  color: varchar('color', { length: 7 }).notNull(),
+  name: text('name').notNull(),
+  color: text('color').notNull(),
   sortOrder: integer('sort_order').default(0).notNull(),
-  isPinned: boolean('is_pinned').default(false).notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  isPinned: integer('is_pinned', { mode: 'boolean' }).default(false).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
 });
 
 // --- Study Materials ---
 
-export const materials = pgTable('materials', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  subjectId: uuid('subject_id')
+export const materials = sqliteTable('materials', {
+  id: text('id').primaryKey().$defaultFn(randomId),
+  subjectId: text('subject_id')
     .notNull()
     .references(() => subjects.id, { onDelete: 'cascade' }),
   userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
-  title: varchar('title', { length: 200 }).notNull(),
-  type: materialTypeEnum('type').notNull(),
-  content: jsonb('content').notNull(),
+  title: text('title').notNull(),
+  type: text('type', {
+    enum: [
+      'notes',
+      'cheatsheet',
+      'infographic',
+      'flashcards',
+      'quiz',
+      'assignment',
+      'presentation',
+      'other',
+    ],
+  }).notNull(),
+  content: text('content', { mode: 'json' }).notNull(),
   version: integer('version').default(1).notNull(),
-  sourceIds: uuid('source_ids').array(),
-  config: jsonb('config'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  sourceIds: text('source_ids', { mode: 'json' }), // stringified array of source IDs
+  config: text('config', { mode: 'json' }),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
 });
 
-export const materialVersions = pgTable('material_versions', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  materialId: uuid('material_id')
+export const materialVersions = sqliteTable('material_versions', {
+  id: text('id').primaryKey().$defaultFn(randomId),
+  materialId: text('material_id')
     .notNull()
     .references(() => materials.id, { onDelete: 'cascade' }),
   version: integer('version').notNull(),
-  content: jsonb('content').notNull(),
-  config: jsonb('config'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  content: text('content', { mode: 'json' }).notNull(),
+  config: text('config', { mode: 'json' }),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
 });
 
-export const extractedSources = pgTable('extracted_sources', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  subjectId: uuid('subject_id').references(() => subjects.id, { onDelete: 'set null' }),
+export const extractedSources = sqliteTable('extracted_sources', {
+  id: text('id').primaryKey().$defaultFn(randomId),
+  subjectId: text('subject_id').references(() => subjects.id, { onDelete: 'set null' }),
   userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
-  name: varchar('name', { length: 255 }).notNull(),
-  type: sourceMaterialTypeEnum('type').notNull(),
+  name: text('name').notNull(),
+  type: text('type').notNull(),
   content: text('content').notNull(),
-  metadata: jsonb('metadata'),
-  r2Key: varchar('r2_key', { length: 500 }),
-  r2ExpiresAt: timestamp('r2_expires_at'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  metadata: text('metadata', { mode: 'json' }),
+  r2Key: text('r2_key'),
+  r2ExpiresAt: integer('r2_expires_at', { mode: 'timestamp_ms' }),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
 });
 
 // --- Deadlines & Notifications ---
 
-export const deadlines = pgTable('deadlines', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  folderId: uuid('folder_id')
+export const deadlines = sqliteTable('deadlines', {
+  id: text('id').primaryKey().$defaultFn(randomId),
+  folderId: text('folder_id')
     .notNull()
     .references(() => folders.id, { onDelete: 'cascade' }),
-  subjectId: uuid('subject_id').references(() => subjects.id, { onDelete: 'set null' }),
+  subjectId: text('subject_id').references(() => subjects.id, { onDelete: 'set null' }),
   userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
-  title: varchar('title', { length: 200 }).notNull(),
+  title: text('title').notNull(),
   description: text('description'),
-  dueDate: timestamp('due_date').notNull(),
-  isCompleted: boolean('is_completed').default(false).notNull(),
-  completedAt: timestamp('completed_at'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  dueDate: integer('due_date', { mode: 'timestamp_ms' }).notNull(),
+  isCompleted: integer('is_completed', { mode: 'boolean' }).default(false).notNull(),
+  completedAt: integer('completed_at', { mode: 'timestamp_ms' }),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
 });
 
-export const notificationPreferences = pgTable('notification_preferences', {
-  id: uuid('id').defaultRandom().primaryKey(),
+export const notificationPreferences = sqliteTable('notification_preferences', {
+  id: text('id').primaryKey().$defaultFn(randomId),
   userId: text('user_id')
     .notNull()
     .unique()
     .references(() => user.id, { onDelete: 'cascade' }),
-  weeklyDigestEnabled: boolean('weekly_digest_enabled').default(true).notNull(),
-  weeklyDigestDay: weekdayEnum('weekly_digest_day').default('monday').notNull(),
-  weeklyDigestTime: time('weekly_digest_time').default('08:00').notNull(),
-  deadlineAlertEnabled: boolean('deadline_alert_enabled').default(true).notNull(),
+  weeklyDigestEnabled: integer('weekly_digest_enabled', { mode: 'boolean' }).default(true).notNull(),
+  weeklyDigestDay: text('weekly_digest_day').default('monday').notNull(),
+  weeklyDigestTime: text('weekly_digest_time').default('08:00').notNull(),
+  deadlineAlertEnabled: integer('deadline_alert_enabled', { mode: 'boolean' }).default(true).notNull(),
   deadlineAlertHoursBefore: integer('deadline_alert_hours_before').default(24).notNull(),
-  timezone: varchar('timezone', { length: 50 }).default('UTC').notNull(),
-  emailFormat: emailFormatEnum('email_format').default('html').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  timezone: text('timezone').default('UTC').notNull(),
+  emailFormat: text('email_format', { enum: ['html', 'plain'] }).default('html').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
 });
 
-export const notificationLogs = pgTable('notification_logs', {
-  id: uuid('id').defaultRandom().primaryKey(),
+export const notificationLogs = sqliteTable('notification_logs', {
+  id: text('id').primaryKey().$defaultFn(randomId),
   userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
-  notificationType: notificationTypeEnum('notification_type').notNull(),
-  deadlineId: uuid('deadline_id').references(() => deadlines.id, { onDelete: 'set null' }),
-  provider: notificationProviderEnum('provider').notNull(),
-  providerMessageId: varchar('provider_message_id', { length: 255 }),
-  status: notificationStatusEnum('status').notNull(),
+  notificationType: text('notification_type').notNull(),
+  deadlineId: text('deadline_id').references(() => deadlines.id, { onDelete: 'set null' }),
+  provider: text('provider').notNull(),
+  providerMessageId: text('provider_message_id'),
+  status: text('status').notNull(),
   errorMessage: text('error_message'),
-  sentAt: timestamp('sent_at'),
-  deliveredAt: timestamp('delivered_at'),
-  openedAt: timestamp('opened_at'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  sentAt: integer('sent_at', { mode: 'timestamp_ms' }),
+  deliveredAt: integer('delivered_at', { mode: 'timestamp_ms' }),
+  openedAt: integer('opened_at', { mode: 'timestamp_ms' }),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
 });
 
-export const emailTemplates = pgTable('email_templates', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  templateKey: varchar('template_key', { length: 100 }).notNull().unique(),
-  subjectLine: varchar('subject_line', { length: 255 }).notNull(),
+export const emailTemplates = sqliteTable('email_templates', {
+  id: text('id').primaryKey().$defaultFn(randomId),
+  templateKey: text('template_key').notNull().unique(),
+  subjectLine: text('subject_line').notNull(),
   htmlBody: text('html_body').notNull(),
   plainBody: text('plain_body').notNull(),
   version: integer('version').default(1).notNull(),
-  isActive: boolean('is_active').default(true).notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  isActive: integer('is_active', { mode: 'boolean' }).default(true).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
 });
 
 // --- Chat & Global Ask AI ---
 
-export const conversations = pgTable('conversations', {
-  id: uuid('id').defaultRandom().primaryKey(),
+export const conversations = sqliteTable('conversations', {
+  id: text('id').primaryKey().$defaultFn(randomId),
   userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
-  title: varchar('title', { length: 200 }).default('New conversation').notNull(),
-  subjectContextIds: uuid('subject_context_ids').array(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  title: text('title').default('New conversation').notNull(),
+  subjectContextIds: text('subject_context_ids', { mode: 'json' }), // stringified array
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
 });
 
-export const chatMessages = pgTable('chat_messages', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  conversationId: uuid('conversation_id')
+export const chatMessages = sqliteTable('chat_messages', {
+  id: text('id').primaryKey().$defaultFn(randomId),
+  conversationId: text('conversation_id')
     .notNull()
     .references(() => conversations.id, { onDelete: 'cascade' }),
-  role: chatRoleEnum('role').notNull(),
+  role: text('role', { enum: ['user', 'assistant', 'system'] }).notNull(),
   content: text('content').notNull(),
-  attachments: jsonb('attachments'),
-  webSearchUsed: boolean('web_search_used').default(false).notNull(),
-  pageContextUsed: boolean('page_context_used').default(false).notNull(),
+  attachments: text('attachments', { mode: 'json' }),
+  webSearchUsed: integer('web_search_used', { mode: 'boolean' }).default(false).notNull(),
+  pageContextUsed: integer('page_context_used', { mode: 'boolean' }).default(false).notNull(),
   tokenCount: integer('token_count'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
 });
 
 // --- AI Router & Telemetry ---
 
-export const generationEvents = pgTable('generation_events', {
-  id: uuid('id').defaultRandom().primaryKey(),
+export const generationEvents = sqliteTable('generation_events', {
+  id: text('id').primaryKey().$defaultFn(randomId),
   userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
-  materialType: varchar('material_type', { length: 50 }).notNull(),
-  provider: varchar('provider', { length: 50 }).notNull(),
-  model: varchar('model', { length: 100 }).notNull(),
+  materialType: text('material_type').notNull(),
+  provider: text('provider').notNull(),
+  model: text('model').notNull(),
   promptTokens: integer('prompt_tokens').notNull(),
   completionTokens: integer('completion_tokens').notNull(),
-  estimatedCostUsd: decimal('estimated_cost_usd', { precision: 10, scale: 6 }).notNull(),
-  status: generationStatusEnum('status').notNull(),
+  estimatedCostUsd: real('estimated_cost_usd').notNull(),
+  status: text('status', { enum: ['success', 'retry', 'fallback', 'failed'] }).notNull(),
   errorMessage: text('error_message'),
   latencyMs: integer('latency_ms').notNull(),
-  idempotencyKey: uuid('idempotency_key').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  idempotencyKey: text('idempotency_key').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
 });

@@ -24,8 +24,8 @@ Welcome to **eStudesk** (`estudesk-bolt.new`)! This document provides an exhaust
 | **Styling & Icons** | Tailwind CSS 3.4 + Lucide React | Custom color design system (`paper`, `ink`, `accent`, `crimson`), custom fonts |
 | **Client Database** | Dexie.js (IndexedDB v3) | Offline storage for semesters, subjects, materials, deadlines, chat sessions |
 | **Backend API** | Cloudflare Workers + Hono | Edge HTTP framework, CORS, structured JSON logging, strict Zod middleware |
-| **Database & ORM** | Neon Postgres + Drizzle ORM | `@neondatabase/serverless` HTTP driver, 18-table relational schema |
-| **Auth Engine** | Better Auth | Self-hosted inside Worker, Drizzle ORM adapter, scrypt password hashing |
+| **Database & ORM** | Turso (libSQL/SQLite at Edge) + Drizzle ORM | `@libsql/client` HTTP driver, 18-table relational schema (9GB free storage, 500 DBs) |
+| **Auth Engine** | Better Auth | Self-hosted inside Worker, Drizzle SQLite adapter, scrypt password hashing |
 | **AI Processing** | Multi-Provider AI Router | Tested & verified with Xiaomi MiMo (`mimo-v2.5-pro` at `https://api.xiaomimimo.com/v1`) |
 | **OCR & Media** | Tesseract.js | Client-side Optical Character Recognition for uploaded image notes |
 | **Rendering Engines** | KaTeX, React Markdown, DOMPurify | LaTeX math expressions, GitHub Flavored Markdown callouts, sandboxed HTML |
@@ -74,7 +74,11 @@ estudesk-bolt.new/
 ## 4. Environment Variables Configuration
 
 ```env
-DATABASE_URL=postgresql://user:password@your-neon-pooler-endpoint.aws.neon.tech/neondb?sslmode=require
+# Database Connection (Turso libSQL / SQLite at the Edge)
+TURSO_DATABASE_URL=libsql://your-db-org.turso.io
+TURSO_AUTH_TOKEN=your_turso_auth_token
+DATABASE_URL=libsql://your-db-org.turso.io
+
 BETTER_AUTH_SECRET=your_better_auth_secret_32_characters_long
 BETTER_AUTH_URL=http://localhost:3000
 
@@ -203,6 +207,16 @@ R2_BUCKET=estudesk-sources
     - **Standardized Object Shape**: Persists `type: 'other'`, `contentMarkdown: msg.content`, and `sourceSnippet: msg.content` to IndexedDB (`db.materials`).
     - **Interactive Feedback**: Shows an emerald `Saved to Others! ✓` confirmation badge.
   - In [`src/components/MaterialViewer.tsx`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/components/MaterialViewer.tsx), ensured `other` type materials render with full GFM markdown, KaTeX math rendering, and PDF export support.
+
+### 11. Edge Database Migration to Turso (libSQL / SQLite)
+- **What was done**: Migrated the serverless backend database from Neon Postgres to **Turso (libSQL/SQLite at the Edge)** to overcome Neon's 512MB storage cap with Turso's generous **9GB free storage tier, 500 databases, and 1 billion monthly reads**.
+- **How it was done**:
+  - **Driver & Dependencies**: Installed `@libsql/client` and uninstalled `@neondatabase/serverless`.
+  - **Drizzle Schema Conversion** ([`apps/api/src/db/schema.ts`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/apps/api/src/db/schema.ts)): Converted all 18 tables to `drizzle-orm/sqlite-core` schema (`sqliteTable`, `text`, `integer`, `real`).
+  - **Better Auth Adapter** ([`apps/api/src/auth/auth.ts`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/apps/api/src/auth/auth.ts)): Configured `drizzleAdapter` with `provider: 'sqlite'`.
+  - **Worker Edge Router** ([`apps/api/src/index.ts`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/apps/api/src/index.ts)): Updated Hono handlers to initialize `@libsql/client` and `drizzle-orm/libsql` with `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`.
+  - **Drizzle Kit Config** ([`drizzle.config.ts`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/drizzle.config.ts)): Configured `dialect: 'turso'` with SQLite output migrations.
+  - **Migration Generation**: Verified and generated migration schema in [`drizzle/0000_sweet_scalphunter.sql`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/drizzle/0000_sweet_scalphunter.sql) (18 tables).
 
 ---
 
