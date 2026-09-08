@@ -50,6 +50,7 @@ R2_BUCKET=estudesk-sources
 ## 4. Maintenance History & Memory Log
 
 - **2026-09-07**: Migrated serverless database layer from Neon Postgres to **Turso (libSQL/SQLite)** with `@libsql/client` and `drizzle-orm/libsql`. Converted all 18 tables to SQLite schema and Better Auth SQLite adapter.
+- **2026-09-07**: Connected live Turso database (`estudesk-db-drhimam`) and pushed all 18 tables to production.
 - **2026-09-07**: Updated `AskAIPanel.tsx` to replace hardcoded responses with live AI completions via `/api/chat` and live fetch to Xiaomi MiMo (`mimo-v2.5-pro`). Added animated `isThinking` loading indicator.
 - **2026-09-07**: Verified active Xiaomi MiMo AI provider (`mimo-v2.5-pro` at `https://api.xiaomimimo.com/v1`).
 - **2026-09-07**: Project memory established for `estudesk-bolt.new`.
