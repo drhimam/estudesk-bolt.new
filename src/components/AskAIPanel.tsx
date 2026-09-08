@@ -25,7 +25,6 @@ import {
   PanelLeftClose,
   Download,
   Upload,
-  MoreVertical,
   FileJson,
   FileDown,
   Maximize2,
@@ -33,10 +32,14 @@ import {
   Camera,
   Loader2,
 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { db, uid } from '@/db/database';
 import { useConversations, useConversationMessages, useAllSubjects, useMaterials } from '@/hooks/useQueries';
 import { useAppState, toggleAIPanelFullscreen, setAIPanelOpen } from '@/store/appState';
 import { COLOR_HEX, COLOR_LIGHT, COLOR_TEXT } from '@/utils/colors';
+import { askAI } from '@/utils/aiClient';
+import { fetchUrlContent, extractUrls } from '@/utils/webReader';
 import type { ChatMessage, ChatConversation, Attachment, AttachmentType, StudyMaterial } from '@/types';
 
 const ATTACHMENT_TYPES: { type: AttachmentType; label: string; icon: React.ReactNode }[] = [
@@ -99,6 +102,7 @@ export function AskAIPanel() {
   const [showCamera, setShowCamera] = useState(false);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrProgress, setOcrProgress] = useState(0);
+  const [isThinking, setIsThinking] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fileAccept, setFileAccept] = useState('image/*,text/*,.pdf');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -167,45 +171,75 @@ export function AskAIPanel() {
     setInput('');
     setAttachments([]);
 
-    setTimeout(async () => {
-      const contextNote =
-        contextSubjectIds.length > 0
-          ? ` based on ${contextSubjects.map((s) => s.name).join(', ')}`
-          : '';
-      const webNote = webSearch ? ' I also searched the web for up-to-date information.' : '';
-      const pageNote = chatWithPage ? ' I can see the current page content too.' : '';
+    setIsThinking(true);
+    const promptText = input.trim();
 
-      const attachmentTexts = attachments
-        .map((a) => a.textContent)
-        .filter((t): t is string => !!t && t.trim().length > 0);
-
-      let attachmentNote = '';
-      if (attachmentTexts.length > 0) {
-        const combined = attachmentTexts.join('\n\n---\n\n');
-        const preview = combined.slice(0, 500);
-        attachmentNote = ` I've extracted the following text from your attachment:\n\n"""\n${preview}${combined.length > 500 ? '...' : ''}
-"""
-
-Here's my analysis based on that content.`;
+    try {
+      // Resolve any pending attachment texts
+      const resolvedAttachmentTexts: string[] = [];
+      for (const a of attachments) {
+        if (a.textContent) {
+          resolvedAttachmentTexts.push(a.textContent);
+        } else if (a.url) {
+          try {
+            const fetched = await fetchUrlContent(a.url);
+            resolvedAttachmentTexts.push(`--- Source: ${a.url} (${fetched.title || 'Page'}) ---\n${fetched.text}`);
+          } catch (e) {
+            console.warn('[AskAIPanel] Could not fetch attached URL content:', a.url, e);
+          }
+        }
       }
 
-      const responses = [
-        `I can help you explore that${contextNote}.${webNote}${pageNote}${attachmentNote} Here's what I found relevant — would you like me to generate study notes, flashcards, or a quiz from this?`,
-        `That's a great question${contextNote}.${webNote}${pageNote}${attachmentNote} The key concept here relates to the fundamental principles we discussed. Would you like me to create a structured summary?`,
-        `I've analyzed your material${contextNote}.${webNote}${attachmentNote} The main themes I'm identifying could be turned into study materials. Would you like me to break this down further?`,
-        `Let me break that down for you${contextNote}.${webNote}${pageNote}${attachmentNote} The core idea connects to several topics. I'd recommend generating flashcards to reinforce these connections.`,
-      ];
+      // Check if user typed URLs directly in the prompt text
+      const detectedUrls = extractUrls(promptText);
+      for (const u of detectedUrls) {
+        if (!attachments.some((a) => a.url === u)) {
+          try {
+            const fetched = await fetchUrlContent(u);
+            resolvedAttachmentTexts.push(`--- Source URL: ${u} (${fetched.title || 'Page'}) ---\n${fetched.text}`);
+          } catch (e) {
+            console.warn('[AskAIPanel] Could not fetch prompt URL:', u, e);
+          }
+        }
+      }
+
+      const combinedSource = resolvedAttachmentTexts.join('\n\n---\n\n');
+
+      // Build conversation history from existing messages for context
+      const history = messages
+        .slice(-20) // Last 20 messages for context window
+        .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+
+      const aiText = await askAI(promptText, {
+        sourceText: combinedSource || undefined,
+        contextSubjectNames: contextSubjects.map((s) => s.name),
+        history,
+      });
+
       const assistantMsg: ChatMessage = {
         id: uid(),
         conversationId: convId,
         subjectId: null,
-        role: 'assistant',
-        content: responses[Math.floor(Math.random() * responses.length)],
+        role: "assistant",
+        content: aiText,
         createdAt: Date.now(),
       };
       await db.messages.add(assistantMsg);
-      await db.conversations.update(convId!, { updatedAt: Date.now() });
-    }, 800);
+      await db.conversations.update(convId, { updatedAt: Date.now() });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const assistantMsg: ChatMessage = {
+        id: uid(),
+        conversationId: convId,
+        subjectId: null,
+        role: "assistant",
+        content: `⚠️ AI error: ${msg}`,
+        createdAt: Date.now(),
+      };
+      await db.messages.add(assistantMsg);
+    } finally {
+      setIsThinking(false);
+    }
   }
 
   async function handleFileUpload(file: File) {
@@ -246,8 +280,9 @@ Here's my analysis based on that content.`;
   }
 
   function addAttachment(type: AttachmentType, name: string, url?: string, extra?: { dataUrl?: string; textContent?: string }) {
+    const tempId = uid();
     const att: Attachment = {
-      id: uid(),
+      id: tempId,
       type,
       name,
       url,
@@ -262,6 +297,20 @@ Here's my analysis based on that content.`;
     setShowTextInput(false);
     setTextValue('');
     setTextName('');
+
+    if ((type === 'url' || type === 'youtube') && url && !extra?.textContent) {
+      fetchUrlContent(url)
+        .then((fetched) => {
+          setAttachments((prev) =>
+            prev.map((a) =>
+              a.id === tempId
+                ? { ...a, name: fetched.title || url, textContent: fetched.text }
+                : a,
+            ),
+          );
+        })
+        .catch((e) => console.warn('[AskAIPanel] URL fetch failed:', e));
+    }
   }
 
   function removeAttachment(id: string) {
@@ -557,6 +606,12 @@ Here's my analysis based on that content.`;
                 {messages.map((msg) => (
                   <MessageBubble key={msg.id} msg={msg} />
                 ))}
+                {isThinking && (
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-accent-50/50 border border-accent-200 text-xs text-accent-700 font-medium animate-pulse">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-accent-600" />
+                    <span>Thinking and analyzing context...</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1304,18 +1359,18 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
           </div>
         )}
         <div
-          className={`inline-block rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
+          className={`inline-block rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed text-left ${
             isUser
               ? 'bg-ink-700 text-white rounded-tr-md'
               : 'bg-white border border-paper-200 text-ink-700 rounded-tl-md shadow-soft'
           }`}
         >
           {msg.attachments && msg.attachments.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mb-2 pb-2 border-b border-white/10">
+            <div className={`flex flex-wrap gap-1.5 mb-2 pb-2 border-b ${isUser ? 'border-white/10' : 'border-paper-100'}`}>
               {msg.attachments.map((a) => (
                 <span
                   key={a.id}
-                  className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-white/10"
+                  className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md ${isUser ? 'bg-white/10' : 'bg-paper-100 text-ink-600'}`}
                 >
                   <AttachmentIcon type={a.type} />
                   {a.name}
@@ -1323,7 +1378,15 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
               ))}
             </div>
           )}
-          <p className="text-left">{msg.content}</p>
+          {isUser ? (
+            <p className="whitespace-pre-wrap">{msg.content}</p>
+          ) : (
+            <div className="prose prose-sm max-w-none text-ink-700 leading-relaxed break-words">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {msg.content}
+              </ReactMarkdown>
+            </div>
+          )}
         </div>
         {!isUser && showSave && (
           <button

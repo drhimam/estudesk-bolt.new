@@ -239,7 +239,7 @@ function SubjectWiseDeadlines({
       {withSubject.map((subject) => {
         const items = sorted.filter((d) => d.subjectId === subject.id);
         const hex = COLOR_HEX[subject.color];
-        const bg = COLOR_LIGHT[subject.color];
+        
         return (
           <div key={subject.id}>
             <div className="flex items-center gap-2 mb-2">

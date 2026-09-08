@@ -2,9 +2,9 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import * as schema from '../db/schema';
 
-export function initBetterAuth(db: any, secret: string) {
+export function initBetterAuth(db: unknown, secret: string) {
   return betterAuth({
-    database: drizzleAdapter(db, {
+    database: drizzleAdapter(db as Parameters<typeof drizzleAdapter>[0], {
       provider: 'pg',
       schema: {
         user: schema.user,

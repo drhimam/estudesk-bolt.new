@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import {
   X,
   Send,
@@ -24,13 +24,17 @@ import {
   Presentation,
   Image as ImageIcon,
   Clipboard,
-  RotateCw,
   Layers,
+  Download,
+  RotateCw,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { db, uid } from '@/db/database';
 import { COLOR_HEX, COLOR_LIGHT, COLOR_TEXT } from '@/utils/colors';
+import { generateMaterial } from '@/utils/aiClient';
+import { fetchUrlContent, extractUrls } from '@/utils/webReader';
+import { exportMaterialAsPdf } from '@/utils/pdfExport';
 import { useAllSubjects, useMaterials } from '@/hooks/useQueries';
 import type {
   MaterialType,
@@ -431,8 +435,9 @@ export function GenerationStudio({ subjectId, subjectColor, type, onClose }: Pro
   }
 
   function addAttachment(aType: AttachmentType, name: string, url?: string) {
+    const tempId = uid();
     const att: Attachment = {
-      id: uid(),
+      id: tempId,
       type: aType,
       name,
       url,
@@ -445,6 +450,21 @@ export function GenerationStudio({ subjectId, subjectColor, type, onClose }: Pro
     setShowTextInput(false);
     setTextValue('');
     setTextName('');
+
+    if ((aType === 'url' || aType === 'youtube') && url) {
+      fetchUrlContent(url)
+        .then((fetched) => {
+          setGenParams((prev) => ({
+            ...prev,
+            attachments: prev.attachments.map((a) =>
+              a.id === tempId
+                ? { ...a, name: fetched.title || url, textContent: fetched.text }
+                : a,
+            ),
+          }));
+        })
+        .catch((e) => console.warn('[GenerationStudio] URL fetch failed:', e));
+    }
   }
 
   function addImageAttachment(dataUrl: string, name: string) {
@@ -487,17 +507,257 @@ export function GenerationStudio({ subjectId, subjectColor, type, onClose }: Pro
     'Finalizing',
   ];
 
+  const [genError, setGenError] = useState<string | null>(null);
+
+  /** Build a descriptive prompt string from generation parameters */
+  function buildPrompt(extraInstruction?: string): string {
+    const parts: string[] = [];
+    if (genParams.title.trim()) parts.push(`Topic: ${genParams.title.trim()}`);
+
+    // Include all configured parameters for active type
+    for (const def of paramDefs) {
+      const val = genParams.params[def.key] !== undefined ? genParams.params[def.key] : def.default;
+      if (val !== undefined && val !== '') {
+        parts.push(`${def.label}: ${val}`);
+      }
+    }
+
+    if (genParams.additionalInstructions.trim()) {
+      parts.push(`Additional Instructions: ${genParams.additionalInstructions.trim()}`);
+    }
+    if (extraInstruction) {
+      parts.push(`Refinement Feedback: ${extraInstruction}`);
+    }
+    return parts.join('\n');
+  }
+
+  /** Collect all attachment text content into a single source string */
+  async function buildSourceText(): Promise<string> {
+    const parts: string[] = [];
+
+    // Process attached files and URLs
+    for (const a of genParams.attachments) {
+      if (a.textContent) {
+        parts.push(a.textContent);
+      } else if (a.url) {
+        try {
+          const fetched = await fetchUrlContent(a.url);
+          parts.push(`--- Source: ${a.url} (${fetched.title || 'Page'}) ---\n${fetched.text}`);
+        } catch (e) {
+          console.warn('[GenerationStudio] Could not fetch attached URL:', a.url, e);
+        }
+      }
+    }
+
+    // Also check if user typed URLs directly in instructions or title
+    const detectedUrls = extractUrls(`${genParams.title} ${genParams.additionalInstructions}`);
+    for (const u of detectedUrls) {
+      if (!genParams.attachments.some((a) => a.url === u)) {
+        try {
+          const fetched = await fetchUrlContent(u);
+          parts.push(`--- Source URL: ${u} (${fetched.title || 'Page'}) ---\n${fetched.text}`);
+        } catch (e) {
+          console.warn('[GenerationStudio] Could not fetch prompt URL:', u, e);
+        }
+      }
+    }
+
+    return parts.join('\n\n---\n\n');
+  }
+
+  /** Map the API response data back into a local StudyMaterial object */
+  function mapApiResponseToMaterial(apiData: Record<string, unknown>): StudyMaterial {
+    const now = Date.now();
+    const materialData = (apiData as { data?: Record<string, unknown> }).data || apiData;
+    const base = {
+      id: uid(),
+      subjectId,
+      createdAt: now,
+      updatedAt: now,
+    };
+    const title = genParams.title.trim() || (materialData.title as string) || `${TYPE_LABELS[activeType]} — Generated`;
+
+    switch (activeType) {
+      case 'notes':
+      case 'cheatsheet':
+      case 'assignment': {
+        let contentMarkdown =
+          (materialData.contentMarkdown as string) ||
+          (materialData.markdown as string) ||
+          (materialData.notes as string) ||
+          (materialData.content as string) ||
+          (materialData.summary as string) ||
+          (materialData.text as string) ||
+          '';
+
+        // Fallback: build markdown from structured sections array
+        if (!contentMarkdown && Array.isArray(materialData.sections)) {
+          const sections = materialData.sections as Array<{ heading?: string; body?: string; keyTerms?: string[] }>;
+          contentMarkdown = sections
+            .map((s) => `## ${s.heading || 'Section'}\n\n${s.body || ''}${s.keyTerms?.length ? `\n\n**Key terms:** ${s.keyTerms.join(', ')}` : ''}`)
+            .join('\n\n');
+        }
+
+        // Fallback: build markdown from topics array
+        if (!contentMarkdown && Array.isArray(materialData.topics)) {
+          const topics = materialData.topics as Array<{
+            topicName?: string;
+            definitions?: Array<{ term: string; definition: string }>;
+            formulas?: string[];
+            mnemonics?: string[];
+          }>;
+          contentMarkdown = topics
+            .map((t) => {
+              const defs = t.definitions?.map((d) => `- **${d.term}**: ${d.definition}`).join('\n') || '';
+              const forms = t.formulas?.map((f) => `- \`${f}\``).join('\n') || '';
+              const mnems = t.mnemonics?.map((m) => `> 💡 ${m}`).join('\n') || '';
+              return `## ${t.topicName || 'Topic'}\n\n${defs}${forms ? `\n\n### Formulas\n${forms}` : ''}${mnems ? `\n\n### Mnemonics\n${mnems}` : ''}`;
+            })
+            .join('\n\n');
+        }
+
+        // If still empty, JSON stringify clean representation
+        if (!contentMarkdown) {
+          contentMarkdown = `# ${title}\n\n*Generated notes ready for review.*`;
+        }
+
+        return {
+          ...base,
+          type: activeType,
+          title,
+          contentMarkdown,
+        };
+      }
+      case 'infographic': {
+        const contentHtml =
+          (materialData.contentHtml as string) ||
+          (materialData.html as string) ||
+          (materialData.svgOrCssLayout as string) ||
+          (materialData.contentMarkdown ? `<div class="p-6">${materialData.contentMarkdown}</div>` : `<div class="p-6"><h2 class="text-xl font-bold">${title}</h2></div>`);
+        return {
+          ...base,
+          type: 'infographic',
+          title,
+          contentHtml,
+        };
+      }
+      case 'flashcards': {
+        const rawCards =
+          (materialData.cards as Array<{ id?: string; front?: string; back?: string; question?: string; answer?: string; term?: string; definition?: string }>) ||
+          (materialData.flashcards as Array<{ id?: string; front?: string; back?: string; question?: string; answer?: string; term?: string; definition?: string }>) ||
+          (materialData.items as Array<{ id?: string; front?: string; back?: string; question?: string; answer?: string; term?: string; definition?: string }>) ||
+          [];
+        return {
+          ...base,
+          type: 'flashcards',
+          title,
+          flashcards: rawCards.map((c, i) => ({
+            id: c.id || uid(),
+            front: c.front || c.question || c.term || `Concept ${i + 1}`,
+            back: c.back || c.answer || c.definition || '',
+          })),
+        };
+      }
+      case 'quiz': {
+        const rawQuestions =
+          (materialData.questions as Array<{
+            id?: string;
+            question?: string;
+            prompt?: string;
+            type?: 'single' | 'multi' | 'short' | 'mixed';
+            options?: string[];
+            correctAnswer?: string[] | string;
+            explanation?: string;
+          }>) ||
+          (materialData.quiz as Array<{
+            id?: string;
+            question?: string;
+            prompt?: string;
+            type?: 'single' | 'multi' | 'short' | 'mixed';
+            options?: string[];
+            correctAnswer?: string[] | string;
+            explanation?: string;
+          }>) ||
+          [];
+        return {
+          ...base,
+          type: 'quiz',
+          title,
+          quiz: rawQuestions.map((q, i) => ({
+            id: q.id || uid(),
+            question: q.question || q.prompt || `Question ${i + 1}`,
+            type: q.type || 'single',
+            options: Array.isArray(q.options) ? q.options : [],
+            correctAnswer: Array.isArray(q.correctAnswer) ? q.correctAnswer : [q.correctAnswer || ''],
+            explanation: q.explanation,
+          })),
+        };
+      }
+      case 'presentation': {
+        const rawSlides =
+          (materialData.slides as Array<{
+            slideNumber?: number;
+            title?: string;
+            points?: string[];
+            notes?: string;
+            content?: string;
+          }>) ||
+          (materialData.presentation as Array<{
+            slideNumber?: number;
+            title?: string;
+            points?: string[];
+            notes?: string;
+            content?: string;
+          }>) ||
+          [];
+        return {
+          ...base,
+          type: 'presentation',
+          title,
+          slides: rawSlides.map((s, i) => ({
+            slideNumber: s.slideNumber || i + 1,
+            title: s.title || `Slide ${i + 1}`,
+            points: Array.isArray(s.points) ? s.points : (s.content ? [s.content] : []),
+            notes: s.notes,
+          })),
+        };
+      }
+      default:
+        return {
+          ...base,
+          type: 'other',
+          title,
+          sourceSnippet: JSON.stringify(materialData),
+        };
+    }
+  }
+
   async function generate() {
     setPhase('generating');
     setGenStep(0);
+    setGenError(null);
 
-    // staged progress
-    for (let i = 0; i < GEN_STEPS.length; i++) {
-      setGenStep(i);
-      await new Promise((r) => setTimeout(r, 500));
+    // staged progress animation
+    const stepTimer = setInterval(() => {
+      setGenStep((prev) => Math.min(prev + 1, GEN_STEPS.length - 1));
+    }, 800);
+
+    let generated: StudyMaterial;
+    try {
+      const prompt = buildPrompt();
+      const sourceText = await buildSourceText();
+      const rawData = await generateMaterial(activeType, prompt, sourceText || undefined, genParams.params);
+      generated = mapApiResponseToMaterial(rawData);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn('[GenerationStudio] API call failed, using local fallback:', msg);
+      setGenError(`AI service warning: ${msg}. Displaying offline preview.`);
+      generated = generateMockContent(activeType, subjectId, genParams);
+    } finally {
+      clearInterval(stepTimer);
+      setGenStep(GEN_STEPS.length - 1);
     }
 
-    const generated = generateMockContent(activeType, subjectId, genParams);
     setDraft(generated);
     setVersions([{ content: JSON.stringify(generated), timestamp: Date.now() }]);
     setVersionIdx(0);
@@ -516,17 +776,38 @@ export function GenerationStudio({ subjectId, subjectColor, type, onClose }: Pro
 
     const userMsg = { role: 'user' as const, content: refineInput.trim() };
     setRefinementMessages((prev) => [...prev, userMsg]);
+    const refinementText = refineInput.trim();
     setRefineInput('');
     setPhase('generating');
     setGenStep(0);
+    setGenError(null);
 
-    for (let i = 0; i < GEN_STEPS.length; i++) {
-      setGenStep(i);
-      await new Promise((r) => setTimeout(r, 400));
-    }
+    const stepTimer = setInterval(() => {
+      setGenStep((prev) => Math.min(prev + 1, GEN_STEPS.length - 1));
+    }, 700);
 
     const currentVersions = versions.length;
-    const refined = generateMockContent(activeType, subjectId, genParams);
+    let refined: StudyMaterial;
+    try {
+      const prompt = buildPrompt(refinementText);
+      const sourceText = await buildSourceText();
+
+      // Include current draft content so AI can refine rather than regenerate
+      const currentContent = draft.contentMarkdown || draft.contentHtml || JSON.stringify(draft.flashcards || draft.quiz || draft.slides || '');
+      const fullSource = [sourceText, `\n\n--- Current Draft ---\n${currentContent}`].filter(Boolean).join('\n\n');
+
+      const rawData = await generateMaterial(activeType, prompt, fullSource || undefined, genParams.params);
+      refined = mapApiResponseToMaterial(rawData);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn('[GenerationStudio] Refine API call failed, using local fallback:', msg);
+      setGenError(`AI service warning: ${msg}. Displaying offline preview.`);
+      refined = generateMockContent(activeType, subjectId, genParams);
+    } finally {
+      clearInterval(stepTimer);
+      setGenStep(GEN_STEPS.length - 1);
+    }
+
     setDraft(refined);
     setVersions((prev) => [
       ...prev,
@@ -638,24 +919,43 @@ export function GenerationStudio({ subjectId, subjectColor, type, onClose }: Pro
             </button>
           </div>
         )}
-        <button
-          onClick={save}
-          disabled={!draft || saved}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-all disabled:opacity-40 hover:shadow-glow"
-          style={{ backgroundColor: hex }}
-        >
-          {saved ? (
-            <>
-              <Check className="w-4 h-4" />
-              Saved
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4" />
-              Save
-            </>
+        <div className="flex items-center gap-2">
+          {draft && (
+            <button
+              onClick={() => {
+                const activeSubject = allSubjects.find((s) => s.id === subjectId);
+                exportMaterialAsPdf({
+                  material: draft,
+                  subjectName: activeSubject?.name,
+                  subjectColor,
+                });
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-ink-700 bg-paper-100 hover:bg-paper-200 border border-paper-300 transition-all shadow-sm active:scale-95"
+              title="Download formatted PDF preview"
+            >
+              <Download className="w-3.5 h-3.5 text-ink-500" />
+              <span>Export PDF</span>
+            </button>
           )}
-        </button>
+          <button
+            onClick={save}
+            disabled={!draft || saved}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-all disabled:opacity-40 hover:shadow-glow"
+            style={{ backgroundColor: hex }}
+          >
+            {saved ? (
+              <>
+                <Check className="w-4 h-4" />
+                Saved
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                Save
+              </>
+            )}
+          </button>
+        </div>
       </header>
 
       {/* Two panels */}
@@ -735,7 +1035,15 @@ export function GenerationStudio({ subjectId, subjectColor, type, onClose }: Pro
                       {msg.content}
                     </div>
                   </div>
-                ))}
+                ))}{genError && (
+                  <div className="flex items-start gap-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-700 animate-slide-up">
+                    <span className="shrink-0 mt-0.5">⚠️</span>
+                    <span className="flex-1">{genError}</span>
+                    <button onClick={() => setGenError(null)} className="shrink-0 text-amber-400 hover:text-amber-600">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="border-t border-paper-200 p-3">
                 <div className="flex items-end gap-2">
@@ -1669,8 +1977,6 @@ function generateMockContent(
     updatedAt: now,
   };
   const title = params.title.trim() || `${TYPE_LABELS[type]} — Generated`;
-  const detail = params.params.detail as string | undefined;
-  const difficulty = params.params.difficulty as string | undefined;
   const count = params.params.count as number | undefined;
   const focus = (params.params.focus as string | undefined) || '';
   const extra = params.additionalInstructions.trim();
@@ -1815,7 +2121,6 @@ ${extra ? `> **Additional:** ${extra}\n\n` : ''}---
 
     case 'flashcards': {
       const numCards = count || 10;
-      const diffLabel = difficulty || 'intermediate';
       const cards: Flashcard[] = [];
       const fronts = [
         'What is homeostasis?',
@@ -1859,7 +2164,6 @@ ${extra ? `> **Additional:** ${extra}\n\n` : ''}---
     case 'quiz': {
       const numQ = count || 5;
       const qType = params.params.qType as string;
-      const diff = difficulty || 'intermediate';
       const questions: QuizQuestion[] = [];
       const templates: { q: string; type: 'single' | 'multi' | 'short'; options: string[]; correct: string[]; exp: string }[] = [
         {

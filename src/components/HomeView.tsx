@@ -1,7 +1,7 @@
 import { GraduationCap, BookOpen, FileText, Sparkles, Shield, ChevronRight, Layers, HelpCircle, Presentation, PenLine, StickyNote } from 'lucide-react';
 import { useSemesters, useSubjects, useMaterials } from '@/hooks/useQueries';
 import { setView } from '@/store/appState';
-import { COLOR_HEX, COLOR_LIGHT, COLOR_TEXT } from '@/utils/colors';
+import { COLOR_LIGHT, COLOR_TEXT } from '@/utils/colors';
 
 export function HomeView() {
   const semesters = useSemesters();
@@ -24,7 +24,7 @@ export function HomeView() {
           </h1>
           <p className="text-ink-500 max-w-lg mx-auto leading-relaxed text-base">
             Attach source material to your subjects, explore it conversationally,
-            then generate notes, flashcards, quizzes, and more — all in one place.
+            then generate notes, flashcards, quizzes, and more - all in one place.
           </p>
         </div>
 

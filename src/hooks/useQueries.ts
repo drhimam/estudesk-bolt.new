@@ -73,7 +73,8 @@ export function useMessages(subjectId: string | null): ChatMessage[] {
         : [],
     [subjectId],
   );
-  return data ?? [];
+  if (!data) return [];
+  return [...data].sort((a, b) => a.createdAt - b.createdAt);
 }
 
 export function useGlobalMessages(): ChatMessage[] {
@@ -98,5 +99,7 @@ export function useConversationMessages(conversationId: string | null): ChatMess
         : [],
     [conversationId],
   );
-  return data ?? [];
+  if (!data) return [];
+  return [...data].sort((a, b) => a.createdAt - b.createdAt);
 }
+

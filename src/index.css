@@ -75,6 +75,71 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+
+  /* 3D Flashcard transitions */
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  .transform-style-3d {
+    transform-style: preserve-3d;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  .rotate-y-180 {
+    transform: rotateY(180deg);
+  }
+
+  /* Focus Mode Themes */
+  .focus-theme-paper {
+    background-color: #fcf9f2;
+    color: #1c1917;
+  }
+  .focus-theme-clean {
+    background-color: #ffffff;
+    color: #0f172a;
+  }
+  .focus-theme-dark {
+    background-color: #090d16;
+    color: #e2e8f0;
+  }
+  .focus-theme-sage {
+    background-color: #f1f6f3;
+    color: #143628;
+  }
+
+  .focus-theme-dark .prose-studesk h1,
+  .focus-theme-dark .prose-studesk h2,
+  .focus-theme-dark .prose-studesk h3,
+  .focus-theme-dark .prose-studesk strong {
+    color: #f8fafc;
+  }
+  .focus-theme-dark .prose-studesk p,
+  .focus-theme-dark .prose-studesk li {
+    color: #cbd5e1;
+  }
+  .focus-theme-dark .prose-studesk code {
+    background-color: #1e293b;
+    color: #38bdf8;
+  }
+  .focus-theme-dark .prose-studesk pre {
+    background-color: #0f172a;
+    border: 1px solid #1e293b;
+  }
+  .focus-theme-dark .prose-studesk table th {
+    background-color: #1e293b;
+    color: #f8fafc;
+    border-color: #334155;
+  }
+  .focus-theme-dark .prose-studesk table td {
+    border-color: #1e293b;
+    color: #cbd5e1;
+  }
+  .focus-theme-dark .prose-studesk blockquote {
+    background: rgba(30, 41, 59, 0.4);
+    color: #cbd5e1;
+  }
 }
 
 /* Markdown rendered content */

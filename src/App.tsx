@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Menu, GraduationCap, PanelLeftOpen, Sparkles, PanelRightClose, Maximize2, Minimize2, X, Search } from 'lucide-react';
-import { db } from '@/db/database';
-import { seedData, setView, setSidebarOpen, toggleAIPanel, setAIPanelOpen, toggleAIPanelFullscreen, setAIPanelFullscreen, useAppState } from '@/store/appState';
+import { Menu, GraduationCap, PanelLeftOpen, Sparkles, PanelRightClose, Search } from 'lucide-react';
+import { seedData, setSidebarOpen, toggleAIPanel, useAppState } from '@/store/appState';
 import { useSemesters, useSubjects } from '@/hooks/useQueries';
 import { Sidebar } from '@/components/Sidebar';
 import { HomeView } from '@/components/HomeView';
@@ -14,6 +13,16 @@ function App() {
   const { view, sidebarOpen, aiPanelOpen, aiPanelFullscreen } = useAppState();
   const [ready, setReady] = useState(false);
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
+  const [aiPanelWidth, setAiPanelWidth] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('estudesk_ai_panel_width');
+      const parsed = saved ? parseInt(saved, 10) : 420;
+      return isNaN(parsed) ? 420 : Math.min(Math.max(parsed, 320), 850);
+    } catch {
+      return 420;
+    }
+  });
+  const [isResizing, setIsResizing] = useState(false);
   const semesters = useSemesters();
   const subjects = useSubjects();
 
@@ -30,6 +39,38 @@ function App() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    function handleMouseMove(e: MouseEvent) {
+      const newWidth = window.innerWidth - e.clientX;
+      const maxWidth = Math.min(window.innerWidth * 0.75, 850);
+      const clamped = Math.min(Math.max(newWidth, 320), maxWidth);
+      setAiPanelWidth(clamped);
+      try {
+        localStorage.setItem('estudesk_ai_panel_width', clamped.toString());
+      } catch {}
+    }
+
+    function handleMouseUp() {
+      setIsResizing(false);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing]);
 
   if (!ready) {
     return (
@@ -85,7 +126,7 @@ function App() {
           </button>
         )}
 
-        {/* Global search + Ask AI buttons — top right corner */}
+        {/* Global search + Ask AI buttons - top right corner */}
         <div className="absolute top-4 right-4 z-30 flex items-center gap-2">
           <button
             onClick={() => setShowGlobalSearch(true)}
@@ -117,7 +158,7 @@ function App() {
         {view.kind === 'subject' && <SubjectView subjectId={view.subjectId} />}
       </div>
 
-      {/* AI Panel — right side */}
+      {/* AI Panel - right side */}
       {aiPanelOpen && !aiPanelFullscreen && (
         <>
           {/* Mobile overlay */}
@@ -125,7 +166,31 @@ function App() {
             className="lg:hidden fixed inset-0 bg-ink-800/30 z-40"
             onClick={toggleAIPanel}
           />
-          <div className="fixed lg:relative inset-y-0 right-0 z-50 lg:z-auto w-full sm:w-96 lg:w-96 xl:w-[420px] bg-white border-l border-paper-300 flex flex-col shadow-lifted lg:shadow-none animate-slide-in-right">
+          <div
+            className="fixed lg:relative inset-y-0 right-0 z-50 lg:z-auto w-full bg-white border-l border-paper-300 flex flex-col shadow-lifted lg:shadow-none animate-slide-in-right"
+            style={{
+              width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${aiPanelWidth}px` : undefined,
+              maxWidth: '100vw',
+            }}
+          >
+            {/* Desktop resize handle on the left border */}
+            <div
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setIsResizing(true);
+              }}
+              onDoubleClick={() => {
+                setAiPanelWidth(420);
+                try {
+                  localStorage.setItem('estudesk_ai_panel_width', '420');
+                } catch {}
+              }}
+              className="hidden lg:flex absolute -left-1.5 top-0 bottom-0 w-3 cursor-col-resize items-center justify-center z-30 group hover:bg-accent-500/20 active:bg-accent-500/30 transition-colors select-none"
+              title="Drag to resize panel (Double-click to reset width)"
+            >
+              <div className="w-1 h-10 rounded-full bg-paper-400/60 group-hover:bg-accent-500 group-hover:h-14 group-active:bg-accent-600 transition-all shadow-sm" />
+            </div>
+
             <div className="flex items-center justify-between px-4 py-3 border-b border-paper-200 bg-white lg:hidden">
               <span className="font-serif text-sm font-semibold text-ink-700">Close</span>
               <button
@@ -144,7 +209,7 @@ function App() {
 
       {showGlobalSearch && <GlobalSearch onClose={() => setShowGlobalSearch(false)} />}
 
-      {/* AI Panel — fullscreen overlay */}
+      {/* AI Panel - fullscreen overlay */}
       {aiPanelOpen && aiPanelFullscreen && (
         <div className="fixed inset-0 z-[60] bg-paper-50 flex flex-col animate-fade-in">
           <div className="flex-1 min-h-0">
