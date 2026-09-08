@@ -31,6 +31,7 @@ import {
   Minimize2,
   Camera,
   Loader2,
+  Copy,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -1315,6 +1316,24 @@ function MaterialPicker({
 function MessageBubble({ msg }: { msg: ChatMessage }) {
   const isUser = msg.role === 'user';
   const [showSave, setShowSave] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(msg.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = msg.content;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }
 
   async function saveAsOther() {
     const material: StudyMaterial = {
@@ -1388,15 +1407,42 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
             </div>
           )}
         </div>
-        {!isUser && showSave && (
+
+        {/* Action bar (Copy + Save to materials) */}
+        <div className={`flex items-center gap-2 mt-1.5 ${isUser ? 'justify-end' : 'ml-1'}`}>
           <button
-            onClick={saveAsOther}
-            className="flex items-center gap-1 mt-1.5 ml-1 text-xs text-ink-400 hover:text-ink-600 transition-colors"
+            onClick={handleCopy}
+            className={`flex items-center gap-1 text-xs transition-colors px-1.5 py-0.5 rounded-md ${
+              copied
+                ? 'text-emerald-600 bg-emerald-50 font-medium'
+                : 'text-ink-400 hover:text-ink-600 hover:bg-paper-100'
+            }`}
+            title="Copy content"
           >
-            <Bookmark className="w-3 h-3" />
-            Save to materials
+            {copied ? (
+              <>
+                <Check className="w-3 h-3 text-emerald-500" />
+                <span>Copied!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3 h-3" />
+                <span>Copy</span>
+              </>
+            )}
           </button>
-        )}
+
+          {!isUser && showSave && (
+            <button
+              onClick={saveAsOther}
+              className="flex items-center gap-1 text-xs text-ink-400 hover:text-ink-600 hover:bg-paper-100 px-1.5 py-0.5 rounded-md transition-colors"
+              title="Save as study material"
+            >
+              <Bookmark className="w-3 h-3" />
+              <span>Save</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

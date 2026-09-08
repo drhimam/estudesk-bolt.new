@@ -179,6 +179,21 @@ R2_BUCKET=estudesk-sources
   - **Table of Contents Slide-Out**: Auto-extracts Markdown headings (`h1`, `h2`, `h3`) for instant smooth scrolling navigation.
   - **Font Size Zooming**: Live scaling from `13px` to `24px` with instant visual feedback.
 
+### 9. 1-Click Copy Support Across All AI Generation Outputs
+- **What was done**: Added universal clipboard copy buttons with visual feedback (instant icon flip + emerald "Copied!" indicator for 2 seconds) across all AI outputs and study material viewers.
+- **How it was done**:
+  - **Ask AI Drawer** ([`src/components/AskAIPanel.tsx`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/components/AskAIPanel.tsx)): Added a dedicated `Copy` button beneath every AI response bubble (and user message), copying clean markdown with 1 click.
+  - **Generation Studio Header & Refinement Chat** ([`src/components/GenerationStudio.tsx`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/components/GenerationStudio.tsx)):
+    - Added a primary **"Copy Content"** button in the studio top bar next to Export PDF.
+    - Added individual **"Copy"** buttons under every refinement conversation turn.
+  - **Draft Preview Components** ([`src/components/GenerationStudio.tsx`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/components/GenerationStudio.tsx)):
+    - 📝 **Notes & Cheatsheet**: "Copy Markdown" button on top right of draft preview.
+    - 📊 **Infographic**: "Copy HTML Layout" button on preview frame.
+    - 🃏 **Flashcards**: "Copy All Cards" bulk action + individual copy icons on every flashcard.
+    - ❓ **Quiz**: "Copy All Questions" bulk action + individual copy icons on every question.
+    - 🖥️ **Presentation**: "Copy All Slides" bulk action + individual copy icons on every slide card.
+  - **Material Viewer** ([`src/components/MaterialViewer.tsx`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/components/MaterialViewer.tsx)): Added a `Copy` icon button directly in both the standard header and the distraction-free Focus Mode floating toolbar.
+
 ---
 
 ## 6. Verification & Quality Assurance

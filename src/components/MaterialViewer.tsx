@@ -27,6 +27,7 @@ import {
   Volume2,
   VolumeX,
   Sparkles,
+  Copy,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -169,6 +170,45 @@ export function MaterialViewer({ material, subjectColor, onBack, onRenamed }: Pr
       subjectColor,
     });
     setMenuOpen(false);
+  }
+
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopyContent() {
+    let content = '';
+    if (material.contentMarkdown) {
+      content = material.contentMarkdown;
+    } else if (material.contentHtml) {
+      content = material.contentHtml;
+    } else if (material.flashcards && material.flashcards.length > 0) {
+      content = `# ${material.title}\n\n` + material.flashcards.map((c, i) => `### Card ${i + 1}\n**Front:** ${c.front}\n**Back:** ${c.back}`).join('\n\n---\n\n');
+    } else if (material.quiz && material.quiz.length > 0) {
+      content = `# ${material.title}\n\n` + material.quiz.map((q, i) => {
+        const opts = q.options?.map((o, oi) => `  ${String.fromCharCode(65 + oi)}. ${o}`).join('\n') || '';
+        return `### Question ${i + 1}: ${q.question}\n${opts ? opts + '\n' : ''}**Correct Answer:** ${q.correctAnswer.join(', ')}${q.explanation ? `\n*Explanation:* ${q.explanation}` : ''}`;
+      }).join('\n\n---\n\n');
+    } else if (material.slides && material.slides.length > 0) {
+      content = `# ${material.title}\n\n` + material.slides.map((s) => `### Slide ${s.slideNumber}: ${s.title}\n${s.points.map(p => `- ${p}`).join('\n')}${s.notes ? `\n\n*Speaker Notes:* ${s.notes}` : ''}`).join('\n\n---\n\n');
+    } else if (material.sourceSnippet) {
+      content = material.sourceSnippet;
+    } else {
+      content = material.title;
+    }
+
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = content;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   }
 
   function downloadRaw() {
@@ -412,6 +452,15 @@ export function MaterialViewer({ material, subjectColor, onBack, onRenamed }: Pr
               </button>
             )}
 
+            {/* Copy Button */}
+            <button
+              onClick={handleCopyContent}
+              className="p-1.5 rounded-xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-white/5 text-ink-600 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/10 transition-all"
+              title={copied ? 'Copied to clipboard!' : 'Copy material content'}
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+            </button>
+
             {/* PDF Exporter */}
             <button
               onClick={handleDownloadPdf}
@@ -560,6 +609,25 @@ export function MaterialViewer({ material, subjectColor, onBack, onRenamed }: Pr
             <kbd className="hidden md:inline text-[10px] text-ink-400 bg-paper-200 px-1 py-0.5 rounded">F</kbd>
           </button>
 
+          {/* Copy Button */}
+          <button
+            onClick={handleCopyContent}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-ink-700 bg-paper-100 hover:bg-paper-200 border border-paper-200 shadow-soft transition-all active:scale-95 shrink-0"
+            title="Copy content to clipboard"
+          >
+            {copied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-500" />
+                <span className="text-emerald-600 font-medium">Copied!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5 text-ink-500" />
+                <span>Copy</span>
+              </>
+            )}
+          </button>
+
           {/* Download PDF Button */}
           <button
             onClick={handleDownloadPdf}
@@ -582,6 +650,13 @@ export function MaterialViewer({ material, subjectColor, onBack, onRenamed }: Pr
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
                 <div className="absolute right-0 top-full mt-1 z-20 w-48 bg-white rounded-xl border border-paper-200 shadow-lifted py-1 animate-scale-in">
+                  <button
+                    onClick={() => { handleCopyContent(); setMenuOpen(false); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-ink-700 hover:bg-paper-50 transition-colors text-left"
+                  >
+                    <Copy className="w-4 h-4 text-accent-600" />
+                    Copy Content
+                  </button>
                   <button
                     onClick={() => { setFocusMode(true); setMenuOpen(false); }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-ink-700 hover:bg-paper-50 transition-colors text-left"

@@ -27,6 +27,7 @@ import {
   Layers,
   Download,
   RotateCw,
+  Copy,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -69,6 +70,117 @@ const TYPE_LABELS: Record<MaterialType, string> = {
 const ALL_MATERIAL_TYPES = Object.keys(TYPE_LABELS) as MaterialType[];
 
 const MAX_REFINEMENT_TURNS = 8;
+
+async function copyTextToClipboard(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+function formatMaterialAsText(material: StudyMaterial): string {
+  if (material.contentMarkdown) {
+    return material.contentMarkdown;
+  }
+  if (material.flashcards && material.flashcards.length > 0) {
+    return (
+      `# ${material.title}\n\n` +
+      material.flashcards
+        .map((c, i) => `### Card ${i + 1}\n**Front:** ${c.front}\n**Back:** ${c.back}`)
+        .join('\n\n---\n\n')
+    );
+  }
+  if (material.quiz && material.quiz.length > 0) {
+    return (
+      `# ${material.title}\n\n` +
+      material.quiz
+        .map((q, i) => {
+          const opts =
+            q.options?.map((o, oi) => `  ${String.fromCharCode(65 + oi)}. ${o}`).join('\n') || '';
+          return `### Question ${i + 1}: ${q.question}\n${
+            opts ? opts + '\n' : ''
+          }**Correct Answer:** ${q.correctAnswer.join(', ')}${
+            q.explanation ? `\n*Explanation:* ${q.explanation}` : ''
+          }`;
+        })
+        .join('\n\n---\n\n')
+    );
+  }
+  if (material.slides && material.slides.length > 0) {
+    return (
+      `# ${material.title}\n\n` +
+      material.slides
+        .map(
+          (s) =>
+            `### Slide ${s.slideNumber}: ${s.title}\n${s.points
+              .map((p) => `- ${p}`)
+              .join('\n')}${s.notes ? `\n\n*Speaker Notes:* ${s.notes}` : ''}`,
+        )
+        .join('\n\n---\n\n')
+    );
+  }
+  if (material.contentHtml) {
+    return material.contentHtml;
+  }
+  return material.sourceSnippet || material.title;
+}
+
+function CopyButton({
+  text,
+  label = 'Copy',
+  className = '',
+  iconOnly = false,
+  title = 'Copy to clipboard',
+}: {
+  text: string;
+  label?: string;
+  className?: string;
+  iconOnly?: boolean;
+  title?: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy(e: React.MouseEvent) {
+    e.stopPropagation();
+    const success = await copyTextToClipboard(text);
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }
+
+  return (
+    <button
+      onClick={handleCopy}
+      className={className}
+      title={copied ? 'Copied to clipboard!' : title}
+    >
+      {copied ? (
+        <>
+          <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+          {!iconOnly && <span className="text-emerald-600 font-medium">Copied!</span>}
+        </>
+      ) : (
+        <>
+          <Copy className="w-3.5 h-3.5 shrink-0" />
+          {!iconOnly && <span>{label}</span>}
+        </>
+      )}
+    </button>
+  );
+}
 
 // --- Type-specific parameter definitions ---
 type ParamValue = string | number | boolean;
@@ -921,21 +1033,29 @@ export function GenerationStudio({ subjectId, subjectColor, type, onClose }: Pro
         )}
         <div className="flex items-center gap-2">
           {draft && (
-            <button
-              onClick={() => {
-                const activeSubject = allSubjects.find((s) => s.id === subjectId);
-                exportMaterialAsPdf({
-                  material: draft,
-                  subjectName: activeSubject?.name,
-                  subjectColor,
-                });
-              }}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-ink-700 bg-paper-100 hover:bg-paper-200 border border-paper-300 transition-all shadow-sm active:scale-95"
-              title="Download formatted PDF preview"
-            >
-              <Download className="w-3.5 h-3.5 text-ink-500" />
-              <span>Export PDF</span>
-            </button>
+            <>
+              <CopyButton
+                text={formatMaterialAsText(draft)}
+                label="Copy Content"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-ink-700 bg-paper-100 hover:bg-paper-200 border border-paper-300 transition-all shadow-sm active:scale-95"
+                title="Copy generated study material to clipboard"
+              />
+              <button
+                onClick={() => {
+                  const activeSubject = allSubjects.find((s) => s.id === subjectId);
+                  exportMaterialAsPdf({
+                    material: draft,
+                    subjectName: activeSubject?.name,
+                    subjectColor,
+                  });
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-ink-700 bg-paper-100 hover:bg-paper-200 border border-paper-300 transition-all shadow-sm active:scale-95"
+                title="Download formatted PDF preview"
+              >
+                <Download className="w-3.5 h-3.5 text-ink-500" />
+                <span>Export PDF</span>
+              </button>
+            </>
           )}
           <button
             onClick={save}
@@ -1023,7 +1143,7 @@ export function GenerationStudio({ subjectId, subjectColor, type, onClose }: Pro
                 {refinementMessages.map((msg, i) => (
                   <div
                     key={i}
-                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-slide-up`}
+                    className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} animate-slide-up`}
                   >
                     <div
                       className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
@@ -1034,6 +1154,13 @@ export function GenerationStudio({ subjectId, subjectColor, type, onClose }: Pro
                     >
                       {msg.content}
                     </div>
+                    <CopyButton
+                      text={msg.content}
+                      label="Copy"
+                      className={`flex items-center gap-1 text-[11px] text-ink-400 hover:text-ink-600 transition-colors mt-1 px-1.5 py-0.5 rounded hover:bg-paper-100 ${
+                        msg.role === 'user' ? 'mr-1' : 'ml-1'
+                      }`}
+                    />
                   </div>
                 ))}{genError && (
                   <div className="flex items-start gap-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-700 animate-slide-up">
@@ -1821,16 +1948,33 @@ function DraftPreview({
 }) {
   if (draft.contentMarkdown) {
     return (
-      <div className="prose-studesk bg-white rounded-2xl border border-paper-200 p-8 shadow-card">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-          {draft.contentMarkdown}
-        </ReactMarkdown>
+      <div className="relative bg-white rounded-2xl border border-paper-200 p-8 shadow-card">
+        <div className="flex justify-end mb-4 pb-3 border-b border-paper-100">
+          <CopyButton
+            text={draft.contentMarkdown}
+            label="Copy Markdown"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-ink-700 bg-paper-100 hover:bg-paper-200 border border-paper-300 transition-all shadow-sm active:scale-95"
+            title="Copy notes markdown to clipboard"
+          />
+        </div>
+        <div className="prose-studesk max-w-none">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {draft.contentMarkdown}
+          </ReactMarkdown>
+        </div>
       </div>
     );
   }
   if (draft.contentHtml) {
     return (
       <div className="bg-white rounded-2xl border border-paper-200 overflow-hidden shadow-card">
+        <div className="flex justify-end p-3 bg-paper-50 border-b border-paper-200">
+          <CopyButton
+            text={draft.contentHtml}
+            label="Copy HTML Layout"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-ink-700 bg-white hover:bg-paper-100 border border-paper-300 transition-all shadow-sm active:scale-95"
+          />
+        </div>
         <iframe
           srcDoc={draft.contentHtml}
           title="Preview"
@@ -1843,44 +1987,82 @@ function DraftPreview({
   }
   if (draft.flashcards) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {draft.flashcards.map((c) => (
-          <div
-            key={c.id}
-            className="bg-white rounded-2xl border border-paper-200 p-5 shadow-soft card-hover"
-            style={{ borderTop: `3px solid ${hex}` }}
-          >
+      <div className="space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-xs font-medium text-ink-400">
+            {draft.flashcards.length} Flashcard{draft.flashcards.length === 1 ? '' : 's'}
+          </span>
+          <CopyButton
+            text={formatMaterialAsText(draft)}
+            label="Copy All Cards"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-ink-700 bg-white hover:bg-paper-100 border border-paper-300 shadow-sm transition-all active:scale-95"
+          />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {draft.flashcards.map((c) => (
             <div
-              className="text-xs font-medium px-2 py-0.5 rounded-md inline-block mb-3"
-              style={{ backgroundColor: bg, color: text }}
+              key={c.id}
+              className="group relative bg-white rounded-2xl border border-paper-200 p-5 shadow-soft card-hover"
+              style={{ borderTop: `3px solid ${hex}` }}
             >
-              Card
+              <div className="flex items-center justify-between mb-3">
+                <div
+                  className="text-xs font-medium px-2 py-0.5 rounded-md inline-block"
+                  style={{ backgroundColor: bg, color: text }}
+                >
+                  Card
+                </div>
+                <CopyButton
+                  text={`Front: ${c.front}\nBack: ${c.back}`}
+                  iconOnly
+                  className="p-1.5 rounded-lg text-ink-400 hover:text-ink-600 hover:bg-paper-100 transition-colors"
+                  title="Copy this card"
+                />
+              </div>
+              <p className="text-sm font-medium text-ink-700 mb-3">{c.front}</p>
+              <div className="border-t border-paper-200 pt-3">
+                <p className="text-sm text-ink-500 leading-relaxed">{c.back}</p>
+              </div>
             </div>
-            <p className="text-sm font-medium text-ink-700 mb-3">{c.front}</p>
-            <div className="border-t border-paper-200 pt-3">
-              <p className="text-sm text-ink-500 leading-relaxed">{c.back}</p>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     );
   }
   if (draft.quiz) {
     return (
       <div className="space-y-4">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-xs font-medium text-ink-400">
+            {draft.quiz.length} Question{draft.quiz.length === 1 ? '' : 's'}
+          </span>
+          <CopyButton
+            text={formatMaterialAsText(draft)}
+            label="Copy All Questions"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-ink-700 bg-white hover:bg-paper-100 border border-paper-300 shadow-sm transition-all active:scale-95"
+          />
+        </div>
         {draft.quiz.map((q, i) => (
           <div
             key={q.id}
-            className="bg-white rounded-2xl border border-paper-200 p-5 shadow-soft"
+            className="group relative bg-white rounded-2xl border border-paper-200 p-5 shadow-soft"
           >
-            <div className="flex items-start gap-3 mb-3">
-              <span
-                className="font-serif text-sm font-semibold w-7 h-7 rounded-lg flex items-center justify-center shrink-0 shadow-soft"
-                style={{ backgroundColor: bg, color: text }}
-              >
-                {i + 1}
-              </span>
-              <p className="text-sm font-medium text-ink-700 pt-0.5">{q.question}</p>
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="flex items-start gap-3 flex-1">
+                <span
+                  className="font-serif text-sm font-semibold w-7 h-7 rounded-lg flex items-center justify-center shrink-0 shadow-soft"
+                  style={{ backgroundColor: bg, color: text }}
+                >
+                  {i + 1}
+                </span>
+                <p className="text-sm font-medium text-ink-700 pt-0.5">{q.question}</p>
+              </div>
+              <CopyButton
+                text={`Question ${i + 1}: ${q.question}\n${q.options.map((o, oi) => `  ${String.fromCharCode(65 + oi)}. ${o}`).join('\n')}\nCorrect Answer: ${q.correctAnswer.join(', ')}${q.explanation ? `\nExplanation: ${q.explanation}` : ''}`}
+                iconOnly
+                className="p-1.5 rounded-lg text-ink-400 hover:text-ink-600 hover:bg-paper-100 transition-colors shrink-0"
+                title="Copy this question"
+              />
             </div>
             <div className="space-y-2 ml-10">
               {q.options.map((opt, oi) => (
@@ -1912,19 +2094,35 @@ function DraftPreview({
   if (draft.slides) {
     return (
       <div className="space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-xs font-medium text-ink-400">
+            {draft.slides.length} Slide{draft.slides.length === 1 ? '' : 's'}
+          </span>
+          <CopyButton
+            text={formatMaterialAsText(draft)}
+            label="Copy All Slides"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-ink-700 bg-white hover:bg-paper-100 border border-paper-300 shadow-sm transition-all active:scale-95"
+          />
+        </div>
         {draft.slides.map((s) => (
           <div
             key={s.slideNumber}
-            className="bg-white rounded-2xl border border-paper-200 p-6 shadow-soft card-hover"
+            className="group relative bg-white rounded-2xl border border-paper-200 p-6 shadow-soft card-hover"
             style={{ borderTop: `3px solid ${hex}` }}
           >
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center justify-between mb-4">
               <span
                 className="text-xs font-medium px-2.5 py-1 rounded-md"
                 style={{ backgroundColor: bg, color: text }}
               >
                 Slide {s.slideNumber}
               </span>
+              <CopyButton
+                text={`Slide ${s.slideNumber}: ${s.title}\n${s.points.map((p) => `- ${p}`).join('\n')}${s.notes ? `\n\nSpeaker Notes: ${s.notes}` : ''}`}
+                iconOnly
+                className="p-1.5 rounded-lg text-ink-400 hover:text-ink-600 hover:bg-paper-100 transition-colors"
+                title="Copy this slide"
+              />
             </div>
             <h3 className="font-serif text-lg font-semibold text-ink-800 mb-3">
               {s.title}
