@@ -33,7 +33,19 @@ interface AppState {
 function getInitialUser(): UserProfile | null {
   try {
     const saved = localStorage.getItem('estudesk_user');
-    return saved ? JSON.parse(saved) : null;
+    if (!saved) return null;
+    const parsed = JSON.parse(saved);
+    if (
+      !parsed ||
+      parsed.id === 'demo_scholar_01' ||
+      parsed.name === 'Alex Vance' ||
+      parsed.email?.includes('alex.scholar') ||
+      parsed.email?.includes('demo')
+    ) {
+      localStorage.removeItem('estudesk_user');
+      return null;
+    }
+    return parsed;
   } catch {
     return null;
   }
