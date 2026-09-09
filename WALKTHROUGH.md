@@ -284,22 +284,16 @@ npm run deploy:pages
 
 ### B. Deploy Backend API to Cloudflare Workers
 ```bash
-# 1. Navigate to the API worker directory
+# Option 1: Direct Deploy from root via root wrangler.json (used by Cloudflare Git builds)
+npx wrangler deploy
+
+# Option 2: Deploy from apps/api directory
 cd apps/api
-
-# 2. Configure Cloudflare Worker secrets (Turso Database & Auth)
-npx wrangler secret put TURSO_DATABASE_URL
-# Input: libsql://estudesk-db-drhimam.aws-us-east-2.turso.io
-
-npx wrangler secret put TURSO_AUTH_TOKEN
-# Input: <YOUR_TURSO_JWT_TOKEN>
-
-npx wrangler secret put BETTER_AUTH_SECRET
-# Input: <YOUR_BETTER_AUTH_SECRET>
-
-# 3. Deploy the Worker to Cloudflare Global Edge
 npx wrangler deploy
 ```
+
+> [!NOTE]
+> Root [`wrangler.json`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/wrangler.json) is configured with `main: "apps/api/src/index.ts"`. This allows Cloudflare's automated Git-connected Worker pipeline to execute `npx wrangler deploy` directly from the repository root without framework auto-detection errors.
 
 ---
 
