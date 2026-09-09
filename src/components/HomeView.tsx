@@ -107,9 +107,9 @@ export function HomeView() {
             <div className="relative z-10 flex items-center gap-3 shrink-0">
               <button
                 onClick={() => openTourModal(0, 'walkthrough')}
-                className="px-5 py-3 rounded-2xl bg-white text-accent-900 hover:bg-paper-50 font-bold text-xs shadow-soft hover:shadow-card hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                className="px-5 py-3 rounded-2xl bg-white text-ink-900 hover:bg-paper-100 font-bold text-xs shadow-soft hover:shadow-card hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
               >
-                <span>Launch Tour</span>
+                <span className="text-ink-900 font-bold text-xs">Launch Tour</span>
                 <ArrowRight className="w-4 h-4 text-accent-700" />
               </button>
             </div>
