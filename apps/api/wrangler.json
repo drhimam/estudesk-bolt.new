@@ -10,7 +10,14 @@
     "AI_PROVIDER": "custom",
     "AI_API_KEY": "sk-sdj3mf8lollo3erf31u564gkjawwlpf3hzsxygqhz6ozrcld",
     "AI_BASE_URL": "https://api.xiaomimimo.com/v1",
-    "AI_MODEL": "mimo-v2.5-pro"
+    "AI_MODEL": "mimo-v2.5-pro",
+    "ZEPTOMAIL_API_URL": "https://api.zeptomail.ca/v1.1/email",
+    "EMAIL_FROM_ADDRESS": "noreply@estudesk.com",
+    "EMAIL_FROM_NAME": "eStudesk",
+    "FRONTEND_URL": "https://estudesk.com"
+  },
+  "triggers": {
+    "crons": ["*/15 * * * *", "0 * * * *"]
   },
   "r2_buckets": [
     {

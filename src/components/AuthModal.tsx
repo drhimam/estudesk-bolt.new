@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   GraduationCap,
@@ -13,21 +13,44 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
+  ArrowLeft,
+  KeyRound,
+  Send,
+  RefreshCw,
 } from 'lucide-react';
-import { useAppState, closeAuthModal, setCurrentUser, setView, clearAllData } from '@/store/appState';
-import { signIn, signUp } from '@/lib/authClient';
+import {
+  useAppState,
+  closeAuthModal,
+  setCurrentUser,
+  setView,
+  clearAllData,
+  openAuthModal,
+  AuthMode,
+} from '@/store/appState';
+import { signIn, signUp, forgetPassword, resetPassword, sendVerificationEmail } from '@/lib/authClient';
 
 export function AuthModal() {
-  const { authModalOpen, authMode } = useAppState();
-  const [tab, setTab] = useState<'signin' | 'signup'>(authMode || 'signin');
+  const { authModalOpen, authMode, authResetToken } = useAppState();
+  const [tab, setTab] = useState<AuthMode>(authMode || 'signin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [emailSentNotice, setEmailSentNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (authMode) {
+      setTab(authMode);
+      setError(null);
+      setSuccess(null);
+      setEmailSentNotice(null);
+    }
+  }, [authMode, authModalOpen]);
 
   if (!authModalOpen) return null;
 
@@ -35,7 +58,112 @@ export function AuthModal() {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    setEmailSentNotice(null);
 
+    // 1. Forgot Password Request Flow
+    if (tab === 'forgot_password') {
+      if (!email.trim()) {
+        setError('Please enter your account email address.');
+        return;
+      }
+      setLoading(true);
+      try {
+        const origin = typeof window !== 'undefined' ? window.location.origin : 'https://estudesk.com';
+        const res = await forgetPassword({
+          email: email.trim(),
+          redirectTo: `${origin}?action=reset-password`,
+        });
+
+        if (res.error) {
+          setError(res.error.message || 'Failed to send password reset email. Please try again.');
+        } else {
+          setEmailSentNotice(
+            `Password reset instructions have been sent via Zoho ZeptoMail to ${email.trim()}. Please check your inbox and spam folder.`
+          );
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Password reset service error';
+        setError(msg);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // 2. Set New Password Flow (Reset Password)
+    if (tab === 'reset_password') {
+      if (!password || !confirmPassword) {
+        setError('Please fill in both password fields.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('Passwords do not match.');
+        return;
+      }
+      if (password.length < 8) {
+        setError('Password must be at least 8 characters long.');
+        return;
+      }
+      if (!authResetToken) {
+        setError('Invalid or expired reset token. Please request a new password reset link.');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const res = await resetPassword({
+          newPassword: password,
+          token: authResetToken,
+        });
+
+        if (res.error) {
+          setError(res.error.message || 'Failed to update password. Token may have expired.');
+        } else {
+          setSuccess('Your password has been successfully updated! You can now sign in.');
+          setTimeout(() => {
+            setTab('signin');
+            setPassword('');
+            setConfirmPassword('');
+          }, 1500);
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Reset password error';
+        setError(msg);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // 3. Email Verification Resend Flow
+    if (tab === 'verify_email') {
+      if (!email.trim()) {
+        setError('Please provide your email address.');
+        return;
+      }
+      setLoading(true);
+      try {
+        const origin = typeof window !== 'undefined' ? window.location.origin : 'https://estudesk.com';
+        const res = await sendVerificationEmail({
+          email: email.trim(),
+          callbackURL: origin,
+        });
+
+        if (res.error) {
+          setError(res.error.message || 'Failed to send verification email.');
+        } else {
+          setEmailSentNotice(`Verification email sent to ${email.trim()} via Zoho ZeptoMail.`);
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Verification service error';
+        setError(msg);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // 4. Standard Sign In / Sign Up Flow
     if (!email || !password) {
       setError('Please enter both email and password.');
       return;
@@ -78,7 +206,7 @@ export function AuthModal() {
           tier: 'Scholar',
         });
 
-        setSuccess('Account created successfully! Welcome to eStudesk.');
+        setSuccess('Account created! A verification email was sent to your inbox via ZeptoMail.');
       } else {
         const res = await signIn.email({
           email: email.trim(),
@@ -111,7 +239,7 @@ export function AuthModal() {
       setTimeout(() => {
         closeAuthModal();
         setView({ kind: 'home' });
-      }, 500);
+      }, 700);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Authentication service error';
       setError(msg);
@@ -138,7 +266,13 @@ export function AuthModal() {
 
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-inner">
-              <GraduationCap className="w-6 h-6 text-white" />
+              {tab === 'forgot_password' || tab === 'reset_password' ? (
+                <KeyRound className="w-6 h-6 text-white" />
+              ) : tab === 'verify_email' ? (
+                <Mail className="w-6 h-6 text-white" />
+              ) : (
+                <GraduationCap className="w-6 h-6 text-white" />
+              )}
             </div>
             <div>
               <div className="flex items-center gap-1.5">
@@ -147,41 +281,71 @@ export function AuthModal() {
                   Cloud
                 </span>
               </div>
-              <p className="text-xs text-paper-200">Intelligent Academic Desk & Production AI</p>
+              <p className="text-xs text-paper-200">
+                {tab === 'forgot_password'
+                  ? 'Password Recovery via ZeptoMail'
+                  : tab === 'reset_password'
+                    ? 'Set New Account Password'
+                    : tab === 'verify_email'
+                      ? 'Email Verification Portal'
+                      : 'Intelligent Academic Desk & Production AI'}
+              </p>
             </div>
           </div>
 
-          {/* Mode switcher tabs */}
-          <div className="flex p-1 bg-black/20 backdrop-blur-md rounded-xl mt-4 border border-white/10">
-            <button
-              type="button"
-              onClick={() => {
-                setTab('signin');
-                setError(null);
-              }}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                tab === 'signin'
-                  ? 'bg-white text-accent-700 shadow-sm'
-                  : 'text-white/80 hover:text-white'
-              }`}
-            >
-              Sign In
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setTab('signup');
-                setError(null);
-              }}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                tab === 'signup'
-                  ? 'bg-white text-accent-700 shadow-sm'
-                  : 'text-white/80 hover:text-white'
-              }`}
-            >
-              Create Account
-            </button>
-          </div>
+          {/* Mode switcher tabs (only on signin / signup) */}
+          {(tab === 'signin' || tab === 'signup') && (
+            <div className="flex p-1 bg-black/20 backdrop-blur-md rounded-xl mt-4 border border-white/10">
+              <button
+                type="button"
+                onClick={() => {
+                  setTab('signin');
+                  setError(null);
+                  setEmailSentNotice(null);
+                }}
+                className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                  tab === 'signin'
+                    ? 'bg-white text-accent-700 shadow-sm'
+                    : 'text-white/80 hover:text-white'
+                }`}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTab('signup');
+                  setError(null);
+                  setEmailSentNotice(null);
+                }}
+                className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                  tab === 'signup'
+                    ? 'bg-white text-accent-700 shadow-sm'
+                    : 'text-white/80 hover:text-white'
+                }`}
+              >
+                Create Account
+              </button>
+            </div>
+          )}
+
+          {/* Subheader banner for recovery views */}
+          {(tab === 'forgot_password' || tab === 'reset_password' || tab === 'verify_email') && (
+            <div className="mt-3 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => {
+                  setTab('signin');
+                  setError(null);
+                  setEmailSentNotice(null);
+                }}
+                className="text-xs text-white/80 hover:text-white flex items-center gap-1 font-medium underline-offset-2 hover:underline"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Back to Sign In</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Body content */}
@@ -200,109 +364,232 @@ export function AuthModal() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {tab === 'signup' && (
+          {emailSentNotice && (
+            <div className="mb-4 p-4 rounded-xl bg-accent-50 border border-accent-200 text-accent-800 text-xs leading-relaxed animate-fade-in space-y-2">
+              <div className="flex items-center gap-2 font-semibold text-accent-900">
+                <Send className="w-4 h-4 text-accent-600" />
+                <span>Instructions Dispatched</span>
+              </div>
+              <p>{emailSentNotice}</p>
+            </div>
+          )}
+
+          {/* FORGOT PASSWORD FORM */}
+          {tab === 'forgot_password' && !emailSentNotice && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <p className="text-xs text-ink-600 leading-relaxed">
+                Enter your registered email address. We will send you a secure password reset link powered by Zoho ZeptoMail Canada.
+              </p>
+
               <div>
-                <label className="block text-xs font-medium text-ink-600 mb-1.5">Full Name</label>
+                <label className="block text-xs font-medium text-ink-600 mb-1.5">Email Address</label>
                 <div className="relative">
-                  <User className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Mail className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
-                    type="text"
+                    type="email"
                     required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Dr. Jordan Hayes"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="scholar@university.edu"
                     className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-paper-300 text-sm text-ink-800 placeholder:text-ink-300 focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100 transition-all"
                   />
                 </div>
               </div>
-            )}
 
-            <div>
-              <label className="block text-xs font-medium text-ink-600 mb-1.5">Email Address</label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="scholar@university.edu"
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-paper-300 text-sm text-ink-800 placeholder:text-ink-300 focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100 transition-all"
-                />
-              </div>
-            </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-2.5 px-4 rounded-xl bg-accent-600 hover:bg-accent-700 text-white font-medium text-sm shadow-card hover:shadow-glow transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Sending Reset Link...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Send Password Reset Link</span>
+                    <Send className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+          )}
 
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-medium text-ink-600">Password</label>
-                {tab === 'signin' && (
+          {/* RESET PASSWORD (NEW PASSWORD) FORM */}
+          {tab === 'reset_password' && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <p className="text-xs text-ink-600 leading-relaxed">
+                Choose a new secure password for your eStudesk account.
+              </p>
+
+              <div>
+                <label className="block text-xs font-medium text-ink-600 mb-1.5">New Password</label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="w-full pl-9 pr-10 py-2.5 rounded-xl border border-paper-300 text-sm text-ink-800 placeholder:text-ink-300 focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100 transition-all"
+                  />
                   <button
                     type="button"
-                    onClick={() => alert('Password reset links are configured via production SMTP.')}
-                    className="text-xs text-accent-600 hover:text-accent-700 hover:underline"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-400 hover:text-ink-600"
                   >
-                    Forgot password?
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
-                )}
+                </div>
               </div>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  className="w-full pl-9 pr-10 py-2.5 rounded-xl border border-paper-300 text-sm text-ink-800 placeholder:text-ink-300 focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100 transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-400 hover:text-ink-600"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
 
-            {tab === 'signin' && (
-              <div className="flex items-center">
-                <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-ink-600">
+              <div>
+                <label className="block text-xs font-medium text-ink-600 mb-1.5">Confirm New Password</label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-3.5 h-3.5 rounded text-accent-600 border-paper-300 focus:ring-accent-500"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-paper-300 text-sm text-ink-800 placeholder:text-ink-300 focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100 transition-all"
                   />
-                  <span>Keep me signed in on this device</span>
-                </label>
+                </div>
               </div>
-            )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-accent-600 to-indigo-600 hover:from-accent-700 hover:to-indigo-700 text-white font-medium text-sm shadow-card hover:shadow-glow transition-all flex items-center justify-center gap-2 disabled:opacity-60"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Authenticating...</span>
-                </>
-              ) : (
-                <>
-                  <span>{tab === 'signin' ? 'Sign In to eStudesk' : 'Create Account'}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-2.5 px-4 rounded-xl bg-accent-600 hover:bg-accent-700 text-white font-medium text-sm shadow-card hover:shadow-glow transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Updating Password...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Set New Password & Sign In</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* SIGN IN & SIGN UP FORMS */}
+          {(tab === 'signin' || tab === 'signup') && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {tab === 'signup' && (
+                <div>
+                  <label className="block text-xs font-medium text-ink-600 mb-1.5">Full Name</label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Dr. Jordan Hayes"
+                      className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-paper-300 text-sm text-ink-800 placeholder:text-ink-300 focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100 transition-all"
+                    />
+                  </div>
+                </div>
               )}
-            </button>
-          </form>
+
+              <div>
+                <label className="block text-xs font-medium text-ink-600 mb-1.5">Email Address</label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="scholar@university.edu"
+                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-paper-300 text-sm text-ink-800 placeholder:text-ink-300 focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-medium text-ink-600">Password</label>
+                  {tab === 'signin' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTab('forgot_password');
+                        setError(null);
+                        setSuccess(null);
+                      }}
+                      className="text-xs text-accent-600 hover:text-accent-700 hover:underline font-medium"
+                    >
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="w-full pl-9 pr-10 py-2.5 rounded-xl border border-paper-300 text-sm text-ink-800 placeholder:text-ink-300 focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-400 hover:text-ink-600"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {tab === 'signin' && (
+                <div className="flex items-center">
+                  <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-ink-600">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="w-3.5 h-3.5 rounded text-accent-600 border-paper-300 focus:ring-accent-500"
+                    />
+                    <span>Keep me signed in on this device</span>
+                  </label>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-accent-600 to-indigo-600 hover:from-accent-700 hover:to-indigo-700 text-white font-medium text-sm shadow-card hover:shadow-glow transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Authenticating...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>{tab === 'signin' ? 'Sign In to eStudesk' : 'Create Account'}</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+          )}
 
           <div className="mt-5 pt-4 border-t border-paper-200 text-center">
             <div className="flex items-center justify-center gap-1.5 text-xs text-ink-500 font-medium">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>Secured by Cloudflare & Turso Database</span>
+              <span>Email Delivery & Security via Zoho ZeptoMail Canada</span>
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Menu, GraduationCap, PanelLeftOpen, Sparkles, PanelRightClose, Search, HelpCircle } from 'lucide-react';
-import { setSidebarOpen, toggleAIPanel, useAppState, openTourModal, closeTourModal } from '@/store/appState';
+import { setSidebarOpen, toggleAIPanel, useAppState, openTourModal, closeTourModal, openAuthModal } from '@/store/appState';
 import { useSemesters, useSubjects } from '@/hooks/useQueries';
 import { Sidebar } from '@/components/Sidebar';
 import { HomeView } from '@/components/HomeView';
@@ -10,8 +10,10 @@ import { AskAIPanel } from '@/components/AskAIPanel';
 import { GlobalSearch } from '@/components/GlobalSearch';
 import { LandingPage } from '@/components/LandingPage';
 import { AuthModal } from '@/components/AuthModal';
+import { NotificationSettingsModal } from '@/components/NotificationSettingsModal';
 import { DashboardTourModal } from '@/components/DashboardTourModal';
 import { syncFromTursoToLocal } from '@/lib/apiSync';
+import { verifyEmail } from '@/lib/authClient';
 
 function App() {
   const { view, sidebarOpen, aiPanelOpen, aiPanelFullscreen, tourModalOpen, tourInitialStep, tourInitialTab, currentUser } = useAppState();
@@ -29,6 +31,28 @@ function App() {
   const [isResizing, setIsResizing] = useState(false);
   const semesters = useSemesters();
   const subjects = useSubjects();
+
+  // Check URL parameters for password reset and email verification tokens
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const action = urlParams.get('action');
+    const token = urlParams.get('token');
+
+    if (action === 'reset-password' && token) {
+      openAuthModal('reset_password', token);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (action === 'verify-email' && token) {
+      verifyEmail({ query: { token } })
+        .then((res) => {
+          if (res.data) {
+            alert('✓ Your email address has been successfully verified!');
+          }
+        })
+        .catch((err) => console.error('Email verification error:', err));
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => {
     setReady(true);
@@ -113,6 +137,7 @@ function App() {
     <div className="h-screen flex bg-[#fbf5eb] overflow-hidden">
       <Sidebar />
       <AuthModal />
+      <NotificationSettingsModal />
       <DashboardTourModal
         isOpen={tourModalOpen}
         onClose={closeTourModal}

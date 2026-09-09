@@ -1,3 +1,16 @@
+# eStudesk System Walkthrough & Architectural Reference
+
+## Recent Update: Zoho ZeptoMail Canada Integration
+- **Gateway**: `https://api.zeptomail.ca/v1.1/email` (Zoho Canada regional endpoint)
+- **Features**:
+  1. **Email Verification**: Dispatches activation emails with secure callback tokens.
+  2. **Forgot Password / Password Reset**: Recovery flow with 1-hour expiration tokens.
+  3. **Weekly Deadline Digest**: Scheduled cron job that summarizes upcoming/overdue deadlines.
+  4. **24h Deadline Alerts**: Scans assignments due within 24h and sends urgent alerts.
+  5. **Notification Settings UI**: Modal to customize schedules, trigger test emails, and view delivery history.
+
+---
+
 # Developer Walkthrough & Architecture Guide — `estudesk-bolt.new`
 
 Welcome to **eStudesk** (`estudesk-bolt.new`)! This document provides an exhaustive, step-by-step technical guide for developers working on or inheriting this codebase. It details the architecture, file hierarchy, database schemas, component contracts, implementation history, and developer commands.

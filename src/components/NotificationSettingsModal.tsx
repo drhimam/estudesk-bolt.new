@@ -1,0 +1,524 @@
+import React, { useState, useEffect } from 'react';
+import {
+  X,
+  Bell,
+  Mail,
+  Clock,
+  Calendar,
+  Send,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  ShieldCheck,
+  Zap,
+  History,
+  Sparkles,
+  RefreshCw,
+} from 'lucide-react';
+import { useAppState, closeNotificationModal } from '@/store/appState';
+import { API_BASE_URL } from '@/lib/authClient';
+
+interface NotificationPreferences {
+  weeklyDigestEnabled: boolean;
+  weeklyDigestDay: string;
+  weeklyDigestTime: string;
+  deadlineAlertEnabled: boolean;
+  deadlineAlertHoursBefore: number;
+  timezone: string;
+  emailFormat: 'html' | 'plain';
+}
+
+interface NotificationLogItem {
+  id: string;
+  notificationType: string;
+  provider: string;
+  providerMessageId?: string | null;
+  status: string;
+  errorMessage?: string | null;
+  createdAt: string | number;
+}
+
+export function NotificationSettingsModal() {
+  const { notificationModalOpen, currentUser } = useAppState();
+
+  const [prefs, setPrefs] = useState<NotificationPreferences>({
+    weeklyDigestEnabled: true,
+    weeklyDigestDay: 'monday',
+    weeklyDigestTime: '08:00',
+    deadlineAlertEnabled: true,
+    deadlineAlertHoursBefore: 24,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+    emailFormat: 'html',
+  });
+
+  const [logs, setLogs] = useState<NotificationLogItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [testSending, setTestSending] = useState(false);
+  const [digestSending, setDigestSending] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Load preferences and logs when modal opens
+  useEffect(() => {
+    if (!notificationModalOpen || !currentUser) return;
+
+    let isMounted = true;
+    async function loadData() {
+      setLoading(true);
+      try {
+        const [prefsRes, logsRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/notifications/preferences?userId=${encodeURIComponent(currentUser!.id)}`),
+          fetch(`${API_BASE_URL}/api/notifications/logs?userId=${encodeURIComponent(currentUser!.id)}`),
+        ]);
+
+        if (prefsRes.ok && isMounted) {
+          const json = await prefsRes.json();
+          if (json.data) {
+            setPrefs((prev) => ({ ...prev, ...json.data }));
+          }
+        }
+
+        if (logsRes.ok && isMounted) {
+          const json = await logsRes.json();
+          if (json.data) {
+            setLogs(json.data);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load notification settings:', err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, [notificationModalOpen, currentUser]);
+
+  if (!notificationModalOpen) return null;
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!currentUser) return;
+    setSaving(true);
+    setStatusMessage(null);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/notifications/preferences`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          ...prefs,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to update notification preferences.');
+      }
+
+      setStatusMessage({ type: 'success', text: 'Notification preferences saved successfully.' });
+      setTimeout(() => setStatusMessage(null), 4000);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Save error';
+      setStatusMessage({ type: 'error', text: msg });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleSendTestEmail() {
+    if (!currentUser) return;
+    setTestSending(true);
+    setStatusMessage(null);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/notifications/test-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          email: currentUser.email,
+          name: currentUser.name,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        throw new Error(json.error || 'Failed to dispatch test email.');
+      }
+
+      setStatusMessage({
+        type: 'success',
+        text: `✓ Test email dispatched via Zoho ZeptoMail Canada to ${currentUser.email}!`,
+      });
+
+      // Refresh logs
+      const logsRes = await fetch(`${API_BASE_URL}/api/notifications/logs?userId=${encodeURIComponent(currentUser.id)}`);
+      if (logsRes.ok) {
+        const logData = await logsRes.json();
+        if (logData.data) setLogs(logData.data);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Test email failed';
+      setStatusMessage({ type: 'error', text: msg });
+    } finally {
+      setTestSending(false);
+    }
+  }
+
+  async function handleSendWeeklyDigest() {
+    if (!currentUser) return;
+    setDigestSending(true);
+    setStatusMessage(null);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/notifications/send-digest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser.id }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        throw new Error(json.error || 'Failed to dispatch weekly digest.');
+      }
+
+      setStatusMessage({
+        type: 'success',
+        text: `✓ Weekly deadline digest sent to ${currentUser.email} via ZeptoMail Canada.`,
+      });
+
+      // Refresh logs
+      const logsRes = await fetch(`${API_BASE_URL}/api/notifications/logs?userId=${encodeURIComponent(currentUser.id)}`);
+      if (logsRes.ok) {
+        const logData = await logsRes.json();
+        if (logData.data) setLogs(logData.data);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Digest dispatch failed';
+      setStatusMessage({ type: 'error', text: msg });
+    } finally {
+      setDigestSending(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-ink-900/60 backdrop-blur-sm animate-fade-in">
+      <div
+        className="relative w-full max-w-2xl bg-white rounded-3xl border border-paper-300 shadow-lifted overflow-hidden transform animate-scale-in max-h-[90vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header banner */}
+        <div className="bg-gradient-to-r from-accent-600 via-accent-700 to-indigo-700 px-6 py-5 text-white flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-inner">
+              <Bell className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="font-serif text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                <span>Email & Notification Settings</span>
+                <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 border border-emerald-400/30">
+                  ZeptoMail Canada
+                </span>
+              </h2>
+              <p className="text-xs text-paper-200">
+                Configure deadline digests, alerts, and transactional email deliverability
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={closeNotificationModal}
+            className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+            title="Close"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Scrollable Content */}
+        <div className="p-6 overflow-y-auto space-y-6 flex-1">
+          {statusMessage && (
+            <div
+              className={`p-3.5 rounded-2xl border text-xs flex items-center gap-2.5 animate-fade-in ${
+                statusMessage.type === 'success'
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                  : 'bg-crimson-50 border-crimson-200 text-crimson-800'
+              }`}
+            >
+              {statusMessage.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-crimson-600 shrink-0" />
+              )}
+              <span className="font-medium">{statusMessage.text}</span>
+            </div>
+          )}
+
+          {/* Mailbox Gateway Status Card */}
+          <div className="p-4 rounded-2xl bg-[#f7f3ec] border border-[#e2dcd0] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-accent-100 flex items-center justify-center text-accent-700">
+                <Mail className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-ink-800 flex items-center gap-1.5">
+                  <span>Recipient: {currentUser?.email || 'Scholar'}</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                </div>
+                <div className="text-[11px] text-ink-500">
+                  Gateway: <code className="font-mono text-[10px] bg-white px-1 py-0.5 rounded border border-paper-300">api.zeptomail.ca (Zoho Canada)</code>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={handleSendTestEmail}
+                disabled={testSending || loading}
+                className="flex-1 sm:flex-none px-3 py-1.5 rounded-xl bg-white border border-paper-300 hover:border-accent-500 text-ink-700 text-xs font-semibold shadow-soft hover:shadow-card transition-all flex items-center justify-center gap-1.5 disabled:opacity-60"
+              >
+                {testSending ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-accent-600" />
+                    <span>Sending...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5 text-accent-600" />
+                    <span>Send Test Email</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          <form onSubmit={handleSave} className="space-y-5">
+            {/* Section 1: Weekly Deadline Digest */}
+            <div className="p-4 rounded-2xl bg-white border border-paper-200 shadow-soft space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <Calendar className="w-4 h-4 text-accent-600" />
+                  <div>
+                    <h3 className="text-xs font-bold text-ink-800">Weekly Deadline Digest</h3>
+                    <p className="text-[11px] text-ink-500">
+                      Receive an academic summary of overdue, upcoming, and this week's deadlines
+                    </p>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={prefs.weeklyDigestEnabled}
+                    onChange={(e) => setPrefs({ ...prefs, weeklyDigestEnabled: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-paper-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-paper-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent-600"></div>
+                </label>
+              </div>
+
+              {prefs.weeklyDigestEnabled && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-paper-100">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-ink-600 mb-1">Dispatch Day</label>
+                    <select
+                      value={prefs.weeklyDigestDay}
+                      onChange={(e) => setPrefs({ ...prefs, weeklyDigestDay: e.target.value })}
+                      className="w-full text-xs bg-paper-50 border border-paper-300 rounded-xl px-2.5 py-2 text-ink-800 focus:outline-none focus:border-accent-500"
+                    >
+                      <option value="monday">Monday (Recommended)</option>
+                      <option value="sunday">Sunday Evening</option>
+                      <option value="tuesday">Tuesday</option>
+                      <option value="wednesday">Wednesday</option>
+                      <option value="thursday">Thursday</option>
+                      <option value="friday">Friday</option>
+                      <option value="saturday">Saturday</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-ink-600 mb-1">Delivery Time</label>
+                    <select
+                      value={prefs.weeklyDigestTime}
+                      onChange={(e) => setPrefs({ ...prefs, weeklyDigestTime: e.target.value })}
+                      className="w-full text-xs bg-paper-50 border border-paper-300 rounded-xl px-2.5 py-2 text-ink-800 focus:outline-none focus:border-accent-500"
+                    >
+                      <option value="07:00">07:00 AM</option>
+                      <option value="08:00">08:00 AM (Default)</option>
+                      <option value="09:00">09:00 AM</option>
+                      <option value="12:00">12:00 PM (Noon)</option>
+                      <option value="18:00">06:00 PM</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-ink-600 mb-1">Email Format</label>
+                    <select
+                      value={prefs.emailFormat}
+                      onChange={(e) => setPrefs({ ...prefs, emailFormat: e.target.value as 'html' | 'plain' })}
+                      className="w-full text-xs bg-paper-50 border border-paper-300 rounded-xl px-2.5 py-2 text-ink-800 focus:outline-none focus:border-accent-500"
+                    >
+                      <option value="html">Rich Academic HTML</option>
+                      <option value="plain">Accessible Plain Text</option>
+                    </select>
+                  </div>
+
+                  <div className="sm:col-span-3 flex justify-end pt-1">
+                    <button
+                      type="button"
+                      onClick={handleSendWeeklyDigest}
+                      disabled={digestSending || loading}
+                      className="px-3 py-1.5 rounded-lg bg-paper-100 hover:bg-paper-200 text-ink-700 text-xs font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                    >
+                      {digestSending ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-accent-600" />
+                          <span>Generating Digest...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-3.5 h-3.5 text-accent-600" />
+                          <span>Send Digest Preview Now</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Section 2: Urgent Deadline Alerts */}
+            <div className="p-4 rounded-2xl bg-white border border-paper-200 shadow-soft space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <Clock className="w-4 h-4 text-accent-600" />
+                  <div>
+                    <h3 className="text-xs font-bold text-ink-800">Urgent Deadline Reminders</h3>
+                    <p className="text-[11px] text-ink-500">
+                      Dispatches immediate notices prior to assignment & exam deadlines
+                    </p>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={prefs.deadlineAlertEnabled}
+                    onChange={(e) => setPrefs({ ...prefs, deadlineAlertEnabled: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-paper-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-paper-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent-600"></div>
+                </label>
+              </div>
+
+              {prefs.deadlineAlertEnabled && (
+                <div className="pt-2 border-t border-paper-100 flex items-center gap-3">
+                  <label className="text-xs font-semibold text-ink-600">Remind me:</label>
+                  <select
+                    value={prefs.deadlineAlertHoursBefore}
+                    onChange={(e) => setPrefs({ ...prefs, deadlineAlertHoursBefore: parseInt(e.target.value, 10) })}
+                    className="text-xs bg-paper-50 border border-paper-300 rounded-xl px-2.5 py-1.5 text-ink-800 focus:outline-none focus:border-accent-500"
+                  >
+                    <option value="12">12 hours before</option>
+                    <option value="24">24 hours before (Default)</option>
+                    <option value="48">48 hours before</option>
+                    <option value="72">72 hours before (3 days)</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* Save Button */}
+            <div className="flex justify-end pt-2">
+              <button
+                type="submit"
+                disabled={saving || loading}
+                className="px-5 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-xs font-semibold shadow-card hover:shadow-glow transition-all flex items-center gap-2 disabled:opacity-60"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Saving Preferences...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Save Preferences</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+
+          {/* Section 3: Delivery History Log */}
+          <div className="pt-4 border-t border-paper-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <History className="w-4 h-4 text-ink-500" />
+                <h3 className="text-xs font-bold text-ink-800">Recent Delivery History</h3>
+              </div>
+              <span className="text-[11px] text-ink-400">Retained for 90 days</span>
+            </div>
+
+            {logs.length === 0 ? (
+              <div className="p-4 rounded-xl bg-paper-50 border border-paper-200 text-center text-xs text-ink-400">
+                No notification delivery events recorded yet.
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-paper-200 overflow-hidden bg-white shadow-soft">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-paper-100 text-ink-600 font-semibold border-b border-paper-200 text-[11px]">
+                    <tr>
+                      <th className="py-2.5 px-3">Type</th>
+                      <th className="py-2.5 px-3">Status</th>
+                      <th className="py-2.5 px-3">Gateway</th>
+                      <th className="py-2.5 px-3">Sent At</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-paper-100">
+                    {logs.map((log) => (
+                      <tr key={log.id} className="hover:bg-paper-50/50">
+                        <td className="py-2 px-3 font-medium text-ink-800 capitalize">
+                          {log.notificationType.replace(/_/g, ' ')}
+                        </td>
+                        <td className="py-2 px-3">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                              log.status === 'sent' || log.status === 'delivered'
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : 'bg-crimson-100 text-crimson-700'
+                            }`}
+                          >
+                            {log.status === 'sent' || log.status === 'delivered' ? (
+                              <CheckCircle2 className="w-2.5 h-2.5" />
+                            ) : (
+                              <AlertCircle className="w-2.5 h-2.5" />
+                            )}
+                            {log.status}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 text-ink-500 font-mono text-[10px]">
+                          {log.provider === 'zeptomail' ? 'ZeptoMail (CA)' : log.provider}
+                        </td>
+                        <td className="py-2 px-3 text-ink-400 text-[11px]">
+                          {new Date(log.createdAt).toLocaleString(undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

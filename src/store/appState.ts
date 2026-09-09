@@ -16,13 +16,17 @@ export type View =
   | { kind: 'semester'; semesterId: string }
   | { kind: 'subject'; subjectId: string };
 
+export type AuthMode = 'signin' | 'signup' | 'forgot_password' | 'reset_password' | 'verify_email';
+
 interface AppState {
   view: View;
   sidebarOpen: boolean;
   aiPanelOpen: boolean;
   aiPanelFullscreen: boolean;
   authModalOpen: boolean;
-  authMode: 'signin' | 'signup';
+  authMode: AuthMode;
+  authResetToken: string | null;
+  notificationModalOpen: boolean;
   currentUser: UserProfile | null;
   tourModalOpen: boolean;
   tourInitialStep: number;
@@ -58,6 +62,8 @@ let state: AppState = {
   aiPanelFullscreen: false,
   authModalOpen: false,
   authMode: 'signin',
+  authResetToken: null,
+  notificationModalOpen: false,
   currentUser: getInitialUser(),
   tourModalOpen: false,
   tourInitialStep: 0,
@@ -118,13 +124,23 @@ export function setAIPanelFullscreen(open: boolean) {
   emit();
 }
 
-export function openAuthModal(mode: 'signin' | 'signup' = 'signin') {
-  state = { ...state, authModalOpen: true, authMode: mode };
+export function openAuthModal(mode: AuthMode = 'signin', token: string | null = null) {
+  state = { ...state, authModalOpen: true, authMode: mode, authResetToken: token };
   emit();
 }
 
 export function closeAuthModal() {
-  state = { ...state, authModalOpen: false };
+  state = { ...state, authModalOpen: false, authResetToken: null };
+  emit();
+}
+
+export function openNotificationModal() {
+  state = { ...state, notificationModalOpen: true };
+  emit();
+}
+
+export function closeNotificationModal() {
+  state = { ...state, notificationModalOpen: false };
   emit();
 }
 

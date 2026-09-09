@@ -1,8 +1,34 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import * as schema from '../db/schema';
+import {
+  sendVerificationNotification,
+  sendResetPasswordNotification,
+  EmailEnvBindings,
+} from '../email/notifications';
 
-export function initBetterAuth(db: unknown, secret: string, baseURL?: string) {
+export function initBetterAuth(
+  db: unknown,
+  secret: string,
+  baseURL?: string,
+  extraOrigins: string[] = [],
+  env?: EmailEnvBindings
+) {
+  const defaultOrigins = [
+    'https://estudesk.com',
+    'https://www.estudesk.com',
+    'https://*.estudesk.com',
+    'https://estudesk-bolt-new.pages.dev',
+    'https://estudesk.pages.dev',
+    'https://*.pages.dev',
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:4173',
+    'http://localhost:8787',
+  ];
+
+  const trustedOrigins = Array.from(new Set([...defaultOrigins, ...extraOrigins]));
+
   return betterAuth({
     database: drizzleAdapter(db as Parameters<typeof drizzleAdapter>[0], {
       provider: 'sqlite',
@@ -15,16 +41,25 @@ export function initBetterAuth(db: unknown, secret: string, baseURL?: string) {
     }),
     secret: secret,
     baseURL: baseURL || 'https://estudesk-api.rifa-numis.workers.dev',
-    trustedOrigins: [
-      'https://estudesk-bolt-new.pages.dev',
-      'https://estudesk.pages.dev',
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'http://localhost:4173',
-    ],
+    trustedOrigins,
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,
+      resetPasswordTokenExpiresIn: 60 * 60, // 1 hour
+      sendResetPassword: async ({ user, url, token }) => {
+        if (env && user && user.email) {
+          await sendResetPasswordNotification(db, env, user, token, url);
+        }
+      },
+    },
+    emailVerification: {
+      sendOnSignUp: true,
+      autoSignInAfterVerification: true,
+      sendVerificationEmail: async ({ user, url, token }) => {
+        if (env && user && user.email) {
+          await sendVerificationNotification(db, env, user, token, url);
+        }
+      },
     },
     socialProviders: {
       google: {

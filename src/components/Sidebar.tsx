@@ -18,10 +18,11 @@ import {
   Sparkles,
   Shield,
   FolderTree,
+  Bell,
 } from 'lucide-react';
 import { db, uid } from '@/db/database';
 import { useSemesters, useSubjects } from '@/hooks/useQueries';
-import { setView, toggleSidebar, useAppState, openAuthModal, logoutUser } from '@/store/appState';
+import { setView, toggleSidebar, useAppState, openAuthModal, logoutUser, openNotificationModal } from '@/store/appState';
 import { signOut } from '@/lib/authClient';
 import { COLOR_HEX } from '@/utils/colors';
 import {
@@ -773,7 +774,17 @@ function SidebarFooter() {
                 </div>
               </div>
 
-              <div className="pt-1">
+              <div className="py-1 space-y-0.5">
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    openNotificationModal();
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-ink-700 hover:bg-paper-100 transition-colors text-left"
+                >
+                  <Bell className="w-3.5 h-3.5 text-accent-600" />
+                  <span>Email & Notifications</span>
+                </button>
                 <button
                   onClick={handleSignOut}
                   className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-crimson-600 hover:bg-crimson-50 transition-colors"

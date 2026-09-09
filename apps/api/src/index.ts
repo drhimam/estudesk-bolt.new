@@ -7,12 +7,21 @@ import { drizzle } from 'drizzle-orm/libsql';
 import * as schema from './db/schema';
 import { initBetterAuth } from './auth/auth';
 import { runAIRouter, GenerationRequest } from './ai/router';
+import {
+  getNotificationPreferences,
+  updateNotificationPreferences,
+  getNotificationLogs,
+  sendTestEmailNotification,
+  sendWeeklyDigestForUser,
+  processDeadlineAlerts,
+} from './email/notifications';
 
 export type Bindings = {
   TURSO_DATABASE_URL?: string;
   TURSO_AUTH_TOKEN?: string;
   DATABASE_URL?: string;
   BETTER_AUTH_SECRET: string;
+  TRUSTED_ORIGINS?: string;
   R2_BUCKET?: unknown;
   AI_PROVIDER?: string;
   AI_API_KEY?: string;
@@ -21,6 +30,11 @@ export type Bindings = {
   DEEPSEEK_API_KEY?: string;
   OPENAI_API_KEY?: string;
   GEMINI_API_KEY?: string;
+  ZEPTOMAIL_API_KEY?: string;
+  ZEPTOMAIL_API_URL?: string;
+  EMAIL_FROM_ADDRESS?: string;
+  EMAIL_FROM_NAME?: string;
+  FRONTEND_URL?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -74,7 +88,10 @@ app.get('/metrics', (c) => {
 app.on(['POST', 'GET'], '/api/auth/*', (c) => {
   const { db } = getDb(c.env);
   const baseURL = new URL(c.req.url).origin;
-  const auth = initBetterAuth(db, c.env.BETTER_AUTH_SECRET || 'default-secret', baseURL);
+  const extraOrigins = c.env.TRUSTED_ORIGINS
+    ? c.env.TRUSTED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
+    : [];
+  const auth = initBetterAuth(db, c.env.BETTER_AUTH_SECRET || 'default-secret', baseURL, extraOrigins, c.env);
   return auth.handler(c.req.raw);
 });
 
@@ -512,4 +529,134 @@ app.post('/api/chat', async (c) => {
   }
 });
 
-export default app;
+// ==========================================
+// Notification & ZeptoMail Endpoints
+// ==========================================
+
+// Get user notification preferences
+app.get('/api/notifications/preferences', async (c) => {
+  try {
+    const userId = c.req.query('userId');
+    if (!userId) return c.json({ error: 'User ID is required' }, 400);
+
+    const { db } = getDb(c.env);
+    const prefs = await getNotificationPreferences(db, userId);
+    return c.json({ data: prefs });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// Update user notification preferences
+app.put('/api/notifications/preferences', async (c) => {
+  try {
+    const body = await c.req.json<{
+      userId: string;
+      weeklyDigestEnabled?: boolean;
+      weeklyDigestDay?: string;
+      weeklyDigestTime?: string;
+      deadlineAlertEnabled?: boolean;
+      deadlineAlertHoursBefore?: number;
+      timezone?: string;
+      emailFormat?: 'html' | 'plain';
+    }>();
+
+    if (!body.userId) return c.json({ error: 'User ID is required' }, 400);
+
+    const { db } = getDb(c.env);
+    const updated = await updateNotificationPreferences(db, body.userId, body);
+    return c.json({ data: updated });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// Get recent notification logs for user
+app.get('/api/notifications/logs', async (c) => {
+  try {
+    const userId = c.req.query('userId');
+    if (!userId) return c.json({ error: 'User ID is required' }, 400);
+
+    const { db } = getDb(c.env);
+    const logs = await getNotificationLogs(db, userId, 20);
+    return c.json({ data: logs });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// Send a test email via Zoho ZeptoMail Canada
+app.post('/api/notifications/test-email', async (c) => {
+  try {
+    const body = await c.req.json<{ userId: string; email: string; name?: string }>();
+    if (!body.email) return c.json({ error: 'Recipient email is required' }, 400);
+
+    const { db } = getDb(c.env);
+    const user = {
+      id: body.userId || 'test_user',
+      name: body.name || body.email.split('@')[0],
+      email: body.email,
+    };
+
+    const result = await sendTestEmailNotification(db, c.env, user);
+    return c.json({
+      success: result.success,
+      messageId: result.messageId,
+      error: result.error,
+      gateway: c.env.ZEPTOMAIL_API_URL || 'https://api.zeptomail.ca/v1.1/email',
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// Trigger Weekly Deadline Digest manually or via cron
+app.post('/api/notifications/send-digest', async (c) => {
+  try {
+    const body = await c.req.json<{ userId: string }>();
+    if (!body.userId) return c.json({ error: 'User ID is required' }, 400);
+
+    const { db } = getDb(c.env);
+    const result = await sendWeeklyDigestForUser(db, c.env, body.userId);
+    return c.json({
+      success: result.success,
+      messageId: result.messageId,
+      error: result.error,
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// Trigger 24h Deadline Alerts scan
+app.post('/api/notifications/send-deadline-alerts', async (c) => {
+  try {
+    const { db } = getDb(c.env);
+    const result = await processDeadlineAlerts(db, c.env);
+    return c.json({ success: true, processedCount: result.processedCount });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// Export worker handler with scheduled cron support
+export default {
+  fetch: app.fetch,
+  async scheduled(event: { cron: string }, env: Bindings, ctx: { waitUntil: (promise: Promise<unknown>) => void }) {
+    console.log(`[Worker Cron Triggered] Pattern: ${event.cron}`);
+    const { db } = getDb(env);
+
+    // Run deadline alerts every 15 minutes
+    ctx.waitUntil(
+      processDeadlineAlerts(db, env).catch((err) => {
+        console.error('[Worker Cron Error in Deadline Alerts]', err);
+      })
+    );
+  },
+};
