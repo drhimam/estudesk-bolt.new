@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Menu, FileText, Flag } from 'lucide-react';
-import { toggleSidebar, useAppState } from '@/store/appState';
+import { FileText, Flag } from 'lucide-react';
 import { useSubject } from '@/hooks/useQueries';
 import { COLOR_HEX, COLOR_LIGHT, COLOR_TEXT } from '@/utils/colors';
 import { StudyMaterialTab } from '@/components/StudyMaterialTab';
@@ -15,7 +14,6 @@ interface Props {
 export function SubjectView({ subjectId }: Props) {
   const subject = useSubject(subjectId);
   const [tab, setTab] = useState<Tab>('materials');
-  const { sidebarOpen } = useAppState();
 
   if (!subject) {
     return (
@@ -42,14 +40,6 @@ export function SubjectView({ subjectId }: Props) {
         style={{ background: `linear-gradient(135deg, ${bg} 0%, #ffffff 60%)` }}
       >
         <div className="flex items-center gap-3 relative z-10">
-          {!sidebarOpen && (
-            <button
-              onClick={toggleSidebar}
-              className="p-1.5 rounded-lg hover:bg-white/60 text-ink-400 transition-colors"
-            >
-              <Menu className="w-4 h-4" />
-            </button>
-          )}
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center font-serif font-semibold text-base shrink-0 shadow-soft"
             style={{ backgroundColor: bg, color: text, border: `1px solid ${hex}22` }}
