@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
@@ -36,9 +37,11 @@ function getDb(env: Bindings) {
 // Middleware
 app.use('*', logger());
 app.use('*', cors({
-  origin: '*',
+  origin: (origin) => origin || '*',
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key'],
+  allowHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key', 'Cookie'],
+  exposeHeaders: ['Set-Cookie'],
+  credentials: true,
 }));
 
 // Health Check Endpoints
@@ -70,11 +73,12 @@ app.get('/metrics', (c) => {
 // Better Auth Route Handler
 app.on(['POST', 'GET'], '/api/auth/*', (c) => {
   const { db } = getDb(c.env);
-  const auth = initBetterAuth(db, c.env.BETTER_AUTH_SECRET || 'default-secret');
+  const baseURL = new URL(c.req.url).origin;
+  const auth = initBetterAuth(db, c.env.BETTER_AUTH_SECRET || 'default-secret', baseURL);
   return auth.handler(c.req.raw);
 });
 
-// Folders / Semesters endpoints
+// Folders / Semesters endpoints (Turso DB)
 app.get('/api/folders', async (c) => {
   try {
     const { db } = getDb(c.env);
@@ -86,7 +90,78 @@ app.get('/api/folders', async (c) => {
   }
 });
 
-// Subjects endpoints
+app.post('/api/folders', async (c) => {
+  try {
+    const body = await c.req.json<{ id?: string; name: string; color?: string; userId?: string; isPinned?: boolean }>();
+    if (!body.name) return c.json({ error: 'Folder name is required' }, 400);
+    const { db } = getDb(c.env);
+
+    let userId = body.userId;
+    if (!userId) {
+      const existingUser = await db.select({ id: schema.user.id }).from(schema.user).limit(1);
+      if (existingUser.length > 0) {
+        userId = existingUser[0].id;
+      } else {
+        const defaultUser = {
+          id: 'user_default',
+          name: 'Scholar',
+          email: 'scholar@estudesk.app',
+        };
+        await db.insert(schema.user).values(defaultUser).onConflictDoNothing();
+        userId = defaultUser.id;
+      }
+    }
+
+    const newFolder = {
+      id: body.id || crypto.randomUUID(),
+      userId: userId,
+      name: body.name.trim().toUpperCase(),
+      color: body.color || '#4F46E5',
+      isPinned: body.isPinned || false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    await db.insert(schema.folders).values(newFolder);
+    return c.json({ data: newFolder }, 201);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+app.put('/api/folders/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const body = await c.req.json<{ name?: string; color?: string; isPinned?: boolean }>();
+    const { db } = getDb(c.env);
+    const updates: Record<string, unknown> = { updatedAt: new Date() };
+    if (body.name) updates.name = body.name.trim().toUpperCase();
+    if (body.color !== undefined) updates.color = body.color;
+    if (body.isPinned !== undefined) updates.isPinned = body.isPinned;
+
+    await db.update(schema.folders).set(updates).where(eq(schema.folders.id, id));
+    return c.json({ success: true });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+app.delete('/api/folders/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const { db } = getDb(c.env);
+    await db.delete(schema.subjects).where(eq(schema.subjects.folderId, id));
+    await db.delete(schema.folders).where(eq(schema.folders.id, id));
+    return c.json({ success: true });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// Subjects endpoints (Turso DB)
 app.get('/api/subjects', async (c) => {
   try {
     const { db } = getDb(c.env);
@@ -95,6 +170,73 @@ app.get('/api/subjects', async (c) => {
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     return c.json({ data: [], error: msg });
+  }
+});
+
+app.post('/api/subjects', async (c) => {
+  try {
+    const body = await c.req.json<{ id?: string; semesterId?: string; folderId?: string; name: string; color?: string; userId?: string }>();
+    const folderId = body.folderId || body.semesterId;
+    if (!folderId || !body.name) return c.json({ error: 'Folder ID and Subject name are required' }, 400);
+    const { db } = getDb(c.env);
+
+    let userId = body.userId;
+    if (!userId) {
+      const existingFolder = await db.select({ userId: schema.folders.userId }).from(schema.folders).where(eq(schema.folders.id, folderId)).limit(1);
+      if (existingFolder.length > 0) {
+        userId = existingFolder[0].userId;
+      } else {
+        const existingUser = await db.select({ id: schema.user.id }).from(schema.user).limit(1);
+        userId = existingUser[0]?.id || 'user_default';
+      }
+    }
+
+    const newSubject = {
+      id: body.id || crypto.randomUUID(),
+      folderId: folderId,
+      userId: userId,
+      name: body.name.trim(),
+      color: body.color || 'teal',
+      isPinned: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    await db.insert(schema.subjects).values(newSubject);
+    return c.json({ data: newSubject }, 201);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+app.put('/api/subjects/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const body = await c.req.json<{ name?: string; color?: string; isPinned?: boolean }>();
+    const { db } = getDb(c.env);
+    const updates: Record<string, unknown> = { updatedAt: new Date() };
+    if (body.name) updates.name = body.name.trim();
+    if (body.color !== undefined) updates.color = body.color;
+    if (body.isPinned !== undefined) updates.isPinned = body.isPinned;
+
+    await db.update(schema.subjects).set(updates).where(eq(schema.subjects.id, id));
+    return c.json({ success: true });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+app.delete('/api/subjects/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const { db } = getDb(c.env);
+    await db.delete(schema.subjects).where(eq(schema.subjects.id, id));
+    return c.json({ success: true });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
   }
 });
 

@@ -24,6 +24,9 @@ interface AppState {
   authModalOpen: boolean;
   authMode: 'signin' | 'signup';
   currentUser: UserProfile | null;
+  tourModalOpen: boolean;
+  tourInitialStep: number;
+  tourInitialTab: 'walkthrough' | 'all-features';
 }
 
 // Initial state reading from localStorage if present
@@ -44,6 +47,9 @@ let state: AppState = {
   authModalOpen: false,
   authMode: 'signin',
   currentUser: getInitialUser(),
+  tourModalOpen: false,
+  tourInitialStep: 0,
+  tourInitialTab: 'walkthrough',
 };
 
 const listeners = new Set<() => void>();
@@ -110,6 +116,16 @@ export function closeAuthModal() {
   emit();
 }
 
+export function openTourModal(stepIndex: number = 0, tab: 'walkthrough' | 'all-features' = 'walkthrough') {
+  state = { ...state, tourModalOpen: true, tourInitialStep: stepIndex, tourInitialTab: tab };
+  emit();
+}
+
+export function closeTourModal() {
+  state = { ...state, tourModalOpen: false };
+  emit();
+}
+
 export function setCurrentUser(user: UserProfile | null) {
   state = { ...state, currentUser: user };
   if (user) {
@@ -127,6 +143,20 @@ export function setCurrentUser(user: UserProfile | null) {
 export function logoutUser() {
   setCurrentUser(null);
   state = { ...state, view: { kind: 'landing' } };
+  emit();
+}
+
+export async function clearAllData() {
+  await Promise.all([
+    db.semesters.clear(),
+    db.subjects.clear(),
+    db.materials.clear(),
+    db.deadlines.clear(),
+    db.messages.clear(),
+    db.conversations.clear(),
+    db.drafts.clear(),
+  ]);
+  state = { ...state, view: { kind: 'home' } };
   emit();
 }
 

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   GraduationCap,
   ChevronRight,
@@ -17,12 +18,22 @@ import {
   Sparkles,
   Home,
   Shield,
+  HelpCircle,
+  FolderTree,
 } from 'lucide-react';
 import { db, uid } from '@/db/database';
 import { useSemesters, useSubjects } from '@/hooks/useQueries';
-import { setView, toggleSidebar, useAppState, openAuthModal, logoutUser } from '@/store/appState';
+import { setView, toggleSidebar, useAppState, openAuthModal, logoutUser, openTourModal } from '@/store/appState';
 import { signOut } from '@/lib/authClient';
 import { COLOR_HEX } from '@/utils/colors';
+import {
+  syncCreateFolder,
+  syncUpdateFolder,
+  syncDeleteFolder,
+  syncCreateSubject,
+  syncUpdateSubject,
+  syncDeleteSubject,
+} from '@/lib/apiSync';
 import type { SubjectColor, Semester, Subject } from '@/types';
 
 export function Sidebar() {
@@ -32,9 +43,18 @@ export function Sidebar() {
   if (!sidebarOpen) return null;
 
   return (
-    <aside className="w-72 shrink-0 border-r border-paper-300 bg-paper-100 flex flex-col h-full animate-slide-in-left">
+    <aside className="w-72 shrink-0 border-r border-paper-300 bg-paper-100 flex flex-col h-full z-20">
       <SidebarHeader />
       <nav className="flex-1 overflow-y-auto scrollbar-thin px-3 py-3">
+        {semesters.length === 0 && (
+          <div className="p-3 mb-2 rounded-xl bg-white/70 border border-dashed border-paper-300 text-center">
+            <FolderTree className="w-6 h-6 text-accent-500 mx-auto mb-1.5 opacity-80" />
+            <p className="text-xs font-semibold text-ink-700">No Folders Yet</p>
+            <p className="text-[11px] text-ink-400 mt-0.5 leading-relaxed">
+              Create your first semester or rotation below.
+            </p>
+          </div>
+        )}
         {semesters.map((s) => (
           <SemesterFolder key={s.id} semester={s} />
         ))}
@@ -98,28 +118,25 @@ function SemesterFolder({ semester }: { semester: Semester }) {
           }`}
         >
           {expanded ? (
-            <ChevronDown className="w-3.5 h-3.5 text-ink-400 shrink-0 transition-transform" />
+            <ChevronDown className="w-3.5 h-3.5 text-ink-400 shrink-0" />
           ) : (
-            <ChevronRight className="w-3.5 h-3.5 text-ink-400 shrink-0 transition-transform" />
+            <ChevronRight className="w-3.5 h-3.5 text-ink-400 shrink-0" />
           )}
-          <span className="truncate flex-1 text-left">{semester.name}</span>
+          <BookOpen className="w-3.5 h-3.5 text-ink-400 shrink-0" />
+          <span className="truncate text-left flex-1">{semester.name}</span>
           {semester.pinned && (
             <Pin className="w-3 h-3 text-accent-500 shrink-0 fill-accent-500" />
-          )}
-          {subjects.length > 0 && (
-            <span className="text-[10px] font-semibold text-ink-300 bg-paper-200 px-1.5 py-0.5 rounded-md shrink-0">
-              {subjects.length}
-            </span>
           )}
         </button>
         <div className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity z-40">
           <SemesterMenu semester={semester} />
         </div>
       </div>
+
       {expanded && (
-        <div className="ml-3 pl-3 border-l border-paper-300 mt-1 space-y-0.5">
-          {subjects.map((subject) => (
-            <SubjectLink key={subject.id} subject={subject} />
+        <div className="ml-3 pl-2.5 border-l border-paper-300/80 mt-0.5 space-y-0.5">
+          {subjects.map((sub) => (
+            <SubjectLink key={sub.id} subject={sub} />
           ))}
           <AddSubjectButton semesterId={semester.id} />
         </div>
@@ -149,12 +166,15 @@ function SemesterMenu({ semester }: { semester: Semester }) {
 
   async function togglePin() {
     await db.semesters.update(semester.id, { pinned: !semester.pinned });
+    syncUpdateFolder(semester.id, { isPinned: !semester.pinned });
     setOpen(false);
   }
 
   async function rename() {
     if (!name.trim()) return;
-    await db.semesters.update(semester.id, { name: name.trim().toUpperCase() });
+    const cleanName = name.trim().toUpperCase();
+    await db.semesters.update(semester.id, { name: cleanName });
+    syncUpdateFolder(semester.id, { name: cleanName });
     setRenaming(false);
     setOpen(false);
   }
@@ -165,14 +185,12 @@ function SemesterMenu({ semester }: { semester: Semester }) {
       .where('semesterId')
       .equals(semester.id)
       .primaryKeys();
-    const materialsCount = await db.materials
-      .where('subjectId')
-      .anyOf(subjectIds)
-      .count();
-    const messagesCount = await db.messages
-      .where('subjectId')
-      .anyOf(subjectIds)
-      .count();
+    const materialsCount = subjectIds.length > 0
+      ? await db.materials.where('subjectId').anyOf(subjectIds).count()
+      : 0;
+    const messagesCount = subjectIds.length > 0
+      ? await db.messages.where('subjectId').anyOf(subjectIds).count()
+      : 0;
     const deadlinesCount = await db.deadlines
       .where('folderId')
       .equals(semester.id)
@@ -182,26 +200,25 @@ function SemesterMenu({ semester }: { semester: Semester }) {
   }
 
   async function confirmDelete() {
-    const subjectIds = await db.subjects
-      .where('semesterId')
-      .equals(semester.id)
-      .primaryKeys();
-    await db.materials
-      .where('subjectId')
-      .anyOf(subjectIds)
-      .delete();
-    await db.messages
-      .where('subjectId')
-      .anyOf(subjectIds)
-      .delete();
-    await db.subjects.bulkDelete(subjectIds);
-    await db.deadlines
-      .where('folderId')
-      .equals(semester.id)
-      .delete();
-    await db.semesters.delete(semester.id);
-    setShowDeleteModal(false);
-    setView({ kind: 'home' });
+    try {
+      const subjectIds = await db.subjects
+        .where('semesterId')
+        .equals(semester.id)
+        .primaryKeys();
+      if (subjectIds.length > 0) {
+        await db.materials.where('subjectId').anyOf(subjectIds).delete();
+        await db.messages.where('subjectId').anyOf(subjectIds).delete();
+        await db.subjects.bulkDelete(subjectIds);
+      }
+      await db.deadlines.where('folderId').equals(semester.id).delete();
+      await db.semesters.delete(semester.id);
+      syncDeleteFolder(semester.id);
+    } catch (err) {
+      console.error('Error deleting semester:', err);
+    } finally {
+      setShowDeleteModal(false);
+      setView({ kind: 'home' });
+    }
   }
 
   if (renaming) {
@@ -285,9 +302,9 @@ function SemesterMenu({ semester }: { semester: Semester }) {
         )}
       </div>
 
-      {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-800/40 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl border border-paper-300 shadow-lifted max-w-md w-full p-6 animate-scale-in">
+      {showDeleteModal && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-ink-950/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl border border-paper-300 shadow-lifted max-w-md w-full p-6 animate-scale-in">
             <h3 className="font-serif text-lg font-bold text-ink-800 mb-2">
               Delete Semester "{semester.name}"?
             </h3>
@@ -298,12 +315,14 @@ function SemesterMenu({ semester }: { semester: Semester }) {
             </p>
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
+                type="button"
                 onClick={() => setShowDeleteModal(false)}
                 className="px-4 py-2 text-sm font-medium text-ink-600 hover:bg-paper-200 rounded-xl transition-colors"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={confirmDelete}
                 className="px-4 py-2 text-sm font-medium text-white bg-crimson-500 hover:bg-crimson-600 rounded-xl shadow-soft transition-colors"
               >
@@ -311,7 +330,8 @@ function SemesterMenu({ semester }: { semester: Semester }) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
@@ -369,12 +389,15 @@ function SubjectMenu({ subject }: { subject: Subject }) {
 
   async function togglePin() {
     await db.subjects.update(subject.id, { pinned: !subject.pinned });
+    syncUpdateSubject(subject.id, { isPinned: !subject.pinned });
     setOpen(false);
   }
 
   async function rename() {
     if (!name.trim()) return;
-    await db.subjects.update(subject.id, { name: name.trim() });
+    const cleanName = name.trim();
+    await db.subjects.update(subject.id, { name: cleanName });
+    syncUpdateSubject(subject.id, { name: cleanName });
     setRenaming(false);
     setOpen(false);
   }
@@ -389,12 +412,18 @@ function SubjectMenu({ subject }: { subject: Subject }) {
   }
 
   async function confirmDelete() {
-    await db.materials.where('subjectId').equals(subject.id).delete();
-    await db.messages.where('subjectId').equals(subject.id).delete();
-    await db.deadlines.where('subjectId').equals(subject.id).delete();
-    await db.subjects.delete(subject.id);
-    setShowDeleteModal(false);
-    setView({ kind: 'semester', semesterId: subject.semesterId });
+    try {
+      await db.materials.where('subjectId').equals(subject.id).delete();
+      await db.messages.where('subjectId').equals(subject.id).delete();
+      await db.deadlines.where('subjectId').equals(subject.id).delete();
+      await db.subjects.delete(subject.id);
+      syncDeleteSubject(subject.id);
+    } catch (err) {
+      console.error('Error deleting subject:', err);
+    } finally {
+      setShowDeleteModal(false);
+      setView({ kind: 'semester', semesterId: subject.semesterId });
+    }
   }
 
   if (renaming) {
@@ -478,9 +507,9 @@ function SubjectMenu({ subject }: { subject: Subject }) {
         )}
       </div>
 
-      {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-800/40 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl border border-paper-300 shadow-lifted max-w-md w-full p-6 animate-scale-in">
+      {showDeleteModal && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-ink-950/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl border border-paper-300 shadow-lifted max-w-md w-full p-6 animate-scale-in">
             <h3 className="font-serif text-lg font-bold text-ink-800 mb-2">
               Delete Subject "{subject.name}"?
             </h3>
@@ -491,12 +520,14 @@ function SubjectMenu({ subject }: { subject: Subject }) {
             </p>
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
+                type="button"
                 onClick={() => setShowDeleteModal(false)}
                 className="px-4 py-2 text-sm font-medium text-ink-600 hover:bg-paper-200 rounded-xl transition-colors"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={confirmDelete}
                 className="px-4 py-2 text-sm font-medium text-white bg-crimson-500 hover:bg-crimson-600 rounded-xl shadow-soft transition-colors"
               >
@@ -504,7 +535,8 @@ function SubjectMenu({ subject }: { subject: Subject }) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
@@ -521,13 +553,16 @@ function AddSubjectButton({ semesterId }: { semesterId: string }) {
 
   async function save() {
     if (!name.trim()) return;
+    const cleanName = name.trim();
+    const id = uid();
     await db.subjects.add({
-      id: uid(),
+      id,
       semesterId,
-      name: name.trim(),
+      name: cleanName,
       color: nextColor,
       createdAt: Date.now(),
     });
+    syncCreateSubject({ id, folderId: semesterId, name: cleanName, color: nextColor });
     setName('');
     setAdding(false);
   }
@@ -568,11 +603,14 @@ function AddSemesterButton() {
 
   async function save() {
     if (!name.trim()) return;
+    const cleanName = name.trim().toUpperCase();
+    const id = uid();
     await db.semesters.add({
-      id: uid(),
-      name: name.trim().toUpperCase(),
+      id,
+      name: cleanName,
       createdAt: Date.now(),
     });
+    syncCreateFolder({ id, name: cleanName });
     setName('');
     setAdding(false);
   }
@@ -633,7 +671,21 @@ function SidebarFooter() {
   }
 
   return (
-    <div className="p-3 border-t border-paper-300 bg-paper-100/80 space-y-2">
+    <div className="p-3 border-t border-paper-300 bg-paper-100/80 space-y-1.5">
+      {/* Interactive Tour & Feature Guide Button */}
+      <button
+        onClick={() => openTourModal(0, 'walkthrough')}
+        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold text-accent-800 bg-accent-50/80 hover:bg-accent-100/90 border border-accent-200/80 transition-all shadow-xs"
+      >
+        <div className="flex items-center gap-2">
+          <HelpCircle className="w-3.5 h-3.5 text-accent-600" />
+          <span>Guide & Tour</span>
+        </div>
+        <span className="text-[10px] font-mono px-1.5 py-0.2 bg-accent-200/60 rounded text-accent-800 font-bold">
+          Manual
+        </span>
+      </button>
+
       {/* Return to Landing Page Button */}
       <button
         onClick={() => setView({ kind: 'landing' })}

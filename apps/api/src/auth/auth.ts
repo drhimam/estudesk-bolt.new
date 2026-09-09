@@ -2,7 +2,7 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import * as schema from '../db/schema';
 
-export function initBetterAuth(db: unknown, secret: string) {
+export function initBetterAuth(db: unknown, secret: string, baseURL?: string) {
   return betterAuth({
     database: drizzleAdapter(db as Parameters<typeof drizzleAdapter>[0], {
       provider: 'sqlite',
@@ -14,6 +14,14 @@ export function initBetterAuth(db: unknown, secret: string) {
       },
     }),
     secret: secret,
+    baseURL: baseURL || 'https://estudesk-api.rifa-numis.workers.dev',
+    trustedOrigins: [
+      'https://estudesk-bolt-new.pages.dev',
+      'https://estudesk.pages.dev',
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'http://localhost:4173',
+    ],
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,

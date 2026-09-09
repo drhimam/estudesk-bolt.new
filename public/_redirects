@@ -1,1 +1,4 @@
-/*    /index.html   200
+/api/*  https://estudesk-api.rifa-numis.workers.dev/api/:splat  200
+/health https://estudesk-api.rifa-numis.workers.dev/health 200
+/ready  https://estudesk-api.rifa-numis.workers.dev/ready 200
+/*      /index.html                                            200

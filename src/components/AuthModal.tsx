@@ -15,7 +15,7 @@ import {
   Loader2,
   Zap,
 } from 'lucide-react';
-import { useAppState, closeAuthModal, setCurrentUser, setView } from '@/store/appState';
+import { useAppState, closeAuthModal, setCurrentUser, setView, clearAllData } from '@/store/appState';
 import { signIn, signUp } from '@/lib/authClient';
 
 export function AuthModal() {
@@ -57,7 +57,6 @@ export function AuthModal() {
         });
 
         if (res.error) {
-          // If server error, show message or fallback
           setError(res.error.message || 'Failed to create account. Please try again.');
           setLoading(false);
           return;
@@ -70,12 +69,16 @@ export function AuthModal() {
           tier: 'Scholar',
         };
 
+        // Clear local mock/demo data so the new user gets an empty dashboard
+        await clearAllData();
+
         setCurrentUser({
           id: user.id,
           name: user.name || name.trim(),
           email: user.email || email.trim(),
           tier: 'Scholar',
         });
+
         setSuccess('Account created successfully! Welcome to eStudesk.');
       } else {
         const res = await signIn.email({
@@ -102,6 +105,7 @@ export function AuthModal() {
           email: user.email || email.trim(),
           tier: 'Scholar',
         });
+
         setSuccess('Welcome back!');
       }
 
@@ -109,20 +113,9 @@ export function AuthModal() {
         closeAuthModal();
         setView({ kind: 'home' });
       }, 500);
-    } catch {
-      // Fallback local auth if backend worker isn't running
-      const fallbackUser = {
-        id: 'user_local_' + Math.random().toString(36).substring(2, 9),
-        name: tab === 'signup' && name ? name.trim() : email.split('@')[0] || 'Scholar',
-        email: email.trim(),
-        tier: 'Scholar',
-      };
-      setCurrentUser(fallbackUser);
-      setSuccess(`Signed in as ${fallbackUser.name}!`);
-      setTimeout(() => {
-        closeAuthModal();
-        setView({ kind: 'home' });
-      }, 600);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Authentication service error';
+      setError(msg);
     } finally {
       setLoading(false);
     }

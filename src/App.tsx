@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Menu, GraduationCap, PanelLeftOpen, Sparkles, PanelRightClose, Search } from 'lucide-react';
-import { seedData, setSidebarOpen, toggleAIPanel, useAppState } from '@/store/appState';
+import { Menu, GraduationCap, PanelLeftOpen, Sparkles, PanelRightClose, Search, HelpCircle } from 'lucide-react';
+import { setSidebarOpen, toggleAIPanel, useAppState, openTourModal, closeTourModal } from '@/store/appState';
 import { useSemesters, useSubjects } from '@/hooks/useQueries';
 import { Sidebar } from '@/components/Sidebar';
 import { HomeView } from '@/components/HomeView';
@@ -10,9 +10,10 @@ import { AskAIPanel } from '@/components/AskAIPanel';
 import { GlobalSearch } from '@/components/GlobalSearch';
 import { LandingPage } from '@/components/LandingPage';
 import { AuthModal } from '@/components/AuthModal';
+import { DashboardTourModal } from '@/components/DashboardTourModal';
 
 function App() {
-  const { view, sidebarOpen, aiPanelOpen, aiPanelFullscreen } = useAppState();
+  const { view, sidebarOpen, aiPanelOpen, aiPanelFullscreen, tourModalOpen, tourInitialStep, tourInitialTab } = useAppState();
   const [ready, setReady] = useState(false);
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   const [aiPanelWidth, setAiPanelWidth] = useState<number>(() => {
@@ -29,7 +30,7 @@ function App() {
   const subjects = useSubjects();
 
   useEffect(() => {
-    seedData().then(() => setReady(true));
+    setReady(true);
   }, []);
 
   useEffect(() => {
@@ -107,6 +108,12 @@ function App() {
     <div className="h-screen flex bg-paper-100 overflow-hidden">
       <Sidebar />
       <AuthModal />
+      <DashboardTourModal
+        isOpen={tourModalOpen}
+        onClose={closeTourModal}
+        initialStepIndex={tourInitialStep}
+        initialTab={tourInitialTab}
+      />
       <div className="flex-1 min-h-0 flex flex-col min-w-0 relative">
         {/* Mobile top bar */}
         {!sidebarOpen && (
@@ -138,8 +145,17 @@ function App() {
           </button>
         )}
 
-        {/* Global search + Ask AI buttons - top right corner */}
+        {/* Top utility buttons: Feature Guide, Search, Ask AI */}
         <div className="absolute top-4 right-4 z-30 flex items-center gap-2">
+          <button
+            onClick={() => openTourModal(0, 'walkthrough')}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-soft bg-accent-50 text-accent-800 border border-accent-200 hover:bg-accent-100 hover:border-accent-300 hover:shadow-card"
+            title="Interactive Feature Guide & Tour"
+          >
+            <HelpCircle className="w-4 h-4 text-accent-600" />
+            <span className="hidden sm:inline">Guide & Tour</span>
+          </button>
+
           <button
             onClick={() => setShowGlobalSearch(true)}
             className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all shadow-soft bg-white text-ink-600 border border-paper-300 hover:border-accent-300 hover:text-accent-600 hover:shadow-card"
@@ -147,6 +163,7 @@ function App() {
             <Search className="w-4 h-4" />
             <span className="hidden sm:inline">Search</span>
           </button>
+
           <button
             onClick={toggleAIPanel}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all shadow-soft ${
