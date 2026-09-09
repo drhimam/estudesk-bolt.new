@@ -218,13 +218,54 @@ R2_BUCKET=estudesk-sources
 
 - **Files Created / Modified**:
   - [`src/components/LandingPage.tsx`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/components/LandingPage.tsx) — Rich hero, live interactive 3D flashcard demo, interactive quiz preview, feature matrix, audio synthesizer preview, testimonials, and academic footer.
-  - [`src/components/AuthModal.tsx`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/components/AuthModal.tsx) — Polished modal with Sign In / Create Account tabs, show/hide password, and 1-click demo bypass.
+  - [`src/components/AuthModal.tsx`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/components/AuthModal.tsx) — Polished modal with Sign In / Create Account tabs, show/hide password, and Better Auth API integration.
   - [`src/lib/authClient.ts`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/lib/authClient.ts) — Better Auth React client instance.
   - [`src/store/appState.ts`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/store/appState.ts) — Auth state management, user profiles, and session persistence.
-  - [`src/components/Sidebar.tsx`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/components/Sidebar.tsx) — User avatar card, tier badge, sign-out menu, and landing page navigation.
+  - [`src/components/Sidebar.tsx`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/components/Sidebar.tsx) — User avatar card, tier badge, and sign-out menu.
   - [`src/App.tsx`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/src/App.tsx) — Root routing between Landing Page and Workspace with global AuthModal.
   - [`public/_redirects`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/public/_redirects) — Cloudflare Pages SPA client-side routing.
   - [`package.json`](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/package.json) — Added `deploy`, `deploy:pages`, and `deploy:api` scripts.
+
+### 13. 3 Distinct, Eye-Soothing Panel Color Architecture
+- **What was done**: Replaced flat monochromatic gray backgrounds with three tailored, eye-soothing pastel themes across the three primary application panels (Sidebar, Main Desk, and Ask AI).
+- **How it was done**:
+  - **Left Sidebar** (`Sidebar.tsx`): Pale Mint-Sage Green theme (`bg-[#e6f0ea]`, header/footer `bg-[#d6e7dc]`, dividers `border-[#bed6c7]`, active subject `bg-white text-ink-900 font-semibold shadow-soft`).
+  - **Center Main Desk Canvas** (`App.tsx`, `HomeView.tsx`, `SemesterDashboard.tsx`, `SubjectView.tsx`): Warm Academic Linen / Parchment theme (`bg-[#fbf5eb]`, top bar `bg-[#f3ead8] border-[#dfd2be]`, note cards `bg-white border-[#dfd2be]`).
+  - **Right Ask AI Panel** (`AskAIPanel.tsx`): Serene Soft Periwinkle / Lavender Ice theme (`bg-[#e8edf8]`, header & prompt bar `bg-[#d8e2f4] border-[#c2d2ee]`, context bar `bg-[#e0eaf7]`, crisp assistant bubbles `bg-white border-[#c2d2ee]`, indigo user bubbles `bg-gradient-to-r from-indigo-600 to-indigo-700`).
+- **Why it was done**: Provides instant visual orientation across the 3 core study areas while preventing eye fatigue during prolonged study sessions.
+
+### 14. Strict Authentication Gating & Guest Data Protection
+- **What was done**: Gated workspace access strictly behind authentication, preventing unauthenticated users from generating AI payloads on the API quota or populating ephemeral guest data in the production Turso database.
+- **How it was done**:
+  - In `App.tsx`, added a top-level route guard: `if (view.kind === 'landing' || !currentUser) return <LandingPage />`.
+  - Updated all Landing Page CTA buttons ("Launch App", "Explore Live Workspace", "Get Started") to trigger `openAuthModal('signup')` or `openAuthModal('signin')`.
+  - Removed unauthenticated background API sync triggers in `src/lib/apiSync.ts`.
+- **Why it was done**: Guarantees database hygiene, eliminates guest sync collisions, and protects AI API credits.
+
+### 15. Purged Hardcoded Demo Accounts ("Alex Vance") & Bypasses
+- **What was done**: Removed all 1-click demo login buttons and hardcoded mock profiles (`Alex Vance` / `demo_scholar_01`).
+- **How it was done**:
+  - Removed demo login handlers from `src/components/AuthModal.tsx`.
+  - Added proactive session cleansing in `getInitialUser()` (`src/store/appState.ts`) to immediately purge legacy demo keys from `localStorage`.
+- **Why it was done**: Ensures only real accounts registered in Better Auth & Turso interact with the system.
+
+### 16. Edge Database Synchronization & Accessible Delete Portals
+- **What was done**: Fixed semester/subject deletion so deletions in the UI immediately propagate to Turso, and resolved clipped/blank delete confirmation dialogs.
+- **How it was done**:
+  - Guarded Dexie `.where().anyOf([])` queries with array length checks to prevent query errors when deleting empty folders.
+  - Portaled confirmation dialogs to `document.body` via `createPortal(..., document.body)` with `z-[100]`, backdrop blur, and high-contrast confirm buttons.
+  - Implemented real-time deletion sync functions (`syncDeleteFolder`, `syncDeleteSubject`) communicating with the Cloudflare Worker API.
+- **Why it was done**: Ensures bidirectional data consistency between local IndexedDB and cloud Turso storage.
+
+### 17. Mobile View Optimization (Duplicate Hamburger Fix)
+- **What was done**: Removed the redundant local hamburger menu icon from `SubjectView.tsx` header.
+- **How it was done**: Deleted the duplicate `Menu` button in `src/components/SubjectView.tsx`, retaining only the global top navigation bar in `src/App.tsx`.
+- **Why it was done**: Cleaned up the mobile header layout so only a single, functional navigation hamburger is presented.
+
+### 18. CI/CD & Cloudflare Deployment Automation
+- **What was done**: Set up automated GitHub Actions workflow (`.github/workflows/deploy.yml`) and documented Cloudflare Direct Git Integration for zero-downtime automated deployments of both Worker API and Pages.
+- **How it was done**: Added build, typecheck, Worker API deploy (`wrangler deploy --config apps/api/wrangler.json`), and Pages asset deployment (`wrangler pages deploy dist`).
+- **Why it was done**: Enables seamless, automated deployments on every `git push`.
 
 ---
 
@@ -238,7 +279,7 @@ npm run build
 # 2. Deploy dist/ directory to Cloudflare Pages
 npm run deploy:pages
 # or via Wrangler CLI:
-# npx wrangler pages deploy dist --project-name=estudesk
+# npx wrangler pages deploy dist --project-name=estudesk-bolt-new
 ```
 
 ### B. Deploy Backend API to Cloudflare Workers
@@ -272,5 +313,6 @@ npm run typecheck
 # Verify Vite production asset bundling
 npm run build
 ```
-- **Build Status**: Exit Code 0 (0 errors, built in ~10s).
-- **Runtime Testing**: Tested Landing Page navigation, interactive flashcard & quiz widgets, Sign In / Sign Up modal, instant scholar demo bypass, user profile menu in sidebar, and live Turso edge database schema.
+- **Build Status**: Exit Code 0 (0 errors).
+- **Live Production URL**: [https://estudesk-bolt-new.pages.dev](https://estudesk-bolt-new.pages.dev)
+- **Runtime Testing**: Tested auth gating, 3-panel color scheme, deletion sync with Turso, mobile view responsiveness, and Cloudflare edge deployments.
