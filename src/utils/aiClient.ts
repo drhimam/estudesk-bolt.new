@@ -59,6 +59,11 @@ export async function chatCompletion(
     responseFormat?: 'json' | 'text';
   },
 ): Promise<string> {
+  const user = typeof window !== 'undefined' ? localStorage.getItem('estudesk_user') : null;
+  if (!user) {
+    throw new Error('Please sign in or create an account to access AI study generation.');
+  }
+
   if (!AI_API_KEY) {
     throw new Error('AI_API_KEY is not configured. Add VITE_AI_API_KEY to your .env file.');
   }

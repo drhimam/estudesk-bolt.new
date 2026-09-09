@@ -14,7 +14,7 @@ import { DashboardTourModal } from '@/components/DashboardTourModal';
 import { syncFromTursoToLocal } from '@/lib/apiSync';
 
 function App() {
-  const { view, sidebarOpen, aiPanelOpen, aiPanelFullscreen, tourModalOpen, tourInitialStep, tourInitialTab } = useAppState();
+  const { view, sidebarOpen, aiPanelOpen, aiPanelFullscreen, tourModalOpen, tourInitialStep, tourInitialTab, currentUser } = useAppState();
   const [ready, setReady] = useState(false);
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   const [aiPanelWidth, setAiPanelWidth] = useState<number>(() => {
@@ -32,8 +32,10 @@ function App() {
 
   useEffect(() => {
     setReady(true);
-    syncFromTursoToLocal();
-  }, []);
+    if (currentUser) {
+      syncFromTursoToLocal();
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -88,7 +90,8 @@ function App() {
     );
   }
 
-  if (view.kind === 'landing') {
+  // Strictly require authentication to enter the study desk
+  if (view.kind === 'landing' || !currentUser) {
     return (
       <>
         <LandingPage />

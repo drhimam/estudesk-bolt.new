@@ -8,11 +8,26 @@ const API_BASE_URL =
     ? 'https://estudesk-api.rifa-numis.workers.dev'
     : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'));
 
+function getAuthenticatedUser(): { id: string; email: string } | null {
+  try {
+    const saved = localStorage.getItem('estudesk_user');
+    if (!saved) return null;
+    const parsed = JSON.parse(saved);
+    if (parsed && parsed.id) return parsed;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function syncFromTursoToLocal() {
+  const user = getAuthenticatedUser();
+  if (!user) return;
+
   try {
     const [foldersRes, subjectsRes] = await Promise.all([
-      fetch(`${API_BASE_URL}/api/folders`),
-      fetch(`${API_BASE_URL}/api/subjects`),
+      fetch(`${API_BASE_URL}/api/folders?userId=${encodeURIComponent(user.id)}`),
+      fetch(`${API_BASE_URL}/api/subjects?userId=${encodeURIComponent(user.id)}`),
     ]);
 
     if (foldersRes.ok && subjectsRes.ok) {
@@ -62,11 +77,14 @@ export async function syncFromTursoToLocal() {
 }
 
 export async function syncCreateFolder(folder: { id: string; name: string; color?: string; userId?: string }) {
+  const user = getAuthenticatedUser();
+  if (!user) return; // Do not write to Turso if not logged in
+
   try {
     const res = await fetch(`${API_BASE_URL}/api/folders`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(folder),
+      body: JSON.stringify({ ...folder, userId: user.id }),
     });
     if (!res.ok) {
       console.warn('[Sync] Failed to sync folder creation:', await res.text());
@@ -77,6 +95,9 @@ export async function syncCreateFolder(folder: { id: string; name: string; color
 }
 
 export async function syncUpdateFolder(id: string, updates: { name?: string; color?: string; isPinned?: boolean }) {
+  const user = getAuthenticatedUser();
+  if (!user) return;
+
   try {
     const res = await fetch(`${API_BASE_URL}/api/folders/${id}`, {
       method: 'PUT',
@@ -92,6 +113,9 @@ export async function syncUpdateFolder(id: string, updates: { name?: string; col
 }
 
 export async function syncDeleteFolder(id: string) {
+  const user = getAuthenticatedUser();
+  if (!user) return;
+
   try {
     const res = await fetch(`${API_BASE_URL}/api/folders/${id}`, {
       method: 'DELETE',
@@ -105,11 +129,14 @@ export async function syncDeleteFolder(id: string) {
 }
 
 export async function syncCreateSubject(subject: { id: string; folderId: string; name: string; color?: string; userId?: string }) {
+  const user = getAuthenticatedUser();
+  if (!user) return; // Do not write to Turso if not logged in
+
   try {
     const res = await fetch(`${API_BASE_URL}/api/subjects`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(subject),
+      body: JSON.stringify({ ...subject, userId: user.id }),
     });
     if (!res.ok) {
       console.warn('[Sync] Failed to sync subject creation:', await res.text());
@@ -120,6 +147,9 @@ export async function syncCreateSubject(subject: { id: string; folderId: string;
 }
 
 export async function syncUpdateSubject(id: string, updates: { name?: string; color?: string; isPinned?: boolean }) {
+  const user = getAuthenticatedUser();
+  if (!user) return;
+
   try {
     const res = await fetch(`${API_BASE_URL}/api/subjects/${id}`, {
       method: 'PUT',
@@ -135,6 +165,9 @@ export async function syncUpdateSubject(id: string, updates: { name?: string; co
 }
 
 export async function syncDeleteSubject(id: string) {
+  const user = getAuthenticatedUser();
+  if (!user) return;
+
   try {
     const res = await fetch(`${API_BASE_URL}/api/subjects/${id}`, {
       method: 'DELETE',

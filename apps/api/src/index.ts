@@ -81,8 +81,11 @@ app.on(['POST', 'GET'], '/api/auth/*', (c) => {
 // Folders / Semesters endpoints (Turso DB)
 app.get('/api/folders', async (c) => {
   try {
+    const userId = c.req.query('userId');
     const { db } = getDb(c.env);
-    const result = await db.select().from(schema.folders);
+    const result = userId
+      ? await db.select().from(schema.folders).where(eq(schema.folders.userId, userId))
+      : await db.select().from(schema.folders);
     return c.json({ data: result });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -94,27 +97,14 @@ app.post('/api/folders', async (c) => {
   try {
     const body = await c.req.json<{ id?: string; name: string; color?: string; userId?: string; isPinned?: boolean }>();
     if (!body.name) return c.json({ error: 'Folder name is required' }, 400);
-    const { db } = getDb(c.env);
-
-    let userId = body.userId;
-    if (!userId) {
-      const existingUser = await db.select({ id: schema.user.id }).from(schema.user).limit(1);
-      if (existingUser.length > 0) {
-        userId = existingUser[0].id;
-      } else {
-        const defaultUser = {
-          id: 'user_default',
-          name: 'Scholar',
-          email: 'scholar@estudesk.app',
-        };
-        await db.insert(schema.user).values(defaultUser).onConflictDoNothing();
-        userId = defaultUser.id;
-      }
+    if (!body.userId) {
+      return c.json({ error: 'Unauthorized: You must be signed in to sync folders' }, 401);
     }
+    const { db } = getDb(c.env);
 
     const newFolder = {
       id: body.id || crypto.randomUUID(),
-      userId: userId,
+      userId: body.userId,
       name: body.name.trim().toUpperCase(),
       color: body.color || '#4F46E5',
       isPinned: body.isPinned || false,
@@ -164,8 +154,11 @@ app.delete('/api/folders/:id', async (c) => {
 // Subjects endpoints (Turso DB)
 app.get('/api/subjects', async (c) => {
   try {
+    const userId = c.req.query('userId');
     const { db } = getDb(c.env);
-    const result = await db.select().from(schema.subjects);
+    const result = userId
+      ? await db.select().from(schema.subjects).where(eq(schema.subjects.userId, userId))
+      : await db.select().from(schema.subjects);
     return c.json({ data: result });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -178,23 +171,15 @@ app.post('/api/subjects', async (c) => {
     const body = await c.req.json<{ id?: string; semesterId?: string; folderId?: string; name: string; color?: string; userId?: string }>();
     const folderId = body.folderId || body.semesterId;
     if (!folderId || !body.name) return c.json({ error: 'Folder ID and Subject name are required' }, 400);
-    const { db } = getDb(c.env);
-
-    let userId = body.userId;
-    if (!userId) {
-      const existingFolder = await db.select({ userId: schema.folders.userId }).from(schema.folders).where(eq(schema.folders.id, folderId)).limit(1);
-      if (existingFolder.length > 0) {
-        userId = existingFolder[0].userId;
-      } else {
-        const existingUser = await db.select({ id: schema.user.id }).from(schema.user).limit(1);
-        userId = existingUser[0]?.id || 'user_default';
-      }
+    if (!body.userId) {
+      return c.json({ error: 'Unauthorized: You must be signed in to sync subjects' }, 401);
     }
+    const { db } = getDb(c.env);
 
     const newSubject = {
       id: body.id || crypto.randomUUID(),
       folderId: folderId,
-      userId: userId,
+      userId: body.userId,
       name: body.name.trim(),
       color: body.color || 'teal',
       isPinned: false,

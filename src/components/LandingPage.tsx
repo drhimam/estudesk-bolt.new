@@ -21,10 +21,14 @@ import {
   Star,
   Users,
   Award,
+  LogIn,
+  UserPlus,
 } from 'lucide-react';
-import { openAuthModal, setView, setCurrentUser } from '@/store/appState';
+import { openAuthModal, setView, useAppState } from '@/store/appState';
 
 export function LandingPage() {
+  const { currentUser } = useAppState();
+
   // Interactive mini-demo state on the landing page
   const [activeTab, setActiveTab] = useState<'flashcard' | 'quiz' | 'ai' | 'audio'>('flashcard');
   const [flipped, setFlipped] = useState(false);
@@ -32,13 +36,12 @@ export function LandingPage() {
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
-  function launchAppDirectly() {
-    // If not signed in, sign in with demo or go directly to app
-    setView({ kind: 'home' });
-  }
-
-  function handleAuth(mode: 'signin' | 'signup') {
-    openAuthModal(mode);
+  function handleProtectedAction(preferredMode: 'signin' | 'signup' = 'signin') {
+    if (currentUser) {
+      setView({ kind: 'home' });
+    } else {
+      openAuthModal(preferredMode);
+    }
   }
 
   return (
@@ -70,19 +73,32 @@ export function LandingPage() {
           </nav>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => handleAuth('signin')}
-              className="px-4 py-2 text-sm font-medium text-ink-700 hover:text-accent-600 hover:bg-paper-200/60 rounded-xl transition-colors"
-            >
-              Sign In
-            </button>
-            <button
-              onClick={launchAppDirectly}
-              className="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-accent-600 to-accent-700 hover:from-accent-700 hover:to-accent-800 rounded-xl shadow-soft hover:shadow-card transition-all flex items-center gap-1.5"
-            >
-              <span>Launch App</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            {currentUser ? (
+              <button
+                onClick={() => setView({ kind: 'home' })}
+                className="px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-accent-600 to-accent-700 hover:from-accent-700 hover:to-accent-800 rounded-xl shadow-soft hover:shadow-card transition-all flex items-center gap-1.5"
+              >
+                <span>Go to Dashboard</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => openAuthModal('signin')}
+                  className="px-4 py-2 text-sm font-medium text-ink-700 hover:text-accent-600 hover:bg-paper-200/60 rounded-xl transition-colors flex items-center gap-1.5"
+                >
+                  <LogIn className="w-4 h-4 text-accent-600" />
+                  <span>Sign In</span>
+                </button>
+                <button
+                  onClick={() => openAuthModal('signup')}
+                  className="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-accent-600 to-accent-700 hover:from-accent-700 hover:to-accent-800 rounded-xl shadow-soft hover:shadow-card transition-all flex items-center gap-1.5"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>Sign Up</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -108,20 +124,33 @@ export function LandingPage() {
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button
-                onClick={() => handleAuth('signup')}
-                className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-accent-600 via-accent-700 to-indigo-700 text-white font-semibold text-base shadow-card hover:shadow-glow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-              >
-                <span>Get Started Free</span>
-                <ArrowRight className="w-5 h-5" />
-              </button>
-              <button
-                onClick={launchAppDirectly}
-                className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-white border border-paper-300 hover:border-accent-300 text-ink-800 font-semibold text-base shadow-soft hover:shadow-card hover:bg-paper-50 transition-all flex items-center justify-center gap-2"
-              >
-                <Zap className="w-4 h-4 text-amber-500" />
-                <span>Explore Live Workspace</span>
-              </button>
+              {currentUser ? (
+                <button
+                  onClick={() => setView({ kind: 'home' })}
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-accent-600 via-accent-700 to-indigo-700 text-white font-semibold text-base shadow-card hover:shadow-glow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>Go to Your Dashboard</span>
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => openAuthModal('signup')}
+                    className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-accent-600 via-accent-700 to-indigo-700 text-white font-semibold text-base shadow-card hover:shadow-glow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <UserPlus className="w-5 h-5" />
+                    <span>Get Started Free (Sign Up)</span>
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => openAuthModal('signin')}
+                    className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-white border border-paper-300 hover:border-accent-300 text-ink-800 font-semibold text-base shadow-soft hover:shadow-card hover:bg-paper-50 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <LogIn className="w-4 h-4 text-accent-600" />
+                    <span>Sign In to Account</span>
+                  </button>
+                </>
+              )}
             </div>
 
             <div className="mt-8 flex items-center justify-center gap-6 text-xs text-ink-400">
@@ -311,8 +340,8 @@ export function LandingPage() {
 
                     <div className="pt-2 flex items-center justify-end">
                       <button
-                        onClick={launchAppDirectly}
-                        className="text-xs font-semibold text-accent-600 hover:text-accent-700 flex items-center gap-1"
+                        onClick={() => handleProtectedAction('signup')}
+                        className="text-xs font-semibold text-accent-600 hover:text-accent-700 flex items-center gap-1 cursor-pointer"
                       >
                         <span>Open AI Generation Studio</span>
                         <ChevronRight className="w-3.5 h-3.5" />
@@ -558,18 +587,29 @@ export function LandingPage() {
             Join thousands of scholars using eStudesk for smart notes, AI-powered generation, and distraction-free mastery.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button
-              onClick={() => handleAuth('signup')}
-              className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-white text-accent-800 font-bold text-base shadow-lifted hover:bg-paper-100 hover:scale-[1.02] active:scale-[0.98] transition-all"
-            >
-              Create Free Account
-            </button>
-            <button
-              onClick={launchAppDirectly}
-              className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold text-base backdrop-blur-md transition-all"
-            >
-              Launch Demo Workspace
-            </button>
+            {currentUser ? (
+              <button
+                onClick={() => setView({ kind: 'home' })}
+                className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-white text-ink-900 font-bold text-base shadow-lifted hover:bg-paper-100 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+              >
+                Open Your Dashboard
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => openAuthModal('signup')}
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-white text-ink-900 font-bold text-base shadow-lifted hover:bg-paper-100 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                >
+                  Create Free Account
+                </button>
+                <button
+                  onClick={() => openAuthModal('signin')}
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold text-base backdrop-blur-md transition-all cursor-pointer"
+                >
+                  Sign In to Desk
+                </button>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -586,9 +626,14 @@ export function LandingPage() {
           </div>
 
           <div className="flex items-center gap-6">
-            <button onClick={launchAppDirectly} className="hover:text-accent-600 transition-colors">Launch Workspace</button>
-            <button onClick={() => handleAuth('signin')} className="hover:text-accent-600 transition-colors">Sign In</button>
-            <button onClick={() => handleAuth('signup')} className="hover:text-accent-600 transition-colors">Create Account</button>
+            {currentUser ? (
+              <button onClick={() => setView({ kind: 'home' })} className="hover:text-accent-600 transition-colors">Go to Dashboard</button>
+            ) : (
+              <>
+                <button onClick={() => openAuthModal('signin')} className="hover:text-accent-600 transition-colors">Sign In</button>
+                <button onClick={() => openAuthModal('signup')} className="hover:text-accent-600 transition-colors font-semibold text-accent-700">Create Account</button>
+              </>
+            )}
           </div>
         </div>
       </footer>
