@@ -417,7 +417,7 @@ export function AskAIPanel() {
   }
 
   return (
-    <div className="relative flex h-full bg-[#f3f5fb]">
+    <div className="relative flex h-full bg-[#e8edf8]">
       {/* Conversation history sidebar — overlays the panel instead of pushing it */}
       {showHistory && (
         <>
@@ -448,11 +448,11 @@ export function AskAIPanel() {
 
       <div className="flex flex-col flex-1 min-w-0">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3.5 border-b border-[#dbe2f0] bg-[#e9eef8]">
+        <div className="flex items-center justify-between px-4 py-3.5 border-b border-[#c2d2ee] bg-[#d8e2f4]">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowHistory(!showHistory)}
-              className="p-1.5 rounded-lg hover:bg-white/60 text-ink-500 hover:text-ink-700 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-white/60 text-ink-600 hover:text-ink-900 transition-colors"
               title="Chat history"
             >
               {showHistory ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}
@@ -464,7 +464,7 @@ export function AskAIPanel() {
               <h2 className="font-serif text-base font-semibold text-ink-800 leading-none">
                 Ask AI
               </h2>
-              <p className="text-[11px] text-ink-400 mt-1">
+              <p className="text-[11px] text-ink-500 mt-1">
                 {activeConversationId
                   ? conversations.find((c) => c.id === activeConversationId)?.title ?? 'Chat'
                   : 'New conversation'}
@@ -474,7 +474,7 @@ export function AskAIPanel() {
           <div className="flex items-center gap-1">
             <button
               onClick={toggleAIPanelFullscreen}
-              className="p-1.5 rounded-lg hover:bg-white/60 text-ink-400 hover:text-ink-600 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-white/60 text-ink-500 hover:text-ink-800 transition-colors"
               title={aiPanelFullscreen ? 'Exit full page view' : 'Full page view'}
             >
               {aiPanelFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -486,7 +486,7 @@ export function AskAIPanel() {
                 setAttachments([]);
                 setContextSubjectIds([]);
               }}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white hover:bg-white/80 text-ink-600 transition-colors border border-[#dbe2f0]"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white hover:bg-white/90 text-ink-700 transition-colors border border-[#c2d2ee] shadow-xs"
               title="New chat"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -503,11 +503,11 @@ export function AskAIPanel() {
         </div>
 
         {/* Context bar */}
-        <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[#dbe2f0] bg-[#eff3fa] flex-wrap">
+        <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[#c2d2ee] bg-[#e0eaf7] flex-wrap">
           <div className="relative">
             <button
               onClick={() => setShowContextPicker(!showContextPicker)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white hover:bg-white/80 text-ink-600 transition-colors border border-[#dbe2f0]"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white hover:bg-white/90 text-ink-700 transition-colors border border-[#c2d2ee]"
             >
               <BookOpen className="w-3.5 h-3.5 text-indigo-500" />
               <span>
@@ -533,7 +533,7 @@ export function AskAIPanel() {
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border ${
               webSearch
                 ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                : 'bg-white text-ink-500 border-[#dbe2f0] hover:bg-white/80'
+                : 'bg-white text-ink-600 border-[#c2d2ee] hover:bg-white/90'
             }`}
           >
             <Globe className="w-3.5 h-3.5" />
@@ -546,7 +546,7 @@ export function AskAIPanel() {
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border ${
               chatWithPage
                 ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                : 'bg-white text-ink-500 border-[#dbe2f0] hover:bg-white/80'
+                : 'bg-white text-ink-600 border-[#c2d2ee] hover:bg-white/90'
             }`}
           >
             <FileQuestion className="w-3.5 h-3.5" />
@@ -557,7 +557,7 @@ export function AskAIPanel() {
 
         {/* Active context chips */}
         {contextSubjects.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 px-4 py-2 bg-[#edf2fa] border-b border-[#dbe2f0]">
+          <div className="flex flex-wrap gap-1.5 px-4 py-2 bg-[#d8e2f4] border-b border-[#c2d2ee]">
             {contextSubjects.map((s) => (
               <span
                 key={s.id}
@@ -582,7 +582,7 @@ export function AskAIPanel() {
                   <Sparkles className="w-6 h-6" />
                 </div>
                 <p className="text-sm font-medium text-ink-700 mb-1">Ask me anything</p>
-                <p className="text-xs text-ink-400 max-w-xs mx-auto leading-relaxed">
+                <p className="text-xs text-ink-500 max-w-xs mx-auto leading-relaxed">
                   Attach a subject for context, toggle web search, or paste material.
                   I can help you study, summarize, and generate materials.
                 </p>
@@ -595,7 +595,7 @@ export function AskAIPanel() {
                     <button
                       key={s}
                       onClick={() => setInput(s)}
-                      className="w-full text-left text-xs text-ink-600 bg-white border border-[#dce4f2] rounded-xl px-3 py-2.5 hover:border-indigo-300 hover:text-indigo-600 transition-colors shadow-sm"
+                      className="w-full text-left text-xs text-ink-700 bg-white border border-[#c2d2ee] rounded-xl px-3 py-2.5 hover:border-indigo-400 hover:text-indigo-700 transition-colors shadow-xs"
                     >
                       {s}
                     </button>
@@ -619,7 +619,7 @@ export function AskAIPanel() {
         </div>
 
         {/* Input area */}
-        <div className="border-t border-[#dbe2f0] bg-[#e9eef8] px-4 py-3">
+        <div className="border-t border-[#c2d2ee] bg-[#d8e2f4] px-4 py-3">
           {attachments.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2.5">
               {attachments.map((a) => (
@@ -805,7 +805,7 @@ export function AskAIPanel() {
               }}
               placeholder="Ask anything about your studies..."
               rows={1}
-              className="flex-1 bg-white border border-[#cad5e6] rounded-2xl px-4 py-2.5 text-sm text-ink-700 placeholder:text-ink-300 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all resize-none max-h-32 shadow-sm"
+              className="flex-1 bg-white border border-[#b2c6e6] rounded-2xl px-4 py-2.5 text-sm text-ink-800 placeholder:text-ink-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all resize-none max-h-32 shadow-xs"
             />
             <button
               onClick={send}
@@ -902,25 +902,16 @@ function CameraModal({
     return () => stopStream();
   }, [stopStream]);
 
-  function capture() {
-    if (!videoRef.current || !canvasRef.current) return;
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    canvas.width = video.videoWidth || 1280;
-    canvas.height = video.videoHeight || 720;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL('image/png');
-    stopStream();
-    onCapture(dataUrl);
-  }
-
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-lifted p-4 max-w-lg w-full mx-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-serif text-base font-semibold text-ink-700">Take Photo</h3>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-ink-950/70 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white rounded-3xl border border-paper-300 shadow-lifted max-w-lg w-full overflow-hidden p-5 animate-scale-in">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-accent-100 flex items-center justify-center text-accent-700">
+              <Camera className="w-4 h-4" />
+            </div>
+            <h3 className="font-serif text-base font-semibold text-ink-800">Scan Lecture Material</h3>
+          </div>
           <button
             onClick={() => {
               stopStream();
@@ -931,33 +922,59 @@ function CameraModal({
             <X className="w-4 h-4" />
           </button>
         </div>
+
         {error ? (
-          <div className="text-center py-8">
-            <Camera className="w-8 h-8 text-ink-300 mx-auto mb-3" />
-            <p className="text-sm text-ink-500">{error}</p>
+          <div className="p-4 rounded-2xl bg-crimson-50 border border-crimson-200 text-crimson-700 text-xs mb-4">
+            {error}
           </div>
         ) : (
-          <>
-            <div className="relative rounded-xl overflow-hidden bg-black aspect-video">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                className="w-full h-full object-cover"
-              />
-              <canvas ref={canvasRef} className="hidden" />
-            </div>
-            <div className="flex justify-center mt-3">
-              <button
-                onClick={capture}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-accent-500 hover:bg-accent-600 transition-colors shadow-soft"
-              >
-                <Camera className="w-4 h-4" />
-                Capture & Extract Text
-              </button>
-            </div>
-          </>
+          <div className="relative rounded-2xl overflow-hidden bg-black aspect-[4/3] mb-4">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              className="w-full h-full object-cover"
+            />
+            <canvas ref={canvasRef} className="hidden" />
+          </div>
         )}
+
+        <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              stopStream();
+              onClose();
+            }}
+            className="px-4 py-2 text-xs font-semibold text-ink-600 hover:bg-paper-100 rounded-xl transition-colors"
+          >
+            Cancel
+          </button>
+          {!error && (
+            <button
+              type="button"
+              onClick={() => {
+                if (videoRef.current && canvasRef.current) {
+                  const video = videoRef.current;
+                  const canvas = canvasRef.current;
+                  canvas.width = video.videoWidth || 640;
+                  canvas.height = video.videoHeight || 480;
+                  const ctx = canvas.getContext('2d');
+                  if (ctx) {
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                    stopStream();
+                    onCapture(dataUrl);
+                  }
+                }
+              }}
+              className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-card transition-colors flex items-center gap-1.5"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>Capture & OCR</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1010,27 +1027,27 @@ function ConversationHistory({
   }
 
   return (
-    <div className="absolute top-0 left-0 bottom-0 w-56 z-40 border-r border-[#dbe2f0] bg-[#f8fafe] flex flex-col shadow-lifted animate-slide-in-left">
-      <div className="flex items-center justify-between px-3 py-3 border-b border-[#dbe2f0] bg-[#eef3fb]">
-        <span className="text-xs font-semibold text-ink-600 uppercase tracking-wide">Chats</span>
+    <div className="absolute top-0 left-0 bottom-0 w-56 z-40 border-r border-[#c2d2ee] bg-[#e8edf8] flex flex-col shadow-lifted animate-slide-in-left">
+      <div className="flex items-center justify-between px-3 py-3 border-b border-[#c2d2ee] bg-[#d8e2f4]">
+        <span className="text-xs font-semibold text-ink-700 uppercase tracking-wide">Chats</span>
         <div className="flex items-center gap-0.5">
           <button
             onClick={onExportAll}
-            className="p-1.5 rounded-lg hover:bg-white text-ink-400 hover:text-ink-600 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-white/60 text-ink-500 hover:text-ink-800 transition-colors"
             title="Export all chats"
           >
             <Download className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={handleImportClick}
-            className="p-1.5 rounded-lg hover:bg-white text-ink-400 hover:text-ink-600 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-white/60 text-ink-500 hover:text-ink-800 transition-colors"
             title="Import chats"
           >
             <Upload className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={onNew}
-            className="p-1.5 rounded-lg hover:bg-white text-ink-400 hover:text-indigo-600 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-white/60 text-ink-500 hover:text-indigo-600 transition-colors"
             title="New chat"
           >
             <Plus className="w-4 h-4" />
@@ -1423,7 +1440,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
           className={`inline-block rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed text-left ${
             isUser
               ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-tr-md shadow-sm'
-              : 'bg-white border border-[#dce4f2] text-ink-800 rounded-tl-md shadow-soft'
+              : 'bg-white border border-[#c2d2ee] text-ink-800 rounded-tl-md shadow-soft'
           }`}
         >
           {msg.attachments && msg.attachments.length > 0 && (

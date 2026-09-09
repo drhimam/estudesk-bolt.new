@@ -13,7 +13,6 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-  Zap,
 } from 'lucide-react';
 import { useAppState, closeAuthModal, setCurrentUser, setView, clearAllData } from '@/store/appState';
 import { signIn, signUp } from '@/lib/authClient';
@@ -119,18 +118,6 @@ export function AuthModal() {
     } finally {
       setLoading(false);
     }
-  }
-
-  function handleDemoLogin() {
-    const demoUser = {
-      id: 'demo_scholar_01',
-      name: 'Alex Vance',
-      email: 'alex.scholar@estudesk.app',
-      tier: 'Pro Scholar',
-    };
-    setCurrentUser(demoUser);
-    closeAuthModal();
-    setView({ kind: 'home' });
   }
 
   return (
@@ -312,25 +299,10 @@ export function AuthModal() {
             </button>
           </form>
 
-          {/* Quick Demo Bypass */}
-          <div className="mt-5 pt-5 border-t border-paper-200">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs text-ink-400">Want to test without credentials?</span>
-            </div>
-            <button
-              type="button"
-              onClick={handleDemoLogin}
-              className="w-full py-2 px-3 rounded-xl border border-paper-300 hover:border-amber-300 bg-amber-50/50 hover:bg-amber-50 text-amber-900 text-xs font-semibold flex items-center justify-center gap-2 transition-all group"
-            >
-              <Zap className="w-3.5 h-3.5 text-amber-600 group-hover:scale-110 transition-transform" />
-              <span>Instant Scholar Demo Access (1-Click)</span>
-            </button>
-          </div>
-
-          <div className="mt-4 text-center">
-            <div className="flex items-center justify-center gap-1 text-[11px] text-ink-400">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Powered by Better Auth & Edge Turso Database</span>
+          <div className="mt-5 pt-4 border-t border-paper-200 text-center">
+            <div className="flex items-center justify-center gap-1.5 text-xs text-ink-500 font-medium">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <span>Secured by Cloudflare & Turso Database</span>
             </div>
           </div>
         </div>

@@ -87,7 +87,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className="relative shrink-0 border-r border-[#d6e4dc] bg-[#eff5f1] flex flex-col h-full z-20 transition-all duration-75 select-none"
+      className="relative shrink-0 border-r border-[#bed6c7] bg-[#e6f0ea] flex flex-col h-full z-20 transition-all duration-75 select-none"
       style={{
         width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${sidebarWidth}px` : undefined,
       }}
@@ -113,7 +113,7 @@ export function Sidebar() {
       <SidebarHeader />
       <nav className="flex-1 overflow-y-auto scrollbar-thin px-3 py-3 select-text">
         {semesters.length === 0 && (
-          <div className="p-3 mb-2 rounded-xl bg-white/70 border border-dashed border-[#c8dcd0] text-center">
+          <div className="p-3 mb-2 rounded-xl bg-white/70 border border-dashed border-[#b4cec0] text-center">
             <FolderTree className="w-6 h-6 text-accent-600 mx-auto mb-1.5 opacity-80" />
             <p className="text-xs font-semibold text-ink-700">No Folders Yet</p>
             <p className="text-[11px] text-ink-400 mt-0.5 leading-relaxed">
@@ -133,7 +133,7 @@ export function Sidebar() {
 
 function SidebarHeader() {
   return (
-    <div className="flex items-center justify-between px-4 py-4 border-b border-[#d6e4dc] bg-[#e5efe8]">
+    <div className="flex items-center justify-between px-4 py-4 border-b border-[#bed6c7] bg-[#d6e7dc]">
       <button
         onClick={() => setView({ kind: 'home' })}
         className="flex items-center gap-2.5 group"
@@ -150,7 +150,7 @@ function SidebarHeader() {
       </button>
       <button
         onClick={toggleSidebar}
-        className="p-1.5 rounded-lg hover:bg-[#d8e7de] text-ink-400 hover:text-ink-700 transition-colors"
+        className="p-1.5 rounded-lg hover:bg-[#c8ded0] text-ink-500 hover:text-ink-800 transition-colors"
         aria-label="Collapse sidebar"
         title="Collapse sidebar"
       >
@@ -179,8 +179,8 @@ function SemesterFolder({ semester }: { semester: Semester }) {
           }}
           className={`w-full flex items-center gap-1.5 px-2.5 py-2 pr-8 rounded-lg text-sm font-bold uppercase tracking-wide transition-all ${
             isActive && view.kind === 'semester'
-              ? 'bg-white text-ink-800 shadow-soft'
-              : 'text-ink-700 hover:bg-[#e1ece4]'
+              ? 'bg-white text-ink-900 shadow-soft'
+              : 'text-ink-700 hover:bg-[#d6e7dc]'
           }`}
         >
           {expanded ? (
@@ -200,7 +200,7 @@ function SemesterFolder({ semester }: { semester: Semester }) {
       </div>
 
       {expanded && (
-        <div className="ml-3 pl-2.5 border-l border-[#c8dcd0] mt-0.5 space-y-0.5">
+        <div className="ml-3 pl-2.5 border-l border-[#b4cec0] mt-0.5 space-y-0.5">
           {subjects.map((sub) => (
             <SubjectLink key={sub.id} subject={sub} />
           ))}
@@ -415,8 +415,8 @@ function SubjectLink({ subject }: { subject: Subject }) {
         onClick={() => setView({ kind: 'subject', subjectId: subject.id })}
         className={`w-full flex items-center gap-2.5 px-2.5 py-2 pr-7 rounded-lg text-sm transition-all ${
           isActive
-            ? 'bg-white text-ink-800 font-medium shadow-soft'
-            : 'text-ink-600 hover:bg-[#e1ece4] hover:text-ink-900'
+            ? 'bg-white text-ink-900 font-semibold shadow-soft'
+            : 'text-ink-700 hover:bg-[#d6e7dc] hover:text-ink-900'
         }`}
       >
         <span
@@ -495,7 +495,7 @@ function SubjectMenu({ subject }: { subject: Subject }) {
 
   if (renaming) {
     return (
-      <div className="flex items-center gap-1 bg-white rounded-lg border border-paper-400 shadow-card px-1.5 py-1 z-20">
+      <div className="flex items-center gap-1 bg-white rounded-lg border border-[#bed6c7] shadow-card px-1.5 py-1 z-20">
         <input
           autoFocus
           value={name}
@@ -507,7 +507,7 @@ function SubjectMenu({ subject }: { subject: Subject }) {
               setName(subject.name);
             }
           }}
-          className="w-24 text-xs bg-paper-50 border border-paper-300 rounded px-1.5 py-1 text-ink-700 focus:outline-none focus:border-accent-400"
+          className="w-24 text-xs bg-white border border-[#bed6c7] rounded px-1.5 py-1 text-ink-700 focus:outline-none focus:border-accent-400"
         />
         <button onClick={rename} className="text-accent-500 hover:text-accent-600 p-0.5">
           <Pencil className="w-3 h-3" />
@@ -533,18 +533,18 @@ function SubjectMenu({ subject }: { subject: Subject }) {
             e.stopPropagation();
             setOpen(!open);
           }}
-          className="p-1 rounded-md hover:bg-paper-200 text-ink-400 hover:text-ink-600 transition-colors"
+          className="p-1 rounded-md hover:bg-[#c8ded0] text-ink-400 hover:text-ink-700 transition-colors"
         >
           <MoreVertical className="w-3.5 h-3.5" />
         </button>
         {open && (
-          <div className="absolute right-0 top-full bg-white rounded-xl border border-paper-300 shadow-lifted py-1 min-w-[150px] z-50 animate-scale-in">
+          <div className="absolute right-0 top-full bg-white rounded-xl border border-[#bed6c7] shadow-lifted py-1 min-w-[150px] z-50 animate-scale-in">
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 togglePin();
               }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-ink-600 hover:bg-paper-100 transition-colors text-left"
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-ink-600 hover:bg-[#e6f0ea] transition-colors text-left"
             >
               <Pin className="w-3.5 h-3.5" />
               {subject.pinned ? 'Unpin from top' : 'Pin to top'}
@@ -554,7 +554,7 @@ function SubjectMenu({ subject }: { subject: Subject }) {
                 e.stopPropagation();
                 setRenaming(true);
               }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-ink-600 hover:bg-paper-100 transition-colors text-left"
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-ink-600 hover:bg-[#e6f0ea] transition-colors text-left"
             >
               <Pencil className="w-3.5 h-3.5" />
               Rename
@@ -639,7 +639,7 @@ function AddSubjectButton({ semesterId }: { semesterId: string }) {
     return (
       <button
         onClick={() => setAdding(true)}
-        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-ink-500 hover:text-ink-800 hover:bg-[#e1ece4] transition-colors"
+        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-ink-600 hover:text-ink-900 hover:bg-[#d6e7dc] transition-colors"
       >
         <Plus className="w-3.5 h-3.5" />
         <span>Add subject</span>
@@ -659,7 +659,7 @@ function AddSubjectButton({ semesterId }: { semesterId: string }) {
         }}
         onBlur={() => (name.trim() ? save() : setAdding(false))}
         placeholder="Subject name"
-        className="w-full text-sm bg-white border border-[#c4d6cb] rounded-lg px-2.5 py-1.5 text-ink-700 placeholder:text-ink-400 focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100 transition-all"
+        className="w-full text-sm bg-white border border-[#b4cec0] rounded-lg px-2.5 py-1.5 text-ink-700 placeholder:text-ink-400 focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100 transition-all"
       />
     </div>
   );
@@ -687,7 +687,7 @@ function AddSemesterButton() {
     return (
       <button
         onClick={() => setAdding(true)}
-        className="w-full flex items-center gap-2 px-2.5 py-2.5 mt-2 rounded-lg text-sm text-ink-500 hover:text-ink-800 hover:bg-[#e1ece4] transition-colors"
+        className="w-full flex items-center gap-2 px-2.5 py-2.5 mt-2 rounded-lg text-sm text-ink-600 hover:text-ink-900 hover:bg-[#d6e7dc] transition-colors"
       >
         <Plus className="w-4 h-4" />
         <span>New semester</span>
@@ -707,7 +707,7 @@ function AddSemesterButton() {
         }}
         onBlur={() => (name.trim() ? save() : setAdding(false))}
         placeholder="SEMESTER NAME"
-        className="w-full text-sm font-bold uppercase bg-white border border-[#c4d6cb] rounded-lg px-2.5 py-1.5 text-ink-700 placeholder:text-ink-400 placeholder:font-normal focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100 transition-all"
+        className="w-full text-sm font-bold uppercase bg-white border border-[#b4cec0] rounded-lg px-2.5 py-1.5 text-ink-700 placeholder:text-ink-400 placeholder:font-normal focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100 transition-all"
       />
     </div>
   );
@@ -739,11 +739,11 @@ function SidebarFooter() {
   }
 
   return (
-    <div className="p-3 border-t border-[#d6e4dc] bg-[#e5efe8] space-y-1.5">
+    <div className="p-3 border-t border-[#bed6c7] bg-[#d6e7dc] space-y-1.5">
       {/* Interactive Tour & Feature Guide Button */}
       <button
         onClick={() => openTourModal(0, 'walkthrough')}
-        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold text-accent-800 bg-white/90 hover:bg-white border border-[#c4d6cb] transition-all shadow-xs"
+        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold text-accent-800 bg-white/90 hover:bg-white border border-[#bed6c7] transition-all shadow-xs"
       >
         <div className="flex items-center gap-2">
           <HelpCircle className="w-3.5 h-3.5 text-accent-600" />
@@ -757,7 +757,7 @@ function SidebarFooter() {
       {/* Return to Landing Page Button */}
       <button
         onClick={() => setView({ kind: 'landing' })}
-        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs text-ink-600 hover:text-ink-900 hover:bg-[#d8e7de] transition-colors"
+        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs text-ink-600 hover:text-ink-900 hover:bg-[#c8ded0] transition-colors"
       >
         <div className="flex items-center gap-2">
           <Home className="w-3.5 h-3.5 text-ink-500" />
@@ -771,7 +771,7 @@ function SidebarFooter() {
         <div ref={menuRef} className="relative">
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="w-full flex items-center gap-2.5 p-2 rounded-xl bg-white border border-[#c4d6cb] shadow-soft hover:shadow-card hover:border-accent-400 transition-all text-left"
+            className="w-full flex items-center gap-2.5 p-2 rounded-xl bg-white border border-[#bed6c7] shadow-soft hover:shadow-card hover:border-accent-400 transition-all text-left"
           >
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-sm">
               {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'S'}

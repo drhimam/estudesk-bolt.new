@@ -110,7 +110,7 @@ function App() {
         : null;
 
   return (
-    <div className="h-screen flex bg-[#faf7f2] overflow-hidden">
+    <div className="h-screen flex bg-[#fbf5eb] overflow-hidden">
       <Sidebar />
       <AuthModal />
       <DashboardTourModal
@@ -119,11 +119,11 @@ function App() {
         initialStepIndex={tourInitialStep}
         initialTab={tourInitialTab}
       />
-      {/* Center Main Panel (Warm Academic Parchment / Ivory) */}
-      <div className="flex-1 min-h-0 flex flex-col min-w-0 relative bg-[#faf7f2]">
+      {/* Center Main Panel (Warm Academic Linen / Parchment) */}
+      <div className="flex-1 min-h-0 flex flex-col min-w-0 relative bg-[#fbf5eb]">
         {/* Mobile top bar */}
         {!sidebarOpen && (
-          <div className="lg:hidden flex items-center gap-2 px-4 py-3 border-b border-[#e9e1d4] bg-[#f8f5ee]">
+          <div className="lg:hidden flex items-center gap-2 px-4 py-3 border-b border-[#dfd2be] bg-[#f3ead8]">
             <button
               onClick={() => setSidebarOpen(true)}
               className="p-2 rounded-lg hover:bg-paper-200 text-ink-500 transition-colors"
@@ -143,7 +143,7 @@ function App() {
         {!sidebarOpen && (
           <button
             onClick={() => setSidebarOpen(true)}
-            className="hidden lg:flex absolute top-4 left-4 z-30 p-2 rounded-lg bg-white/90 border border-[#e4dccf] shadow-soft text-ink-500 hover:text-ink-800 hover:shadow-card transition-all"
+            className="hidden lg:flex absolute top-4 left-4 z-30 p-2 rounded-lg bg-white/95 border border-[#dfd2be] shadow-soft text-ink-600 hover:text-ink-900 hover:shadow-card transition-all"
             aria-label="Expand sidebar"
             title="Expand sidebar"
           >
@@ -164,7 +164,7 @@ function App() {
 
           <button
             onClick={() => setShowGlobalSearch(true)}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all shadow-soft bg-white/95 text-ink-600 border border-[#e4dccf] hover:border-accent-300 hover:text-accent-600 hover:shadow-card"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all shadow-soft bg-white/95 text-ink-600 border border-[#dfd2be] hover:border-accent-300 hover:text-accent-600 hover:shadow-card"
           >
             <Search className="w-4 h-4" />
             <span className="hidden sm:inline">Search</span>
@@ -175,7 +175,7 @@ function App() {
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all shadow-soft ${
               aiPanelOpen
                 ? 'bg-indigo-600 text-white shadow-glow'
-                : 'bg-white/95 text-ink-600 border border-[#e4dccf] hover:border-indigo-300 hover:text-indigo-600 hover:shadow-card'
+                : 'bg-white/95 text-ink-600 border border-[#dfd2be] hover:border-indigo-300 hover:text-indigo-600 hover:shadow-card'
             }`}
           >
             <Sparkles className="w-4 h-4" />
@@ -193,7 +193,7 @@ function App() {
         {view.kind === 'subject' && <SubjectView subjectId={view.subjectId} />}
       </div>
 
-      {/* AI Panel - right side (Serene Soft Periwinkle / Lavender-Mist) */}
+      {/* AI Panel - right side (Serene Soft Periwinkle-Lavender) */}
       {aiPanelOpen && !aiPanelFullscreen && (
         <>
           {/* Mobile overlay */}
@@ -202,7 +202,7 @@ function App() {
             onClick={toggleAIPanel}
           />
           <div
-            className="fixed lg:relative inset-y-0 right-0 z-50 lg:z-auto w-full bg-[#f3f5fb] border-l border-[#dbe2f0] flex flex-col shadow-lifted lg:shadow-none animate-slide-in-right"
+            className="fixed lg:relative inset-y-0 right-0 z-50 lg:z-auto w-full bg-[#e8edf8] border-l border-[#c2d2ee] flex flex-col shadow-lifted lg:shadow-none animate-slide-in-right"
             style={{
               width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${aiPanelWidth}px` : undefined,
               maxWidth: '100vw',
