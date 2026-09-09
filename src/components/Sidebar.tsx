@@ -379,20 +379,21 @@ function SemesterMenu({ semester }: { semester: Semester }) {
               <strong className="text-ink-700">{counts.deadlines} deadlines</strong>, and{' '}
               <strong className="text-ink-700">{counts.messages} chat messages</strong>. This action cannot be undone.
             </p>
-            <div className="flex items-center justify-end gap-3 pt-2">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-paper-200 mt-2">
               <button
                 type="button"
                 onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 text-sm font-medium text-ink-600 hover:bg-paper-200 rounded-xl transition-colors"
+                className="px-4 py-2.5 text-sm font-semibold text-ink-700 bg-paper-200 hover:bg-paper-300 rounded-xl transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={confirmDelete}
-                className="px-4 py-2 text-sm font-medium text-white bg-crimson-500 hover:bg-crimson-600 rounded-xl shadow-soft transition-colors"
+                className="px-4 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 active:bg-red-800 rounded-xl shadow-card transition-colors flex items-center gap-1.5 cursor-pointer"
               >
-                Delete Semester
+                <Trash2 className="w-4 h-4 text-white" />
+                <span>Delete Semester</span>
               </button>
             </div>
           </div>
@@ -584,20 +585,21 @@ function SubjectMenu({ subject }: { subject: Subject }) {
               <strong className="text-ink-700">{counts.deadlines} deadlines</strong>, and{' '}
               <strong className="text-ink-700">{counts.messages} chat messages</strong>. This action cannot be undone.
             </p>
-            <div className="flex items-center justify-end gap-3 pt-2">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-paper-200 mt-2">
               <button
                 type="button"
                 onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 text-sm font-medium text-ink-600 hover:bg-paper-200 rounded-xl transition-colors"
+                className="px-4 py-2.5 text-sm font-semibold text-ink-700 bg-paper-200 hover:bg-paper-300 rounded-xl transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={confirmDelete}
-                className="px-4 py-2 text-sm font-medium text-white bg-crimson-500 hover:bg-crimson-600 rounded-xl shadow-soft transition-colors"
+                className="px-4 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 active:bg-red-800 rounded-xl shadow-card transition-colors flex items-center gap-1.5 cursor-pointer"
               >
-                Delete Subject
+                <Trash2 className="w-4 h-4 text-white" />
+                <span>Delete Subject</span>
               </button>
             </div>
           </div>
