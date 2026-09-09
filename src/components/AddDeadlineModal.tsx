@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { X, Calendar, Flag } from 'lucide-react';
 import { db, uid } from '@/db/database';
-import type { Subject } from '@/types';
+import { syncCreateDeadline } from '@/lib/apiSync';
+import type { Subject, Deadline } from '@/types';
 
 interface Props {
   open: boolean;
@@ -22,7 +23,7 @@ export function AddDeadlineModal({ open, onClose, semesterId, subjects }: Props)
 
   async function save() {
     if (!title.trim() || !dueDate) return;
-    await db.deadlines.add({
+    const newDeadline: Deadline = {
       id: uid(),
       folderId: semesterId,
       subjectId: isOther ? null : subjectId || null,
@@ -31,7 +32,9 @@ export function AddDeadlineModal({ open, onClose, semesterId, subjects }: Props)
       dueDate: new Date(dueDate).getTime(),
       completed: false,
       createdAt: Date.now(),
-    });
+    };
+    await db.deadlines.add(newDeadline);
+    syncCreateDeadline(newDeadline);
     setTitle('');
     setDescription('');
     setSubjectId('');

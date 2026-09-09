@@ -18,6 +18,7 @@ import { useSubjects, useDeadlines } from '@/hooks/useQueries';
 import { setView } from '@/store/appState';
 import { COLOR_HEX, COLOR_LIGHT, COLOR_TEXT } from '@/utils/colors';
 import { AddDeadlineModal } from '@/components/AddDeadlineModal';
+import { syncUpdateDeadline, syncDeleteDeadline } from '@/lib/apiSync';
 import {
   categorizeDeadline,
   CATEGORY_META,
@@ -465,11 +466,14 @@ function DeadlineRow({
   const meta = CATEGORY_META[cat];
 
   async function toggle() {
-    await db.deadlines.update(deadline.id, { completed: !deadline.completed });
+    const newCompleted = !deadline.completed;
+    await db.deadlines.update(deadline.id, { completed: newCompleted });
+    syncUpdateDeadline(deadline.id, { completed: newCompleted });
   }
 
   async function remove() {
     await db.deadlines.delete(deadline.id);
+    syncDeleteDeadline(deadline.id);
   }
 
   return (

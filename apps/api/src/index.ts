@@ -225,11 +225,24 @@ app.delete('/api/subjects/:id', async (c) => {
   }
 });
 
-// Materials endpoints
+// Materials endpoints (Turso DB)
 app.get('/api/materials', async (c) => {
   try {
+    const userId = c.req.query('userId');
+    const subjectId = c.req.query('subjectId');
     const { db } = getDb(c.env);
-    const result = await db.select().from(schema.materials);
+    let query = db.select().from(schema.materials);
+    if (userId && subjectId) {
+      const result = await query.where(eq(schema.materials.userId, userId));
+      return c.json({ data: result.filter((m) => m.subjectId === subjectId) });
+    } else if (userId) {
+      const result = await query.where(eq(schema.materials.userId, userId));
+      return c.json({ data: result });
+    } else if (subjectId) {
+      const result = await query.where(eq(schema.materials.subjectId, subjectId));
+      return c.json({ data: result });
+    }
+    const result = await query;
     return c.json({ data: result });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -237,15 +250,178 @@ app.get('/api/materials', async (c) => {
   }
 });
 
-// Deadlines endpoints
+app.post('/api/materials', async (c) => {
+  try {
+    const body = await c.req.json<{
+      id?: string;
+      subjectId: string;
+      userId?: string;
+      title: string;
+      type: string;
+      content: Record<string, unknown>;
+      version?: number;
+    }>();
+    if (!body.title || !body.subjectId || !body.type) {
+      return c.json({ error: 'Title, Subject ID, and Type are required' }, 400);
+    }
+    if (!body.userId) {
+      return c.json({ error: 'Unauthorized: You must be signed in to sync materials' }, 401);
+    }
+    const { db } = getDb(c.env);
+
+    const newMaterial = {
+      id: body.id || crypto.randomUUID(),
+      subjectId: body.subjectId,
+      userId: body.userId,
+      title: body.title.trim(),
+      type: body.type as schema.MaterialType,
+      content: body.content || {},
+      version: body.version || 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    await db.insert(schema.materials).values(newMaterial);
+    return c.json({ data: newMaterial }, 201);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+app.put('/api/materials/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const body = await c.req.json<{
+      title?: string;
+      type?: string;
+      content?: Record<string, unknown>;
+      version?: number;
+    }>();
+    const { db } = getDb(c.env);
+    const updates: Record<string, unknown> = { updatedAt: new Date() };
+    if (body.title) updates.title = body.title.trim();
+    if (body.type) updates.type = body.type;
+    if (body.content !== undefined) updates.content = body.content;
+    if (body.version !== undefined) updates.version = body.version;
+
+    await db.update(schema.materials).set(updates).where(eq(schema.materials.id, id));
+    return c.json({ success: true });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+app.delete('/api/materials/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const { db } = getDb(c.env);
+    await db.delete(schema.materials).where(eq(schema.materials.id, id));
+    return c.json({ success: true });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// Deadlines endpoints (Turso DB)
 app.get('/api/deadlines', async (c) => {
   try {
+    const userId = c.req.query('userId');
+    const folderId = c.req.query('folderId');
     const { db } = getDb(c.env);
-    const result = await db.select().from(schema.deadlines);
+    let query = db.select().from(schema.deadlines);
+    if (userId) {
+      const result = await query.where(eq(schema.deadlines.userId, userId));
+      return c.json({ data: folderId ? result.filter((d) => d.folderId === folderId) : result });
+    }
+    const result = await query;
     return c.json({ data: result });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     return c.json({ data: [], error: msg });
+  }
+});
+
+app.post('/api/deadlines', async (c) => {
+  try {
+    const body = await c.req.json<{
+      id?: string;
+      folderId: string;
+      subjectId?: string | null;
+      userId?: string;
+      title: string;
+      description?: string;
+      dueDate: number | string;
+      isCompleted?: boolean;
+    }>();
+    if (!body.title || !body.folderId || !body.dueDate) {
+      return c.json({ error: 'Title, Folder ID, and Due Date are required' }, 400);
+    }
+    if (!body.userId) {
+      return c.json({ error: 'Unauthorized: You must be signed in to sync deadlines' }, 401);
+    }
+    const { db } = getDb(c.env);
+
+    const newDeadline = {
+      id: body.id || crypto.randomUUID(),
+      folderId: body.folderId,
+      subjectId: body.subjectId || null,
+      userId: body.userId,
+      title: body.title.trim(),
+      description: body.description || null,
+      dueDate: new Date(body.dueDate),
+      isCompleted: body.isCompleted || false,
+      completedAt: body.isCompleted ? new Date() : null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    await db.insert(schema.deadlines).values(newDeadline);
+    return c.json({ data: newDeadline }, 201);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+app.put('/api/deadlines/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const body = await c.req.json<{
+      title?: string;
+      description?: string | null;
+      dueDate?: number | string;
+      isCompleted?: boolean;
+    }>();
+    const { db } = getDb(c.env);
+    const updates: Record<string, unknown> = { updatedAt: new Date() };
+    if (body.title) updates.title = body.title.trim();
+    if (body.description !== undefined) updates.description = body.description;
+    if (body.dueDate) updates.dueDate = new Date(body.dueDate);
+    if (body.isCompleted !== undefined) {
+      updates.isCompleted = body.isCompleted;
+      updates.completedAt = body.isCompleted ? new Date() : null;
+    }
+
+    await db.update(schema.deadlines).set(updates).where(eq(schema.deadlines.id, id));
+    return c.json({ success: true });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+app.delete('/api/deadlines/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const { db } = getDb(c.env);
+    await db.delete(schema.deadlines).where(eq(schema.deadlines.id, id));
+    return c.json({ success: true });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
   }
 });
 

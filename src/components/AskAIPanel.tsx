@@ -41,6 +41,7 @@ import { useAppState, toggleAIPanelFullscreen, setAIPanelOpen } from '@/store/ap
 import { COLOR_HEX, COLOR_LIGHT, COLOR_TEXT } from '@/utils/colors';
 import { askAI } from '@/utils/aiClient';
 import { fetchUrlContent, extractUrls } from '@/utils/webReader';
+import { syncCreateMaterial } from '@/lib/apiSync';
 import type { ChatMessage, ChatConversation, Attachment, AttachmentType, StudyMaterial } from '@/types';
 
 const ATTACHMENT_TYPES: { type: AttachmentType; label: string; icon: React.ReactNode }[] = [
@@ -1380,6 +1381,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
     };
 
     await db.materials.add(material);
+    syncCreateMaterial(material);
     setShowSubjectPicker(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);

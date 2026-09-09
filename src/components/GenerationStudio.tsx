@@ -37,6 +37,7 @@ import { generateMaterial } from '@/utils/aiClient';
 import { fetchUrlContent, extractUrls } from '@/utils/webReader';
 import { exportMaterialAsPdf } from '@/utils/pdfExport';
 import { useAllSubjects, useMaterials } from '@/hooks/useQueries';
+import { syncCreateMaterial } from '@/lib/apiSync';
 import type {
   MaterialType,
   StudyMaterial,
@@ -946,6 +947,7 @@ export function GenerationStudio({ subjectId, subjectColor, type, onClose }: Pro
       updatedAt: Date.now(),
     };
     await db.materials.add(material);
+    syncCreateMaterial(material);
     setSavedMaterials((prev) => [
       ...prev,
       { title: material.title, type: activeType },

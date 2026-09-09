@@ -23,6 +23,7 @@ import { useMaterials } from '@/hooks/useQueries';
 import { COLOR_HEX, COLOR_LIGHT, COLOR_TEXT } from '@/utils/colors';
 import { GenerationStudio } from '@/components/GenerationStudio';
 import { MaterialViewer } from '@/components/MaterialViewer';
+import { syncUpdateMaterial, syncDeleteMaterial } from '@/lib/apiSync';
 import type { MaterialType, StudyMaterial, SubjectColor } from '@/types';
 
 type SubTab = MaterialType;
@@ -198,6 +199,7 @@ function MaterialCard({
   async function remove(e: React.MouseEvent) {
     e.stopPropagation();
     await db.materials.delete(material.id);
+    syncDeleteMaterial(material.id);
     setMenuOpen(false);
   }
 
@@ -208,6 +210,7 @@ function MaterialCard({
       return;
     }
     await db.materials.update(material.id, { title: trimmed, updatedAt: Date.now() });
+    syncUpdateMaterial(material.id, { title: trimmed });
     material.title = trimmed;
     setRenaming(false);
     setMenuOpen(false);

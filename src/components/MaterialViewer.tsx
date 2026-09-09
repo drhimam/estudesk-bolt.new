@@ -39,6 +39,7 @@ import { COLOR_HEX, COLOR_LIGHT, COLOR_TEXT } from '@/utils/colors';
 import { exportMaterialAsPdf } from '@/utils/pdfExport';
 import { FocusTimer } from '@/components/FocusTimer';
 import { ambientAudio, type AmbientSoundType } from '@/utils/ambientAudio';
+import { syncUpdateMaterial, syncDeleteMaterial } from '@/lib/apiSync';
 import type { StudyMaterial, SubjectColor, Flashcard, QuizQuestion, PresentationSlide } from '@/types';
 
 export function MathFormula({ formula, display = true }: { formula: string; display?: boolean }) {
@@ -148,6 +149,7 @@ export function MaterialViewer({ material, subjectColor, onBack, onRenamed }: Pr
 
   async function remove() {
     await db.materials.delete(material.id);
+    syncDeleteMaterial(material.id);
     onBack();
   }
 
@@ -158,6 +160,7 @@ export function MaterialViewer({ material, subjectColor, onBack, onRenamed }: Pr
       return;
     }
     await db.materials.update(material.id, { title: trimmed, updatedAt: Date.now() });
+    syncUpdateMaterial(material.id, { title: trimmed });
     material.title = trimmed;
     setRenaming(false);
     onRenamed?.();

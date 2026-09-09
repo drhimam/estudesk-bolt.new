@@ -303,7 +303,51 @@ npx wrangler deploy
 
 ---
 
-## 7. Verification & Quality Assurance
+## 7. Cloud Synchronization with Turso Database
+
+To guarantee seamless cross-device synchronization while preserving offline-first responsiveness, all core data models are wired with full bidirectional synchronization between local Dexie (IndexedDB) and remote Turso DB tables:
+
+```mermaid
+flowchart LR
+    subgraph Client ["Client Browser"]
+        Dexie[("Dexie IndexedDB\nLocal Cache")]
+        UI["UI Components\n(Studio, AI, Tabs)"]
+        SyncLib["src/lib/apiSync.ts\nSync Layer"]
+    end
+
+    subgraph CloudflareEdge ["Cloudflare Edge"]
+        WorkerAPI["apps/api (Hono)"]
+        DrizzleORM["Drizzle ORM"]
+    end
+
+    subgraph TursoCloud ["Turso Database"]
+        TursoTables[("Turso Tables\n• folders\n• subjects\n• materials\n• deadlines")]
+    end
+
+    UI -->|"1. Local Write (Instant)"| Dexie
+    UI -->|"2. Cloud Sync (Async)"| SyncLib
+    SyncLib -->|"POST / PUT / DELETE"| WorkerAPI
+    WorkerAPI --> DrizzleORM --> TursoTables
+    SyncLib -.->|"Initial Reconciliation (GET)"| WorkerAPI
+    WorkerAPI -.->|"Fetch & Update"| Dexie
+```
+
+### Synchronized Data Models:
+1. **Folders / Semesters** (`db.semesters` $\leftrightarrow$ `folders` table):
+   - Handled via `syncCreateFolder`, `syncUpdateFolder`, `syncDeleteFolder`.
+2. **Subjects** (`db.subjects` $\leftrightarrow$ `subjects` table):
+   - Handled via `syncCreateSubject`, `syncUpdateSubject`, `syncDeleteSubject`.
+3. **Study Materials** (`db.materials` $\leftrightarrow$ `materials` table):
+   - Captures notes, cheat sheets, infographics, flashcards, quizzes, presentations, and AI snippets.
+   - Handled via `syncCreateMaterial`, `syncUpdateMaterial`, `syncDeleteMaterial`.
+   - Client format (`contentMarkdown`, `contentHtml`, `flashcards`, `quiz`, `slides`, `sourceSnippet`) serialized into `content` JSON column.
+4. **Deadlines** (`db.deadlines` $\leftrightarrow$ `deadlines` table):
+   - Captures due dates, completed state, description, and subject linkage.
+   - Handled via `syncCreateDeadline`, `syncUpdateDeadline`, `syncDeleteDeadline`.
+
+---
+
+## 8. Verification & Quality Assurance
 
 All features have been validated with strict TypeScript compilation and production builds:
 ```bash
@@ -314,5 +358,6 @@ npm run typecheck
 npm run build
 ```
 - **Build Status**: Exit Code 0 (0 errors).
-- **Live Production URL**: [https://estudesk-bolt-new.pages.dev](https://estudesk-bolt-new.pages.dev)
-- **Runtime Testing**: Tested auth gating, 3-panel color scheme, deletion sync with Turso, mobile view responsiveness, and Cloudflare edge deployments.
+- **Frontend URL**: [https://estudesk-bolt-new.pages.dev](https://estudesk-bolt-new.pages.dev)
+- **API Worker URL**: [https://estudesk-api.rifa-numis.workers.dev](https://estudesk-api.rifa-numis.workers.dev)
+- **Runtime Testing**: Tested auth gating, 3-panel color scheme, deletion sync with Turso, mobile view responsiveness, study material & deadline creation/edit/deletion cloud writes, and Cloudflare edge deployments.

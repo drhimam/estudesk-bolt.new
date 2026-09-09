@@ -4,6 +4,7 @@ import { db } from '@/db/database';
 import { useDeadlines, useSubject } from '@/hooks/useQueries';
 import { AddDeadlineModal } from '@/components/AddDeadlineModal';
 import { DownloadMenu } from '@/components/DownloadMenu';
+import { syncUpdateDeadline, syncDeleteDeadline } from '@/lib/apiSync';
 import {
   categorizeDeadline,
   CATEGORY_META,
@@ -271,13 +272,16 @@ function DeadlineItem({ deadline }: { deadline: Deadline }) {
   const meta = CATEGORY_META[cat];
 
   async function toggle() {
+    const newCompleted = !deadline.completed;
     await db.deadlines.update(deadline.id, {
-      completed: !deadline.completed,
+      completed: newCompleted,
     });
+    syncUpdateDeadline(deadline.id, { completed: newCompleted });
   }
 
   async function remove() {
     await db.deadlines.delete(deadline.id);
+    syncDeleteDeadline(deadline.id);
   }
 
   return (
