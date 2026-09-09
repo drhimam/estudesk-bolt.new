@@ -417,7 +417,7 @@ export function AskAIPanel() {
   }
 
   return (
-    <div className="relative flex h-full bg-paper-50">
+    <div className="relative flex h-full bg-[#f3f5fb]">
       {/* Conversation history sidebar — overlays the panel instead of pushing it */}
       {showHistory && (
         <>
@@ -448,16 +448,16 @@ export function AskAIPanel() {
 
       <div className="flex flex-col flex-1 min-w-0">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3.5 border-b border-paper-200 bg-white">
+        <div className="flex items-center justify-between px-4 py-3.5 border-b border-[#dbe2f0] bg-[#e9eef8]">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowHistory(!showHistory)}
-              className="p-1.5 rounded-lg hover:bg-paper-100 text-ink-400 hover:text-ink-600 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-white/60 text-ink-500 hover:text-ink-700 transition-colors"
               title="Chat history"
             >
               {showHistory ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}
             </button>
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent-500 to-accent-700 flex items-center justify-center shadow-soft">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center shadow-soft">
               <Sparkles className="w-4.5 h-4.5 text-white" />
             </div>
             <div>
@@ -474,7 +474,7 @@ export function AskAIPanel() {
           <div className="flex items-center gap-1">
             <button
               onClick={toggleAIPanelFullscreen}
-              className="p-1.5 rounded-lg hover:bg-paper-100 text-ink-400 hover:text-ink-600 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-white/60 text-ink-400 hover:text-ink-600 transition-colors"
               title={aiPanelFullscreen ? 'Exit full page view' : 'Full page view'}
             >
               {aiPanelFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -486,7 +486,7 @@ export function AskAIPanel() {
                 setAttachments([]);
                 setContextSubjectIds([]);
               }}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-paper-100 hover:bg-paper-200 text-ink-600 transition-colors border border-paper-200"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white hover:bg-white/80 text-ink-600 transition-colors border border-[#dbe2f0]"
               title="New chat"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -503,13 +503,13 @@ export function AskAIPanel() {
         </div>
 
         {/* Context bar */}
-        <div className="flex items-center gap-2 px-4 py-2.5 border-b border-paper-200 bg-white/60 flex-wrap">
+        <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[#dbe2f0] bg-[#eff3fa] flex-wrap">
           <div className="relative">
             <button
               onClick={() => setShowContextPicker(!showContextPicker)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-paper-100 hover:bg-paper-200 text-ink-600 transition-colors border border-paper-200"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white hover:bg-white/80 text-ink-600 transition-colors border border-[#dbe2f0]"
             >
-              <BookOpen className="w-3.5 h-3.5 text-ink-400" />
+              <BookOpen className="w-3.5 h-3.5 text-indigo-500" />
               <span>
                 {contextSubjectIds.length === 0
                   ? 'Add subject context'
@@ -532,8 +532,8 @@ export function AskAIPanel() {
             onClick={() => setWebSearch(!webSearch)}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border ${
               webSearch
-                ? 'bg-accent-50 text-accent-700 border-accent-200'
-                : 'bg-paper-100 text-ink-500 border-paper-200 hover:bg-paper-200'
+                ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                : 'bg-white text-ink-500 border-[#dbe2f0] hover:bg-white/80'
             }`}
           >
             <Globe className="w-3.5 h-3.5" />
@@ -545,8 +545,8 @@ export function AskAIPanel() {
             onClick={() => setChatWithPage(!chatWithPage)}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border ${
               chatWithPage
-                ? 'bg-accent-50 text-accent-700 border-accent-200'
-                : 'bg-paper-100 text-ink-500 border-paper-200 hover:bg-paper-200'
+                ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                : 'bg-white text-ink-500 border-[#dbe2f0] hover:bg-white/80'
             }`}
           >
             <FileQuestion className="w-3.5 h-3.5" />
@@ -557,7 +557,7 @@ export function AskAIPanel() {
 
         {/* Active context chips */}
         {contextSubjects.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 px-4 py-2 bg-paper-50 border-b border-paper-100">
+          <div className="flex flex-wrap gap-1.5 px-4 py-2 bg-[#edf2fa] border-b border-[#dbe2f0]">
             {contextSubjects.map((s) => (
               <span
                 key={s.id}
@@ -578,10 +578,10 @@ export function AskAIPanel() {
           <div className="px-4 py-4">
             {messages.length === 0 ? (
               <div className="text-center py-16">
-                <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center bg-gradient-to-br from-accent-100 to-accent-200 text-accent-600 shadow-soft">
+                <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center bg-gradient-to-br from-indigo-100 to-indigo-200 text-indigo-600 shadow-soft">
                   <Sparkles className="w-6 h-6" />
                 </div>
-                <p className="text-sm font-medium text-ink-600 mb-1">Ask me anything</p>
+                <p className="text-sm font-medium text-ink-700 mb-1">Ask me anything</p>
                 <p className="text-xs text-ink-400 max-w-xs mx-auto leading-relaxed">
                   Attach a subject for context, toggle web search, or paste material.
                   I can help you study, summarize, and generate materials.
@@ -595,7 +595,7 @@ export function AskAIPanel() {
                     <button
                       key={s}
                       onClick={() => setInput(s)}
-                      className="w-full text-left text-xs text-ink-500 bg-white border border-paper-200 rounded-xl px-3 py-2.5 hover:border-accent-300 hover:text-accent-600 transition-colors"
+                      className="w-full text-left text-xs text-ink-600 bg-white border border-[#dce4f2] rounded-xl px-3 py-2.5 hover:border-indigo-300 hover:text-indigo-600 transition-colors shadow-sm"
                     >
                       {s}
                     </button>
@@ -608,8 +608,8 @@ export function AskAIPanel() {
                   <MessageBubble key={msg.id} msg={msg} />
                 ))}
                 {isThinking && (
-                  <div className="flex items-center gap-2 p-3 rounded-xl bg-accent-50/50 border border-accent-200 text-xs text-accent-700 font-medium animate-pulse">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-accent-600" />
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-indigo-50/70 border border-indigo-200 text-xs text-indigo-700 font-medium animate-pulse">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600" />
                     <span>Thinking and analyzing context...</span>
                   </div>
                 )}
@@ -619,7 +619,7 @@ export function AskAIPanel() {
         </div>
 
         {/* Input area */}
-        <div className="border-t border-paper-200 bg-white px-4 py-3">
+        <div className="border-t border-[#dbe2f0] bg-[#e9eef8] px-4 py-3">
           {attachments.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2.5">
               {attachments.map((a) => (
@@ -805,12 +805,12 @@ export function AskAIPanel() {
               }}
               placeholder="Ask anything about your studies..."
               rows={1}
-              className="flex-1 bg-paper-50 border border-paper-300 rounded-2xl px-4 py-2.5 text-sm text-ink-700 placeholder:text-ink-300 focus:outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-100 transition-all resize-none max-h-32"
+              className="flex-1 bg-white border border-[#cad5e6] rounded-2xl px-4 py-2.5 text-sm text-ink-700 placeholder:text-ink-300 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all resize-none max-h-32 shadow-sm"
             />
             <button
               onClick={send}
               disabled={!input.trim() && attachments.length === 0}
-              className="p-2.5 rounded-xl text-white transition-all shrink-0 disabled:opacity-40 disabled:cursor-not-allowed bg-accent-500 hover:bg-accent-600 hover:shadow-glow"
+              className="p-2.5 rounded-xl text-white transition-all shrink-0 disabled:opacity-40 disabled:cursor-not-allowed bg-indigo-600 hover:bg-indigo-700 shadow-soft"
             >
               <Send className="w-5 h-5" />
             </button>
@@ -1010,27 +1010,27 @@ function ConversationHistory({
   }
 
   return (
-    <div className="absolute top-0 left-0 bottom-0 w-56 z-40 border-r border-paper-200 bg-white flex flex-col shadow-lifted animate-slide-in-left">
-      <div className="flex items-center justify-between px-3 py-3 border-b border-paper-200">
-        <span className="text-xs font-semibold text-ink-500 uppercase tracking-wide">Chats</span>
+    <div className="absolute top-0 left-0 bottom-0 w-56 z-40 border-r border-[#dbe2f0] bg-[#f8fafe] flex flex-col shadow-lifted animate-slide-in-left">
+      <div className="flex items-center justify-between px-3 py-3 border-b border-[#dbe2f0] bg-[#eef3fb]">
+        <span className="text-xs font-semibold text-ink-600 uppercase tracking-wide">Chats</span>
         <div className="flex items-center gap-0.5">
           <button
             onClick={onExportAll}
-            className="p-1.5 rounded-lg hover:bg-paper-100 text-ink-400 hover:text-ink-600 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-white text-ink-400 hover:text-ink-600 transition-colors"
             title="Export all chats"
           >
             <Download className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={handleImportClick}
-            className="p-1.5 rounded-lg hover:bg-paper-100 text-ink-400 hover:text-ink-600 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-white text-ink-400 hover:text-ink-600 transition-colors"
             title="Import chats"
           >
             <Upload className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={onNew}
-            className="p-1.5 rounded-lg hover:bg-paper-100 text-ink-400 hover:text-accent-500 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-white text-ink-400 hover:text-indigo-600 transition-colors"
             title="New chat"
           >
             <Plus className="w-4 h-4" />
@@ -1059,7 +1059,7 @@ function ConversationHistory({
             <div
               key={conv.id}
               className={`group mx-1.5 mb-0.5 rounded-lg transition-colors ${
-                activeId === conv.id ? 'bg-accent-50 border border-accent-100' : 'hover:bg-paper-100'
+                activeId === conv.id ? 'bg-indigo-50 border border-indigo-200' : 'hover:bg-white'
               }`}
             >
               {editingId === conv.id ? (
@@ -1399,8 +1399,8 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
       <div
         className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-xs font-medium shadow-soft ${
           isUser
-            ? 'bg-ink-700 text-white'
-            : 'bg-gradient-to-br from-accent-400 to-accent-600 text-white'
+            ? 'bg-indigo-600 text-white'
+            : 'bg-gradient-to-br from-indigo-500 to-indigo-700 text-white'
         }`}
       >
         {isUser ? 'You' : <Sparkles className="w-4 h-4" />}
@@ -1414,7 +1414,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
           </div>
         )}
         {msg.webSearch && (
-          <div className={`flex items-center gap-1 mb-1 text-[10px] text-accent-500 ${isUser ? 'justify-end' : ''}`}>
+          <div className={`flex items-center gap-1 mb-1 text-[10px] text-indigo-600 ${isUser ? 'justify-end' : ''}`}>
             <Globe className="w-3 h-3" />
             Web search
           </div>
@@ -1422,8 +1422,8 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
         <div
           className={`inline-block rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed text-left ${
             isUser
-              ? 'bg-ink-700 text-white rounded-tr-md'
-              : 'bg-white border border-paper-200 text-ink-700 rounded-tl-md shadow-soft'
+              ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-tr-md shadow-sm'
+              : 'bg-white border border-[#dce4f2] text-ink-800 rounded-tl-md shadow-soft'
           }`}
         >
           {msg.attachments && msg.attachments.length > 0 && (

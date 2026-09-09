@@ -87,7 +87,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className="relative shrink-0 border-r border-paper-300 bg-paper-100 flex flex-col h-full z-20 transition-all duration-75 select-none"
+      className="relative shrink-0 border-r border-[#d6e4dc] bg-[#eff5f1] flex flex-col h-full z-20 transition-all duration-75 select-none"
       style={{
         width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${sidebarWidth}px` : undefined,
       }}
@@ -104,17 +104,17 @@ export function Sidebar() {
             localStorage.setItem('estudesk_sidebar_width', '288');
           } catch {}
         }}
-        className="hidden lg:flex absolute -right-1.5 top-0 bottom-0 w-3 cursor-col-resize items-center justify-center z-30 group hover:bg-accent-500/20 active:bg-accent-500/30 transition-colors select-none"
+        className="hidden lg:flex absolute -right-1.5 top-0 bottom-0 w-3 cursor-col-resize items-center justify-center z-30 group hover:bg-emerald-600/20 active:bg-emerald-600/30 transition-colors select-none"
         title="Drag to resize sidebar (Double-click to reset width)"
       >
-        <div className="w-1 h-10 rounded-full bg-paper-400/60 group-hover:bg-accent-500 group-hover:h-14 group-active:bg-accent-600 transition-all shadow-sm" />
+        <div className="w-1 h-10 rounded-full bg-emerald-600/40 group-hover:bg-emerald-600 group-hover:h-14 group-active:bg-emerald-700 transition-all shadow-sm" />
       </div>
 
       <SidebarHeader />
       <nav className="flex-1 overflow-y-auto scrollbar-thin px-3 py-3 select-text">
         {semesters.length === 0 && (
-          <div className="p-3 mb-2 rounded-xl bg-white/70 border border-dashed border-paper-300 text-center">
-            <FolderTree className="w-6 h-6 text-accent-500 mx-auto mb-1.5 opacity-80" />
+          <div className="p-3 mb-2 rounded-xl bg-white/70 border border-dashed border-[#c8dcd0] text-center">
+            <FolderTree className="w-6 h-6 text-accent-600 mx-auto mb-1.5 opacity-80" />
             <p className="text-xs font-semibold text-ink-700">No Folders Yet</p>
             <p className="text-[11px] text-ink-400 mt-0.5 leading-relaxed">
               Create your first semester or rotation below.
@@ -133,7 +133,7 @@ export function Sidebar() {
 
 function SidebarHeader() {
   return (
-    <div className="flex items-center justify-between px-4 py-4 border-b border-paper-300">
+    <div className="flex items-center justify-between px-4 py-4 border-b border-[#d6e4dc] bg-[#e5efe8]">
       <button
         onClick={() => setView({ kind: 'home' })}
         className="flex items-center gap-2.5 group"
@@ -145,12 +145,12 @@ function SidebarHeader() {
           <h1 className="font-serif text-lg font-semibold text-ink-800 leading-none">
             eStudesk
           </h1>
-          <p className="text-[11px] text-ink-400 mt-1">Study prep</p>
+          <p className="text-[11px] text-ink-500 mt-1">Study prep</p>
         </div>
       </button>
       <button
         onClick={toggleSidebar}
-        className="p-1.5 rounded-lg hover:bg-paper-200 text-ink-400 transition-colors"
+        className="p-1.5 rounded-lg hover:bg-[#d8e7de] text-ink-400 hover:text-ink-700 transition-colors"
         aria-label="Collapse sidebar"
         title="Collapse sidebar"
       >
@@ -180,7 +180,7 @@ function SemesterFolder({ semester }: { semester: Semester }) {
           className={`w-full flex items-center gap-1.5 px-2.5 py-2 pr-8 rounded-lg text-sm font-bold uppercase tracking-wide transition-all ${
             isActive && view.kind === 'semester'
               ? 'bg-white text-ink-800 shadow-soft'
-              : 'text-ink-700 hover:bg-paper-200/70'
+              : 'text-ink-700 hover:bg-[#e1ece4]'
           }`}
         >
           {expanded ? (
@@ -200,7 +200,7 @@ function SemesterFolder({ semester }: { semester: Semester }) {
       </div>
 
       {expanded && (
-        <div className="ml-3 pl-2.5 border-l border-paper-300/80 mt-0.5 space-y-0.5">
+        <div className="ml-3 pl-2.5 border-l border-[#c8dcd0] mt-0.5 space-y-0.5">
           {subjects.map((sub) => (
             <SubjectLink key={sub.id} subject={sub} />
           ))}
@@ -416,7 +416,7 @@ function SubjectLink({ subject }: { subject: Subject }) {
         className={`w-full flex items-center gap-2.5 px-2.5 py-2 pr-7 rounded-lg text-sm transition-all ${
           isActive
             ? 'bg-white text-ink-800 font-medium shadow-soft'
-            : 'text-ink-500 hover:bg-paper-200/50 hover:text-ink-700'
+            : 'text-ink-600 hover:bg-[#e1ece4] hover:text-ink-900'
         }`}
       >
         <span
@@ -639,7 +639,7 @@ function AddSubjectButton({ semesterId }: { semesterId: string }) {
     return (
       <button
         onClick={() => setAdding(true)}
-        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-ink-400 hover:text-ink-600 hover:bg-paper-200/50 transition-colors"
+        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-ink-500 hover:text-ink-800 hover:bg-[#e1ece4] transition-colors"
       >
         <Plus className="w-3.5 h-3.5" />
         <span>Add subject</span>
@@ -659,7 +659,7 @@ function AddSubjectButton({ semesterId }: { semesterId: string }) {
         }}
         onBlur={() => (name.trim() ? save() : setAdding(false))}
         placeholder="Subject name"
-        className="w-full text-sm bg-white border border-paper-400 rounded-lg px-2.5 py-1.5 text-ink-700 placeholder:text-ink-300 focus:outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-100 transition-all"
+        className="w-full text-sm bg-white border border-[#c4d6cb] rounded-lg px-2.5 py-1.5 text-ink-700 placeholder:text-ink-400 focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100 transition-all"
       />
     </div>
   );
@@ -687,7 +687,7 @@ function AddSemesterButton() {
     return (
       <button
         onClick={() => setAdding(true)}
-        className="w-full flex items-center gap-2 px-2.5 py-2.5 mt-2 rounded-lg text-sm text-ink-400 hover:text-ink-600 hover:bg-paper-200/60 transition-colors"
+        className="w-full flex items-center gap-2 px-2.5 py-2.5 mt-2 rounded-lg text-sm text-ink-500 hover:text-ink-800 hover:bg-[#e1ece4] transition-colors"
       >
         <Plus className="w-4 h-4" />
         <span>New semester</span>
@@ -707,7 +707,7 @@ function AddSemesterButton() {
         }}
         onBlur={() => (name.trim() ? save() : setAdding(false))}
         placeholder="SEMESTER NAME"
-        className="w-full text-sm font-bold uppercase bg-white border border-paper-400 rounded-lg px-2.5 py-1.5 text-ink-700 placeholder:text-ink-300 placeholder:font-normal focus:outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-100 transition-all"
+        className="w-full text-sm font-bold uppercase bg-white border border-[#c4d6cb] rounded-lg px-2.5 py-1.5 text-ink-700 placeholder:text-ink-400 placeholder:font-normal focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100 transition-all"
       />
     </div>
   );
@@ -739,17 +739,17 @@ function SidebarFooter() {
   }
 
   return (
-    <div className="p-3 border-t border-paper-300 bg-paper-100/80 space-y-1.5">
+    <div className="p-3 border-t border-[#d6e4dc] bg-[#e5efe8] space-y-1.5">
       {/* Interactive Tour & Feature Guide Button */}
       <button
         onClick={() => openTourModal(0, 'walkthrough')}
-        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold text-accent-800 bg-accent-50/80 hover:bg-accent-100/90 border border-accent-200/80 transition-all shadow-xs"
+        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold text-accent-800 bg-white/90 hover:bg-white border border-[#c4d6cb] transition-all shadow-xs"
       >
         <div className="flex items-center gap-2">
           <HelpCircle className="w-3.5 h-3.5 text-accent-600" />
           <span>Guide & Tour</span>
         </div>
-        <span className="text-[10px] font-mono px-1.5 py-0.2 bg-accent-200/60 rounded text-accent-800 font-bold">
+        <span className="text-[10px] font-mono px-1.5 py-0.2 bg-accent-100 rounded text-accent-800 font-bold">
           Manual
         </span>
       </button>
@@ -757,10 +757,10 @@ function SidebarFooter() {
       {/* Return to Landing Page Button */}
       <button
         onClick={() => setView({ kind: 'landing' })}
-        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs text-ink-500 hover:text-ink-800 hover:bg-paper-200/70 transition-colors"
+        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs text-ink-600 hover:text-ink-900 hover:bg-[#d8e7de] transition-colors"
       >
         <div className="flex items-center gap-2">
-          <Home className="w-3.5 h-3.5 text-ink-400" />
+          <Home className="w-3.5 h-3.5 text-ink-500" />
           <span>Landing Overview</span>
         </div>
         <ChevronRight className="w-3 h-3 text-ink-400" />
@@ -771,7 +771,7 @@ function SidebarFooter() {
         <div ref={menuRef} className="relative">
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="w-full flex items-center gap-2.5 p-2 rounded-xl bg-white border border-paper-300 shadow-soft hover:shadow-card hover:border-accent-300 transition-all text-left"
+            className="w-full flex items-center gap-2.5 p-2 rounded-xl bg-white border border-[#c4d6cb] shadow-soft hover:shadow-card hover:border-accent-400 transition-all text-left"
           >
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-sm">
               {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'S'}

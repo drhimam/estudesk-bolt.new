@@ -110,7 +110,7 @@ function App() {
         : null;
 
   return (
-    <div className="h-screen flex bg-paper-100 overflow-hidden">
+    <div className="h-screen flex bg-[#faf7f2] overflow-hidden">
       <Sidebar />
       <AuthModal />
       <DashboardTourModal
@@ -119,13 +119,14 @@ function App() {
         initialStepIndex={tourInitialStep}
         initialTab={tourInitialTab}
       />
-      <div className="flex-1 min-h-0 flex flex-col min-w-0 relative">
+      {/* Center Main Panel (Warm Academic Parchment / Ivory) */}
+      <div className="flex-1 min-h-0 flex flex-col min-w-0 relative bg-[#faf7f2]">
         {/* Mobile top bar */}
         {!sidebarOpen && (
-          <div className="lg:hidden flex items-center gap-2 px-4 py-3 border-b border-paper-200 bg-white">
+          <div className="lg:hidden flex items-center gap-2 px-4 py-3 border-b border-[#e9e1d4] bg-[#f8f5ee]">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-2 rounded-lg hover:bg-paper-100 text-ink-400 transition-colors"
+              className="p-2 rounded-lg hover:bg-paper-200 text-ink-500 transition-colors"
             >
               <Menu className="w-4 h-4" />
             </button>
@@ -142,7 +143,7 @@ function App() {
         {!sidebarOpen && (
           <button
             onClick={() => setSidebarOpen(true)}
-            className="hidden lg:flex absolute top-4 left-4 z-30 p-2 rounded-lg bg-white border border-paper-300 shadow-soft text-ink-400 hover:text-ink-600 hover:shadow-card transition-all"
+            className="hidden lg:flex absolute top-4 left-4 z-30 p-2 rounded-lg bg-white/90 border border-[#e4dccf] shadow-soft text-ink-500 hover:text-ink-800 hover:shadow-card transition-all"
             aria-label="Expand sidebar"
             title="Expand sidebar"
           >
@@ -163,7 +164,7 @@ function App() {
 
           <button
             onClick={() => setShowGlobalSearch(true)}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all shadow-soft bg-white text-ink-600 border border-paper-300 hover:border-accent-300 hover:text-accent-600 hover:shadow-card"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all shadow-soft bg-white/95 text-ink-600 border border-[#e4dccf] hover:border-accent-300 hover:text-accent-600 hover:shadow-card"
           >
             <Search className="w-4 h-4" />
             <span className="hidden sm:inline">Search</span>
@@ -173,8 +174,8 @@ function App() {
             onClick={toggleAIPanel}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all shadow-soft ${
               aiPanelOpen
-                ? 'bg-accent-600 text-white shadow-glow'
-                : 'bg-white text-ink-600 border border-paper-300 hover:border-accent-300 hover:text-accent-600 hover:shadow-card'
+                ? 'bg-indigo-600 text-white shadow-glow'
+                : 'bg-white/95 text-ink-600 border border-[#e4dccf] hover:border-indigo-300 hover:text-indigo-600 hover:shadow-card'
             }`}
           >
             <Sparkles className="w-4 h-4" />
@@ -192,7 +193,7 @@ function App() {
         {view.kind === 'subject' && <SubjectView subjectId={view.subjectId} />}
       </div>
 
-      {/* AI Panel - right side */}
+      {/* AI Panel - right side (Serene Soft Periwinkle / Lavender-Mist) */}
       {aiPanelOpen && !aiPanelFullscreen && (
         <>
           {/* Mobile overlay */}
@@ -201,7 +202,7 @@ function App() {
             onClick={toggleAIPanel}
           />
           <div
-            className="fixed lg:relative inset-y-0 right-0 z-50 lg:z-auto w-full bg-white border-l border-paper-300 flex flex-col shadow-lifted lg:shadow-none animate-slide-in-right"
+            className="fixed lg:relative inset-y-0 right-0 z-50 lg:z-auto w-full bg-[#f3f5fb] border-l border-[#dbe2f0] flex flex-col shadow-lifted lg:shadow-none animate-slide-in-right"
             style={{
               width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${aiPanelWidth}px` : undefined,
               maxWidth: '100vw',
@@ -219,22 +220,22 @@ function App() {
                   localStorage.setItem('estudesk_ai_panel_width', '420');
                 } catch {}
               }}
-              className="hidden lg:flex absolute -left-1.5 top-0 bottom-0 w-3 cursor-col-resize items-center justify-center z-30 group hover:bg-accent-500/20 active:bg-accent-500/30 transition-colors select-none"
+              className="hidden lg:flex absolute -left-1.5 top-0 bottom-0 w-3 cursor-col-resize items-center justify-center z-30 group hover:bg-indigo-500/20 active:bg-indigo-500/30 transition-colors select-none"
               title="Drag to resize panel (Double-click to reset width)"
             >
-              <div className="w-1 h-10 rounded-full bg-paper-400/60 group-hover:bg-accent-500 group-hover:h-14 group-active:bg-accent-600 transition-all shadow-sm" />
+              <div className="w-1 h-10 rounded-full bg-indigo-300 group-hover:bg-indigo-600 group-hover:h-14 group-active:bg-indigo-700 transition-all shadow-sm" />
             </div>
 
-            <div className="flex items-center justify-between px-4 py-3 border-b border-paper-200 bg-white lg:hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[#dbe2f0] bg-[#e9eef8] lg:hidden">
               <span className="font-serif text-sm font-semibold text-ink-700">Close</span>
               <button
                 onClick={toggleAIPanel}
-                className="p-1.5 rounded-lg hover:bg-paper-100 text-ink-400"
+                className="p-1.5 rounded-lg hover:bg-[#dfe6f4] text-ink-500"
               >
                 <PanelRightClose className="w-4 h-4" />
               </button>
             </div>
-            <div className="flex-1 min-h-0">
+            <div className="flex-1 min-h-0 bg-[#f3f5fb]">
               <AskAIPanel />
             </div>
           </div>
@@ -245,7 +246,7 @@ function App() {
 
       {/* AI Panel - fullscreen overlay */}
       {aiPanelOpen && aiPanelFullscreen && (
-        <div className="fixed inset-0 z-[60] bg-paper-50 flex flex-col animate-fade-in">
+        <div className="fixed inset-0 z-[60] bg-[#f3f5fb] flex flex-col animate-fade-in">
           <div className="flex-1 min-h-0">
             <AskAIPanel />
           </div>
