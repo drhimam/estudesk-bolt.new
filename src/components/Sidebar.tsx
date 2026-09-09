@@ -16,14 +16,12 @@ import {
   LogIn,
   LogOut,
   Sparkles,
-  Home,
   Shield,
-  HelpCircle,
   FolderTree,
 } from 'lucide-react';
 import { db, uid } from '@/db/database';
 import { useSemesters, useSubjects } from '@/hooks/useQueries';
-import { setView, toggleSidebar, useAppState, openAuthModal, logoutUser, openTourModal } from '@/store/appState';
+import { setView, toggleSidebar, useAppState, openAuthModal, logoutUser } from '@/store/appState';
 import { signOut } from '@/lib/authClient';
 import { COLOR_HEX } from '@/utils/colors';
 import {
@@ -739,33 +737,7 @@ function SidebarFooter() {
   }
 
   return (
-    <div className="p-3 border-t border-[#bed6c7] bg-[#d6e7dc] space-y-1.5">
-      {/* Interactive Tour & Feature Guide Button */}
-      <button
-        onClick={() => openTourModal(0, 'walkthrough')}
-        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold text-accent-800 bg-white/90 hover:bg-white border border-[#bed6c7] transition-all shadow-xs"
-      >
-        <div className="flex items-center gap-2">
-          <HelpCircle className="w-3.5 h-3.5 text-accent-600" />
-          <span>Guide & Tour</span>
-        </div>
-        <span className="text-[10px] font-mono px-1.5 py-0.2 bg-accent-100 rounded text-accent-800 font-bold">
-          Manual
-        </span>
-      </button>
-
-      {/* Return to Landing Page Button */}
-      <button
-        onClick={() => setView({ kind: 'landing' })}
-        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs text-ink-600 hover:text-ink-900 hover:bg-[#c8ded0] transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          <Home className="w-3.5 h-3.5 text-ink-500" />
-          <span>Landing Overview</span>
-        </div>
-        <ChevronRight className="w-3 h-3 text-ink-400" />
-      </button>
-
+    <div className="p-3 border-t border-[#bed6c7] bg-[#d6e7dc]">
       {/* User profile section */}
       {currentUser ? (
         <div ref={menuRef} className="relative">
