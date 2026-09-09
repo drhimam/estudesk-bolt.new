@@ -40,12 +40,78 @@ export function Sidebar() {
   const { sidebarOpen } = useAppState();
   const semesters = useSemesters();
 
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('estudesk_sidebar_width');
+      const parsed = saved ? parseInt(saved, 10) : 288;
+      return isNaN(parsed) ? 288 : Math.min(Math.max(parsed, 220), 520);
+    } catch {
+      return 288;
+    }
+  });
+  const [isResizing, setIsResizing] = useState(false);
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    function handleMouseMove(e: MouseEvent) {
+      const newWidth = e.clientX;
+      const maxWidth = Math.min(window.innerWidth * 0.45, 520);
+      const clamped = Math.min(Math.max(newWidth, 220), maxWidth);
+      setSidebarWidth(clamped);
+      try {
+        localStorage.setItem('estudesk_sidebar_width', clamped.toString());
+      } catch {}
+    }
+
+    function handleMouseUp() {
+      setIsResizing(false);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing]);
+
   if (!sidebarOpen) return null;
 
   return (
-    <aside className="w-72 shrink-0 border-r border-paper-300 bg-paper-100 flex flex-col h-full z-20">
+    <aside
+      className="relative shrink-0 border-r border-paper-300 bg-paper-100 flex flex-col h-full z-20 transition-all duration-75 select-none"
+      style={{
+        width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${sidebarWidth}px` : undefined,
+      }}
+    >
+      {/* Desktop resize handle on the right border */}
+      <div
+        onMouseDown={(e) => {
+          e.preventDefault();
+          setIsResizing(true);
+        }}
+        onDoubleClick={() => {
+          setSidebarWidth(288);
+          try {
+            localStorage.setItem('estudesk_sidebar_width', '288');
+          } catch {}
+        }}
+        className="hidden lg:flex absolute -right-1.5 top-0 bottom-0 w-3 cursor-col-resize items-center justify-center z-30 group hover:bg-accent-500/20 active:bg-accent-500/30 transition-colors select-none"
+        title="Drag to resize sidebar (Double-click to reset width)"
+      >
+        <div className="w-1 h-10 rounded-full bg-paper-400/60 group-hover:bg-accent-500 group-hover:h-14 group-active:bg-accent-600 transition-all shadow-sm" />
+      </div>
+
       <SidebarHeader />
-      <nav className="flex-1 overflow-y-auto scrollbar-thin px-3 py-3">
+      <nav className="flex-1 overflow-y-auto scrollbar-thin px-3 py-3 select-text">
         {semesters.length === 0 && (
           <div className="p-3 mb-2 rounded-xl bg-white/70 border border-dashed border-paper-300 text-center">
             <FolderTree className="w-6 h-6 text-accent-500 mx-auto mb-1.5 opacity-80" />

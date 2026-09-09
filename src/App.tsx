@@ -11,6 +11,7 @@ import { GlobalSearch } from '@/components/GlobalSearch';
 import { LandingPage } from '@/components/LandingPage';
 import { AuthModal } from '@/components/AuthModal';
 import { DashboardTourModal } from '@/components/DashboardTourModal';
+import { syncFromTursoToLocal } from '@/lib/apiSync';
 
 function App() {
   const { view, sidebarOpen, aiPanelOpen, aiPanelFullscreen, tourModalOpen, tourInitialStep, tourInitialTab } = useAppState();
@@ -31,6 +32,7 @@ function App() {
 
   useEffect(() => {
     setReady(true);
+    syncFromTursoToLocal();
   }, []);
 
   useEffect(() => {

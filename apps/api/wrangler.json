@@ -5,7 +5,11 @@
   "compatibility_date": "2026-09-01",
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
-    "ENVIRONMENT": "development"
+    "ENVIRONMENT": "production",
+    "TURSO_DATABASE_URL": "libsql://estudesk-db-drhimam.aws-us-east-2.turso.io",
+    "AI_PROVIDER": "custom",
+    "AI_BASE_URL": "https://api.xiaomimimo.com/v1",
+    "AI_MODEL": "mimo-v2.5-pro"
   },
   "r2_buckets": [
     {
