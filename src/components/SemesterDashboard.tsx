@@ -106,7 +106,7 @@ export function SemesterDashboard({ semesterId, semesterName }: Props) {
             <div className="flex items-center gap-2">
               <DownloadMenu
                 studentName=""
-                semesterName={semesterName}
+                semesterName={semesterName || 'Current Term'}
                 scopeLabel="all-subjects"
                 deadlines={deadlines}
                 subjects={subjects}

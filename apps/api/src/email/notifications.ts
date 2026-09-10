@@ -297,58 +297,32 @@ export async function sendWeeklyDigestForUser(
     return { success: true, message: 'No active deadlines to digest; skipped sending.' };
   }
 
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
-  const thisWeekEnd = new Date(todayStart.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-  const overdue: DeadlineItem[] = [];
-  const dueToday: DeadlineItem[] = [];
-  const dueThisWeek: DeadlineItem[] = [];
-  const later: DeadlineItem[] = [];
-
-  for (const d of allDeadlines) {
+  const deadlineItems: DeadlineItem[] = allDeadlines.map((d: { id: string; title: string; description?: string | null; subjectId?: string | null; dueDate: number | Date | string }) => {
     const due = new Date(d.dueDate);
     const sub = d.subjectId ? subjectMap.get(d.subjectId) : undefined;
-    const diffDays = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-
-    const item: DeadlineItem = {
+    return {
       id: d.id,
       title: d.title,
+      description: d.description,
       subjectName: sub?.name,
       subjectColor: sub?.color,
       dueDate: due,
-      daysRemainingOrOverdue: diffDays,
     };
-
-    if (due.getTime() < todayStart.getTime()) {
-      overdue.push(item);
-    } else if (due.getTime() >= todayStart.getTime() && due.getTime() < todayEnd.getTime()) {
-      dueToday.push(item);
-    } else if (due.getTime() >= todayEnd.getTime() && due.getTime() <= thisWeekEnd.getTime()) {
-      dueThisWeek.push(item);
-    } else {
-      later.push(item);
-    }
-  }
+  });
 
   const activeFolderName = userFolders[0]?.name || 'Current Term';
   const frontendUrl = env.FRONTEND_URL || 'https://estudesk.com';
 
-  const { html, text } = renderWeeklyDigestEmail({
+  const { html, text, totalCount } = renderWeeklyDigestEmail({
     userName: user.name || user.email.split('@')[0],
     semesterName: activeFolderName,
     appUrl: frontendUrl,
-    overdue,
-    dueToday,
-    dueThisWeek,
-    later,
+    deadlines: deadlineItems,
   });
 
   const subjectPrefix = isPreview ? '[Preview] ' : '';
-  const totalItemCount = overdue.length + dueToday.length + dueThisWeek.length;
-  const subjectLine = totalItemCount > 0
-    ? `${subjectPrefix}Your week ahead — ${totalItemCount} deadlines in ${activeFolderName}`
+  const subjectLine = totalCount > 0
+    ? `${subjectPrefix}Your week ahead — ${totalCount} deadline${totalCount > 1 ? 's' : ''} in ${activeFolderName}`
     : `${subjectPrefix}Weekly Briefing — All caught up in ${activeFolderName}`;
 
   const res = await sendZeptoMail({

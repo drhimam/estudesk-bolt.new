@@ -1,5 +1,26 @@
 # eStudesk System Walkthrough & Architectural Reference
 
+## Recent Update: Week-by-Week Date-Wise Weekly Deadline Email Digest
+- **Synchronized Date-Wise Layout (`apps/api/src/email/templates.ts`)**:
+  - Upgraded `renderWeeklyDigestEmail` and `groupDeadlinesForEmail` to mirror the frontend date-wise week-by-week table layout.
+  - Granular chronological sections:
+    - 🔴 **Overdue**: Soft blush rose cards (`#fff1f2`, border `#fecdd3`, badge `#ffe4e6`, text `#9f1239`)
+    - 🟡 **Today**: Soft warm amber cards (`#fffbeb`, border `#fde68a`, badge `#fef3c7`, text `#92400e`)
+    - 🔵 **This Week**: Soft sky blue cards with exact date sublabel (`#f0f9ff`, border `#bae6fd`, badge `#e0f2fe`, text `#0369a1`)
+    - 🟣 **Next Week**: Soft lavender periwinkle cards with date sublabel (`#eef2ff`, border `#c7d2fe`, badge `#e0e7ff`, text `#3730a3`)
+    - 🟢 **Week-by-Week Future Ranges**: Distinct `Week of [Start] – [End]` chronological buckets styled with soft academic sage cards (`#f4f8f5`, border `#d3e4d9`, badge `#e3eee6`, text `#274835`)
+- **Card-Level Academic Metadata**:
+  - Bold task titles with HTML character escaping against XSS.
+  - Color-coded subject pill badges mapping to subject color tokens (`rose`, `amber`, `teal`, `blue`, `violet`, `emerald`, `crimson`, `slate`, `plum`, `ochre`) with graceful fallback to `Other`.
+  - Formatted due date label (`Due [Day, Month Date]`) and optional task description snippets.
+  - Relative countdown chips (`Today`, `Tomorrow`, `Xd left`, `Xd overdue`).
+- **Summary Metrics Grid**:
+  - High-level overview banner showing Total Active, This Week, and Urgent/Overdue counts.
+  - "🎉 All Caught Up!" celebratory banner when zero pending assignments remain.
+- **Client-Resilient HTML & Plain Text**:
+  - Formatted using robust nested table / inline styles fully compatible across Apple Mail, Gmail (Web, iOS, Android), Outlook (Web, Desktop, Mobile), and Yahoo.
+  - Structured plain text alternative maintaining section headers and item bullets.
+
 ## Recent Update: Timestamped Filenames for All Exports & Downloads
 - **Standardized Timestamp Engine (`src/utils/filename.ts`)**:
   - Implemented `getFileTimestamp(date?: Date)` providing cross-platform safe timestamps in `YYYY-MM-DD_HH-mm` format (e.g. `2026-09-10_16-05`).

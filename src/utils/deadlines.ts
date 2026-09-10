@@ -209,7 +209,6 @@ export function groupDeadlinesByDate(deadlines: Deadline[]): DateDeadlineGroup[]
   if (overdueItems.length > 0) {
     groups.push({
       id: 'overdue',
-      label: 'Overdue',
       category: 'overdue',
       ...CATEGORY_META.overdue,
       items: overdueItems,
@@ -219,7 +218,6 @@ export function groupDeadlinesByDate(deadlines: Deadline[]): DateDeadlineGroup[]
   if (todayItems.length > 0) {
     groups.push({
       id: 'today',
-      label: 'Today',
       category: 'today',
       ...CATEGORY_META.today,
       items: todayItems,
@@ -229,10 +227,10 @@ export function groupDeadlinesByDate(deadlines: Deadline[]): DateDeadlineGroup[]
   if (thisWeekItems.length > 0) {
     groups.push({
       id: 'thisWeek',
-      label: 'This Week',
-      sublabel: formatWeekRange(new Date(now + DAY_MS), new Date(currentWeekEnd)),
       category: 'thisWeek',
       ...CATEGORY_META.thisWeek,
+      label: 'This Week',
+      sublabel: formatWeekRange(new Date(now + DAY_MS), new Date(currentWeekEnd)),
       items: thisWeekItems,
     });
   }

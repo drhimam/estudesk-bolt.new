@@ -1583,10 +1583,6 @@ function AttachmentIcon({ type }: { type: AttachmentType }) {
   }
 }
 
-function sanitizeFilename(name: string): string {
-  return name.replace(/[^a-z0-9-_ ]/gi, '').trim().replace(/\s+/g, '_') || 'chat';
-}
-
 function downloadFile(filename: string, content: string) {
   const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
