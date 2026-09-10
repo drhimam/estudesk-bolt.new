@@ -44,7 +44,7 @@ export function initBetterAuth(
     trustedOrigins,
     emailAndPassword: {
       enabled: true,
-      requireEmailVerification: false,
+      requireEmailVerification: true,
       resetPasswordTokenExpiresIn: 60 * 60, // 1 hour
       sendResetPassword: async ({ user, url, token }) => {
         if (env && user && user.email) {
@@ -54,7 +54,7 @@ export function initBetterAuth(
     },
     emailVerification: {
       sendOnSignUp: true,
-      autoSignInAfterVerification: true,
+      autoSignInAfterVerification: false,
       sendVerificationEmail: async ({ user, url, token }) => {
         if (env && user && user.email) {
           await sendVerificationNotification(db, env, user, token, url);

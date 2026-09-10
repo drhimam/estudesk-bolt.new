@@ -26,6 +26,8 @@ interface AppState {
   authModalOpen: boolean;
   authMode: AuthMode;
   authResetToken: string | null;
+  authInitialNotice?: string | null;
+  authInitialError?: string | null;
   notificationModalOpen: boolean;
   currentUser: UserProfile | null;
   tourModalOpen: boolean;
@@ -63,6 +65,8 @@ let state: AppState = {
   authModalOpen: false,
   authMode: 'signin',
   authResetToken: null,
+  authInitialNotice: null,
+  authInitialError: null,
   notificationModalOpen: false,
   currentUser: getInitialUser(),
   tourModalOpen: false,
@@ -124,13 +128,31 @@ export function setAIPanelFullscreen(open: boolean) {
   emit();
 }
 
-export function openAuthModal(mode: AuthMode = 'signin', token: string | null = null) {
-  state = { ...state, authModalOpen: true, authMode: mode, authResetToken: token };
+export function openAuthModal(
+  mode: AuthMode = 'signin',
+  token: string | null = null,
+  notice: string | null = null,
+  error: string | null = null
+) {
+  state = {
+    ...state,
+    authModalOpen: true,
+    authMode: mode,
+    authResetToken: token,
+    authInitialNotice: notice,
+    authInitialError: error,
+  };
   emit();
 }
 
 export function closeAuthModal() {
-  state = { ...state, authModalOpen: false, authResetToken: null };
+  state = {
+    ...state,
+    authModalOpen: false,
+    authResetToken: null,
+    authInitialNotice: null,
+    authInitialError: null,
+  };
   emit();
 }
 

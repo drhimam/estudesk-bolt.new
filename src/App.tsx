@@ -45,11 +45,30 @@ function App() {
     } else if (action === 'verify-email' && token) {
       verifyEmail({ query: { token } })
         .then((res) => {
-          if (res.data) {
-            alert('✓ Your email address has been successfully verified!');
+          if (res.error) {
+            openAuthModal(
+              'signin',
+              null,
+              null,
+              res.error.message || 'Verification token is invalid or has expired. Please sign in or request a new link.'
+            );
+          } else {
+            openAuthModal(
+              'signin',
+              null,
+              '✓ Your email address has been successfully verified! You can now sign in.'
+            );
           }
         })
-        .catch((err) => console.error('Email verification error:', err));
+        .catch((err) => {
+          console.error('Email verification error:', err);
+          openAuthModal(
+            'signin',
+            null,
+            null,
+            'Failed to verify email token. Please try again or request a new verification email.'
+          );
+        });
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);

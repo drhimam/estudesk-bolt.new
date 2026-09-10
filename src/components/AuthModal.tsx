@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   X,
   GraduationCap,
-  Sparkles,
   Lock,
   Mail,
   User,
@@ -23,14 +22,12 @@ import {
   closeAuthModal,
   setCurrentUser,
   setView,
-  clearAllData,
-  openAuthModal,
   AuthMode,
 } from '@/store/appState';
 import { signIn, signUp, forgetPassword, resetPassword, sendVerificationEmail } from '@/lib/authClient';
 
 export function AuthModal() {
-  const { authModalOpen, authMode, authResetToken } = useAppState();
+  const { authModalOpen, authMode, authResetToken, authInitialNotice, authInitialError } = useAppState();
   const [tab, setTab] = useState<AuthMode>(authMode || 'signin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -39,26 +36,61 @@ export function AuthModal() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [resendingVerification, setResendingVerification] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [emailSentNotice, setEmailSentNotice] = useState<string | null>(null);
+  const [unverifiedEmailError, setUnverifiedEmailError] = useState(false);
 
   useEffect(() => {
     if (authMode) {
       setTab(authMode);
-      setError(null);
-      setSuccess(null);
+      setError(authInitialError || null);
+      setSuccess(authInitialNotice || null);
       setEmailSentNotice(null);
+      setUnverifiedEmailError(false);
     }
-  }, [authMode, authModalOpen]);
+  }, [authMode, authModalOpen, authInitialNotice, authInitialError]);
 
   if (!authModalOpen) return null;
+
+  async function handleResendVerification(targetEmail?: string) {
+    const emailToUse = (targetEmail || email).trim();
+    if (!emailToUse) {
+      setError('Please enter your email address.');
+      return;
+    }
+    setResendingVerification(true);
+    setError(null);
+    try {
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'https://estudesk.com';
+      const res = await sendVerificationEmail({
+        email: emailToUse,
+        callbackURL: origin,
+      });
+
+      if (res.error) {
+        setError(res.error.message || 'Failed to resend verification email.');
+      } else {
+        setEmailSentNotice(
+          `A fresh verification link has been sent to ${emailToUse} via Zoho ZeptoMail Canada. Please check your inbox and spam folder.`
+        );
+        setUnverifiedEmailError(false);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Verification service error';
+      setError(msg);
+    } finally {
+      setResendingVerification(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setSuccess(null);
     setEmailSentNotice(null);
+    setUnverifiedEmailError(false);
 
     // 1. Forgot Password Request Flow
     if (tab === 'forgot_password') {
@@ -137,29 +169,7 @@ export function AuthModal() {
 
     // 3. Email Verification Resend Flow
     if (tab === 'verify_email') {
-      if (!email.trim()) {
-        setError('Please provide your email address.');
-        return;
-      }
-      setLoading(true);
-      try {
-        const origin = typeof window !== 'undefined' ? window.location.origin : 'https://estudesk.com';
-        const res = await sendVerificationEmail({
-          email: email.trim(),
-          callbackURL: origin,
-        });
-
-        if (res.error) {
-          setError(res.error.message || 'Failed to send verification email.');
-        } else {
-          setEmailSentNotice(`Verification email sent to ${email.trim()} via Zoho ZeptoMail.`);
-        }
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Verification service error';
-        setError(msg);
-      } finally {
-        setLoading(false);
-      }
+      await handleResendVerification();
       return;
     }
 
@@ -189,24 +199,13 @@ export function AuthModal() {
           return;
         }
 
-        const user = res.data?.user || {
-          id: 'user_' + Date.now(),
-          name: name.trim(),
-          email: email.trim(),
-          tier: 'Scholar',
-        };
-
-        // Clear local mock/demo data so the new user gets an empty dashboard
-        await clearAllData();
-
-        setCurrentUser({
-          id: user.id,
-          name: user.name || name.trim(),
-          email: user.email || email.trim(),
-          tier: 'Scholar',
-        });
-
-        setSuccess('Account created! A verification email was sent to your inbox via ZeptoMail.');
+        // Account created! Require email verification before logging in
+        setPassword('');
+        setConfirmPassword('');
+        setTab('verify_email');
+        setEmailSentNotice(
+          `Account created successfully! We have sent a verification link to ${email.trim()} via Zoho ZeptoMail Canada. Please verify your email to activate your account before signing in.`
+        );
       } else {
         const res = await signIn.email({
           email: email.trim(),
@@ -214,7 +213,21 @@ export function AuthModal() {
         });
 
         if (res.error) {
-          setError(res.error.message || 'Invalid email or password.');
+          const errMsg = res.error.message || 'Invalid email or password.';
+          const isUnverified =
+            errMsg.toLowerCase().includes('not verified') ||
+            errMsg.toLowerCase().includes('email_not_verified') ||
+            errMsg.toLowerCase().includes('verification') ||
+            errMsg.toLowerCase().includes('verify');
+
+          if (isUnverified) {
+            setUnverifiedEmailError(true);
+            setError(
+              'Your email address has not been verified yet. Please check your inbox or click below to resend the verification link.'
+            );
+          } else {
+            setError(errMsg);
+          }
           setLoading(false);
           return;
         }
@@ -234,12 +247,11 @@ export function AuthModal() {
         });
 
         setSuccess('Welcome back!');
+        setTimeout(() => {
+          closeAuthModal();
+          setView({ kind: 'home' });
+        }, 700);
       }
-
-      setTimeout(() => {
-        closeAuthModal();
-        setView({ kind: 'home' });
-      }, 700);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Authentication service error';
       setError(msg);
@@ -302,6 +314,7 @@ export function AuthModal() {
                   setTab('signin');
                   setError(null);
                   setEmailSentNotice(null);
+                  setUnverifiedEmailError(false);
                 }}
                 className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
                   tab === 'signin'
@@ -317,6 +330,7 @@ export function AuthModal() {
                   setTab('signup');
                   setError(null);
                   setEmailSentNotice(null);
+                  setUnverifiedEmailError(false);
                 }}
                 className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
                   tab === 'signup'
@@ -338,6 +352,7 @@ export function AuthModal() {
                   setTab('signin');
                   setError(null);
                   setEmailSentNotice(null);
+                  setUnverifiedEmailError(false);
                 }}
                 className="text-xs text-white/80 hover:text-white flex items-center gap-1 font-medium underline-offset-2 hover:underline"
               >
@@ -351,9 +366,31 @@ export function AuthModal() {
         {/* Body content */}
         <div className="p-6">
           {error && (
-            <div className="mb-4 p-3 rounded-xl bg-crimson-50 border border-crimson-200 text-crimson-700 text-xs flex items-center gap-2 animate-fade-in">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 text-crimson-600" />
-              <span>{error}</span>
+            <div className="mb-4 p-3.5 rounded-xl bg-crimson-50 border border-crimson-200 text-crimson-800 text-xs flex flex-col gap-2 animate-fade-in">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 text-crimson-600 mt-0.5" />
+                <span className="leading-relaxed">{error}</span>
+              </div>
+              {unverifiedEmailError && email.trim() && (
+                <button
+                  type="button"
+                  disabled={resendingVerification}
+                  onClick={() => handleResendVerification(email)}
+                  className="self-start text-xs font-semibold text-accent-700 hover:text-accent-800 underline flex items-center gap-1.5 mt-1 disabled:opacity-60"
+                >
+                  {resendingVerification ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Sending verification email...</span>
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Resend verification email to {email.trim()}</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           )}
 
@@ -368,18 +405,80 @@ export function AuthModal() {
             <div className="mb-4 p-4 rounded-xl bg-accent-50 border border-accent-200 text-accent-800 text-xs leading-relaxed animate-fade-in space-y-2">
               <div className="flex items-center gap-2 font-semibold text-accent-900">
                 <Send className="w-4 h-4 text-accent-600" />
-                <span>Instructions Dispatched</span>
+                <span>Verification Email Dispatched</span>
               </div>
               <p>{emailSentNotice}</p>
             </div>
           )}
 
-          {/* FORGOT PASSWORD FORM */}
-          {tab === 'forgot_password' && !emailSentNotice && (
+          {/* VERIFY EMAIL TAB */}
+          {tab === 'verify_email' && (
             <form onSubmit={handleSubmit} className="space-y-4">
-              <p className="text-xs text-ink-600 leading-relaxed">
-                Enter your registered email address. We will send you a secure password reset link powered by Zoho ZeptoMail Canada.
-              </p>
+              {!emailSentNotice && (
+                <p className="text-xs text-ink-600 leading-relaxed">
+                  Enter your email address to receive a fresh verification link powered by Zoho ZeptoMail Canada.
+                </p>
+              )}
+
+              <div>
+                <label className="block text-xs font-medium text-ink-600 mb-1.5">Email Address</label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="scholar@university.edu"
+                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-paper-300 text-sm text-ink-800 placeholder:text-ink-300 focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 pt-1">
+                <button
+                  type="submit"
+                  disabled={resendingVerification || loading || !email.trim()}
+                  className="w-full py-2.5 px-4 rounded-xl bg-accent-600 hover:bg-accent-700 text-white font-medium text-sm shadow-card hover:shadow-glow transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  {resendingVerification || loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Sending Verification Email...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Resend Verification Email</span>
+                      <Send className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTab('signin');
+                    setError(null);
+                    setEmailSentNotice(null);
+                    setUnverifiedEmailError(false);
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-paper-100 hover:bg-paper-200 text-ink-700 font-medium text-sm transition-all flex items-center justify-center gap-2"
+                >
+                  <span>Go to Sign In</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* FORGOT PASSWORD FORM */}
+          {tab === 'forgot_password' && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {!emailSentNotice && (
+                <p className="text-xs text-ink-600 leading-relaxed">
+                  Enter your registered email address. We will send you a secure password reset link powered by Zoho ZeptoMail Canada.
+                </p>
+              )}
 
               <div>
                 <label className="block text-xs font-medium text-ink-600 mb-1.5">Email Address</label>
@@ -525,6 +624,8 @@ export function AuthModal() {
                         setTab('forgot_password');
                         setError(null);
                         setSuccess(null);
+                        setEmailSentNotice(null);
+                        setUnverifiedEmailError(false);
                       }}
                       className="text-xs text-accent-600 hover:text-accent-700 hover:underline font-medium"
                     >

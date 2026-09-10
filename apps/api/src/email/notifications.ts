@@ -61,10 +61,10 @@ export async function sendVerificationNotification(
   env: EmailEnvBindings,
   user: { id: string; name?: string | null; email: string },
   token: string,
-  url?: string
+  _url?: string
 ) {
-  const frontendUrl = env.FRONTEND_URL || 'https://estudesk.com';
-  const verificationUrl = url || `${frontendUrl}?token=${token}&action=verify-email`;
+  const frontendUrl = (env.FRONTEND_URL || 'https://estudesk.com').replace(/\/+$/, '');
+  const verificationUrl = `${frontendUrl}/?token=${encodeURIComponent(token)}&action=verify-email`;
 
   const { html, text } = renderVerificationEmail({
     userName: user.name || user.email.split('@')[0],
@@ -104,10 +104,10 @@ export async function sendResetPasswordNotification(
   env: EmailEnvBindings,
   user: { id: string; name?: string | null; email: string },
   token: string,
-  url?: string
+  _url?: string
 ) {
-  const frontendUrl = env.FRONTEND_URL || 'https://estudesk.com';
-  const resetUrl = url || `${frontendUrl}?token=${token}&action=reset-password`;
+  const frontendUrl = (env.FRONTEND_URL || 'https://estudesk.com').replace(/\/+$/, '');
+  const resetUrl = `${frontendUrl}/?token=${encodeURIComponent(token)}&action=reset-password`;
 
   const { html, text } = renderResetPasswordEmail({
     userName: user.name || user.email.split('@')[0],
