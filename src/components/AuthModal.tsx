@@ -73,7 +73,7 @@ export function AuthModal() {
         setError(res.error.message || 'Failed to resend verification email.');
       } else {
         setEmailSentNotice(
-          `A fresh verification link has been sent to ${emailToUse} via Zoho ZeptoMail Canada. Please check your inbox and spam folder.`
+          `A fresh verification link has been sent to ${emailToUse}. Please check your inbox and spam folder.`
         );
         setUnverifiedEmailError(false);
       }
@@ -110,7 +110,7 @@ export function AuthModal() {
           setError(res.error.message || 'Failed to send password reset email. Please try again.');
         } else {
           setEmailSentNotice(
-            `Password reset instructions have been sent via Zoho ZeptoMail to ${email.trim()}. Please check your inbox and spam folder.`
+            `Password reset instructions have been sent to ${email.trim()}. Please check your inbox and spam folder.`
           );
         }
       } catch (err: unknown) {
@@ -204,7 +204,7 @@ export function AuthModal() {
         setConfirmPassword('');
         setTab('verify_email');
         setEmailSentNotice(
-          `Account created successfully! We have sent a verification link to ${email.trim()} via Zoho ZeptoMail Canada. Please verify your email to activate your account before signing in.`
+          `Account created successfully! We have sent a verification link to ${email.trim()}. Please verify your email to activate your account before signing in.`
         );
       } else {
         const res = await signIn.email({
@@ -295,7 +295,7 @@ export function AuthModal() {
               </div>
               <p className="text-xs text-paper-200">
                 {tab === 'forgot_password'
-                  ? 'Password Recovery via ZeptoMail'
+                  ? 'Password Recovery'
                   : tab === 'reset_password'
                     ? 'Set New Account Password'
                     : tab === 'verify_email'
@@ -416,7 +416,7 @@ export function AuthModal() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {!emailSentNotice && (
                 <p className="text-xs text-ink-600 leading-relaxed">
-                  Enter your email address to receive a fresh verification link powered by Zoho ZeptoMail Canada.
+                  Enter your email address to receive a fresh verification link.
                 </p>
               )}
 
@@ -476,7 +476,7 @@ export function AuthModal() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {!emailSentNotice && (
                 <p className="text-xs text-ink-600 leading-relaxed">
-                  Enter your registered email address. We will send you a secure password reset link powered by Zoho ZeptoMail Canada.
+                  Enter your registered email address. We will send you a secure password reset link.
                 </p>
               )}
 
@@ -690,7 +690,7 @@ export function AuthModal() {
           <div className="mt-5 pt-4 border-t border-paper-200 text-center">
             <div className="flex items-center justify-center gap-1.5 text-xs text-ink-500 font-medium">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>Email Delivery & Security via Zoho ZeptoMail Canada</span>
+              <span>eStudesk End-to-End Encrypted Cloud Infrastructure</span>
             </div>
           </div>
         </div>

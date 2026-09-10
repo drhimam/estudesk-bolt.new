@@ -152,7 +152,7 @@ export function NotificationSettingsModal() {
 
       setStatusMessage({
         type: 'success',
-        text: `✓ Test email dispatched via Zoho ZeptoMail Canada to ${currentUser.email}!`,
+        text: `✓ Test email dispatched to ${currentUser.email}!`,
       });
 
       // Refresh logs
@@ -188,7 +188,7 @@ export function NotificationSettingsModal() {
 
       setStatusMessage({
         type: 'success',
-        text: `✓ Weekly deadline digest sent to ${currentUser.email} via ZeptoMail Canada.`,
+        text: `✓ Weekly deadline digest sent to ${currentUser.email}.`,
       });
 
       // Refresh logs
@@ -221,7 +221,7 @@ export function NotificationSettingsModal() {
               <h2 className="font-serif text-lg font-bold tracking-tight text-white flex items-center gap-2">
                 <span>Email & Notification Settings</span>
                 <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 border border-emerald-400/30">
-                  ZeptoMail Canada
+                  Cloud Mail
                 </span>
               </h2>
               <p className="text-xs text-paper-200">
@@ -269,7 +269,7 @@ export function NotificationSettingsModal() {
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 </div>
                 <div className="text-[11px] text-ink-500">
-                  Gateway: <code className="font-mono text-[10px] bg-white px-1 py-0.5 rounded border border-paper-300">api.zeptomail.ca (Zoho Canada)</code>
+                  Status: <span className="font-medium text-emerald-700">Connected &amp; Active</span>
                 </div>
               </div>
             </div>
@@ -500,7 +500,7 @@ export function NotificationSettingsModal() {
                           </span>
                         </td>
                         <td className="py-2 px-3 text-ink-500 font-mono text-[10px]">
-                          {log.provider === 'zeptomail' ? 'ZeptoMail (CA)' : log.provider}
+                          {log.provider === 'zeptomail' ? 'Cloud Mail' : log.provider}
                         </td>
                         <td className="py-2 px-3 text-ink-400 text-[11px]">
                           {new Date(log.createdAt).toLocaleString(undefined, {

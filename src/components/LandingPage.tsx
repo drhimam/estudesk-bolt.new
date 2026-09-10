@@ -112,7 +112,7 @@ export function LandingPage() {
           <div className="text-center max-w-3xl mx-auto mb-12">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-accent-50 border border-accent-200/80 text-accent-800 text-xs font-semibold mb-6 shadow-sm">
               <Sparkles className="w-3.5 h-3.5 text-accent-600" />
-              <span>Multi-Agent AI Studio & Turso Edge Sync Active</span>
+              <span>Multi-Agent AI Studio &amp; Real-Time Cloud Sync Active</span>
             </div>
             
             <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-ink-950 leading-[1.15]">
@@ -160,11 +160,11 @@ export function LandingPage() {
               </div>
               <div className="flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-accent-600" />
-                <span>Offline-first IndexedDB</span>
+                <span>Offline-first local cache</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Database className="w-4 h-4 text-indigo-600" />
-                <span>Turso Cloud Database</span>
+                <span>eStudesk Cloud Database</span>
               </div>
             </div>
           </div>
@@ -428,9 +428,9 @@ export function LandingPage() {
               <div className="w-12 h-12 rounded-2xl bg-teal-100 text-teal-800 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Database className="w-6 h-6" />
               </div>
-              <h3 className="font-serif text-xl font-bold text-ink-900 mb-2">Turso Edge libSQL Sync</h3>
+              <h3 className="font-serif text-xl font-bold text-ink-900 mb-2">Real-Time Edge Cloud Sync</h3>
               <p className="text-sm text-ink-600 leading-relaxed">
-                Sub-10ms global edge replication with Turso database and local Dexie IndexedDB cache so your study notes are accessible anywhere, even offline.
+                Sub-10ms global real-time cloud replication and local offline cache so your study notes are accessible anywhere, anytime.
               </p>
             </div>
           </div>
@@ -445,13 +445,13 @@ export function LandingPage() {
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold mb-4">
                   <Code2 className="w-3.5 h-3.5" />
-                  <span>Production Cloudflare & Turso Infrastructure</span>
+                  <span>eStudesk High-Availability Cloud Infrastructure</span>
                 </div>
                 <h2 className="font-serif text-3xl font-bold text-ink-950 mb-4">
-                  Built for Speed, Privacy & Infinite Scalability
+                  Built for Speed, Privacy &amp; Infinite Scalability
                 </h2>
                 <p className="text-sm text-ink-600 leading-relaxed mb-6">
-                  eStudesk runs on Cloudflare Workers edge nodes, connecting directly to Turso libSQL SQLite clusters and securing sessions with Better Auth enterprise token rotation.
+                  eStudesk runs on high-performance global edge nodes, connecting directly to encrypted cloud clusters with enterprise session protection.
                 </p>
 
                 <div className="space-y-3">
@@ -459,21 +459,21 @@ export function LandingPage() {
                     <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                     <div>
                       <span className="text-sm font-semibold text-ink-800">Edge-Native Routing:</span>
-                      <p className="text-xs text-ink-500">Hono.js worker with instant sub-millisecond cold starts across 300+ global data centers.</p>
+                      <p className="text-xs text-ink-500">Sub-millisecond latency and instant response times across 300+ global data centers.</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <span className="text-sm font-semibold text-ink-800">Better Auth Integration:</span>
-                      <p className="text-xs text-ink-500">Drizzle SQLite adapter with encrypted passwords and 7-day persistent session tokens.</p>
+                      <span className="text-sm font-semibold text-ink-800">Enterprise Security:</span>
+                      <p className="text-xs text-ink-500">Encrypted token rotation and secure session isolation for ultimate study privacy.</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                     <div>
                       <span className="text-sm font-semibold text-ink-800">Offline-First Resiliency:</span>
-                      <p className="text-xs text-ink-500">All flashcards, quizzes, notes, and timers work 100% offline via local IndexedDB.</p>
+                      <p className="text-xs text-ink-500">All flashcards, quizzes, notes, and timers work 100% offline via local cache.</p>
                     </div>
                   </div>
                 </div>
@@ -481,18 +481,18 @@ export function LandingPage() {
 
               <div className="bg-ink-950 text-paper-100 rounded-2xl p-6 font-mono text-xs shadow-lifted">
                 <div className="flex items-center justify-between pb-3 border-b border-ink-800 text-ink-400 mb-4">
-                  <span>turso-connection-status.log</span>
+                  <span>cloud-sync-status.log</span>
                   <span className="text-emerald-400 flex items-center gap-1">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                     ONLINE
                   </span>
                 </div>
                 <pre className="text-paper-300 leading-relaxed overflow-x-auto">
-{`[turso.aws-us-east-2] Handshake successful (libsql v0.18)
-[schema.sync] 18 relational tables active
-[auth.better] SQLite drizzleAdapter loaded
-[worker.cloudflare] Region: Global Edge
-[dexie.client] IndexedDB: estudesk_v2 (synced)
+{`[estudesk.cloud] Handshake successful (secure TLS 1.3)
+[schema.sync] Relational workspace tables active
+[auth.security] Session authentication active & verified
+[network.edge] Region: Global Edge CDN
+[cache.client] Local offline store (synchronized)
 [audio.ambient] Web Audio API 432Hz synthesizer ready`}
                 </pre>
               </div>

@@ -105,7 +105,7 @@ export function renderVerificationEmail(props: VerificationTemplateProps): { htm
       </p>
     </div>
     <div class="footer">
-      &copy; ${new Date().getFullYear()} eStudesk Inc. &bull; Sent via Zoho ZeptoMail Canada<br/>
+      &copy; ${new Date().getFullYear()} eStudesk Inc. &bull; Academic Workspace & AI Study Desk<br/>
       Need help? Contact <a href="mailto:${supportEmail}" class="link-muted">${supportEmail}</a>
     </div>
   </div>
@@ -167,7 +167,7 @@ export function renderResetPasswordEmail(props: ResetPasswordTemplateProps): { h
       </p>
     </div>
     <div class="footer">
-      &copy; ${new Date().getFullYear()} eStudesk Inc. &bull; Sent via Zoho ZeptoMail Canada<br/>
+      &copy; ${new Date().getFullYear()} eStudesk Inc. &bull; Academic Workspace & AI Study Desk<br/>
       If you did not make this request, contact <a href="mailto:${supportEmail}" class="link-muted">${supportEmail}</a> immediately.
     </div>
   </div>
@@ -255,7 +255,7 @@ export function renderWeeklyDigestEmail(props: WeeklyDigestTemplateProps): { htm
       </div>
     </div>
     <div class="footer">
-      &copy; ${new Date().getFullYear()} eStudesk Inc. &bull; Sent via Zoho ZeptoMail Canada<br/>
+      &copy; ${new Date().getFullYear()} eStudesk Inc. &bull; Academic Workspace & AI Study Desk<br/>
       You can customize your digest frequency in <a href="${appUrl}" class="link-muted">Settings &rarr; Notifications</a>.
     </div>
   </div>
@@ -329,7 +329,7 @@ export function renderDeadlineAlertEmail(props: DeadlineAlertTemplateProps): { h
       </div>
     </div>
     <div class="footer">
-      &copy; ${new Date().getFullYear()} eStudesk Inc. &bull; Sent via Zoho ZeptoMail Canada
+      &copy; ${new Date().getFullYear()} eStudesk Inc. &bull; Academic Workspace & AI Study Desk
     </div>
   </div>
 </body>
@@ -354,30 +354,30 @@ View on eStudesk: ${actionUrl}
  * 5. Test Email Notification Template
  */
 export function renderTestEmail(props: TestEmailTemplateProps): { html: string; text: string } {
-  const { userName, userEmail, timestamp, apiUrl } = props;
+  const { userName, userEmail, timestamp } = props;
 
   const html = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>ZeptoMail Canada Connection Verified - eStudesk</title>
+  <title>eStudesk Cloud Mail Connection Verified</title>
   <style>${baseStyles}</style>
 </head>
 <body>
   <div class="container">
     <div class="header">
       <div class="logo">eStudesk <span class="badge" style="background:#059669;">Connected</span></div>
-      <div class="subtitle">Zoho ZeptoMail Canada (api.zeptomail.ca)</div>
+      <div class="subtitle">eStudesk Secure Cloud Mail Service</div>
     </div>
     <div class="content">
       <div class="greeting">Success, ${userName || 'Scholar'}!</div>
-      <p>Your eStudesk transactional email pipeline is <strong>fully operational</strong>.</p>
+      <p>Your eStudesk transactional email service is <strong>fully operational</strong>.</p>
 
       <div class="callout">
         <strong>Connection Details:</strong><br/>
         &bull; <strong>Recipient:</strong> ${userEmail}<br/>
-        &bull; <strong>Gateway Region:</strong> Zoho Canada (api.zeptomail.ca)<br/>
+        &bull; <strong>Service Status:</strong> Active &amp; Verified<br/>
         &bull; <strong>Dispatch Time:</strong> ${timestamp}<br/>
         &bull; <strong>Status:</strong> Authenticated &amp; Delivered
       </div>
@@ -395,9 +395,9 @@ export function renderTestEmail(props: TestEmailTemplateProps): { html: string; 
   const text = `
 Success, ${userName || 'Scholar'}!
 
-Your eStudesk transactional email connection via Zoho ZeptoMail Canada is functioning properly.
+Your eStudesk transactional email connection is functioning properly.
 - Recipient: ${userEmail}
-- Gateway: api.zeptomail.ca
+- Service: eStudesk Cloud Mail
 - Timestamp: ${timestamp}
 
 eStudesk Academic Workspace

@@ -770,7 +770,7 @@ function SidebarFooter() {
                 <p className="text-[10px] text-ink-400 truncate">{currentUser.email}</p>
                 <div className="mt-1.5 flex items-center gap-1 text-[10px] text-emerald-600 font-medium">
                   <Shield className="w-3 h-3" />
-                  <span>Turso Cloud Active</span>
+                  <span>Cloud Sync Active</span>
                 </div>
               </div>
 
