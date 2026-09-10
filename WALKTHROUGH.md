@@ -1,5 +1,15 @@
 # eStudesk System Walkthrough & Architectural Reference
 
+## Recent Update: Week-by-Week Date-Wise Deadline Grouping
+- **Granular Date-Wise Breakdown**: Replaced the previous monolithic "Later" bucket with an intelligent, chronological week-by-week grouping engine (`groupDeadlinesByDate` in `src/utils/deadlines.ts`).
+- **Structured Chronological Progression**:
+  1. **Overdue** (if any assignments are past due)
+  2. **Today** (assignments due today)
+  3. **This Week** (remaining assignments due during the current week, e.g. `This Week (Sep 11 – Sep 13)`)
+  4. **Next Week** (assignments due the following calendar week, e.g. `Next Week (Sep 14 – Sep 20)`)
+  5. **Week-by-Week Future Ranges** (distinct chronological groups for every subsequent week, e.g. `Week of Sep 21 – Sep 27`, `Week of Sep 28 – Oct 4`, `Week of Oct 5 – Oct 11`, etc.)
+- **Cross-View Consistency**: Applied week-by-week grouping across the **Semester Dashboard** Date-wise tab, the **Subject Deadline Tab** active list, and the **PDF & Text Download Exporters** (`DownloadMenu`).
+
 ## Recent Update: Due Date Timezone Shift Fix
 - **Root Cause Resolved**: `<input type="date">` produces `YYYY-MM-DD` strings (e.g. `2026-09-29`). When previously passed to `new Date(dueDate).getTime()`, JavaScript parsed it as UTC midnight (`2026-09-29T00:00:00.000Z`). In timezones behind UTC (such as North American Eastern/Central/Pacific time), this shifted the date to the previous evening (e.g. Sept 28 at 8 PM), displaying as the day before.
 - **Local Noon Parsing**: Updated `AddDeadlineModal.tsx` and `EditDeadlineModal.tsx` to extract `[year, month, day]` and construct `new Date(year, month - 1, day, 12, 0, 0).getTime()`. This anchors the deadline to local noon, completely preventing any timezone or DST drift across all calendar views, tables, and PDF reports.

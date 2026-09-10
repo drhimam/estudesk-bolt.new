@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf';
 import type { Deadline, Subject } from '@/types';
-import { categorizeDeadline, CATEGORY_META, relativeDeadlineLabel } from '@/utils/deadlines';
+import { groupDeadlinesByDate, relativeDeadlineLabel } from '@/utils/deadlines';
 
 export type ExportGrouping = 'category' | 'subject';
 
@@ -28,15 +28,13 @@ function getSubjectName(deadline: Deadline, subjects: Subject[]): string {
 }
 
 function groupByCategory(deadlines: Deadline[]) {
-  const cats = ['overdue', 'today', 'thisWeek', 'later'] as const;
-  return cats
-    .map((cat) => ({
-      cat,
-      label: CATEGORY_META[cat].label,
-      hex: CATEGORY_META[cat].hex,
-      items: deadlines.filter((d) => categorizeDeadline(d) === cat),
-    }))
-    .filter((g) => g.items.length > 0);
+  const groups = groupDeadlinesByDate(deadlines);
+  return groups.map((g) => ({
+    cat: g.category,
+    label: g.sublabel ? `${g.label} (${g.sublabel})` : g.label,
+    hex: g.hex,
+    items: g.items,
+  }));
 }
 
 function groupBySubject(deadlines: Deadline[], subjects: Subject[]) {

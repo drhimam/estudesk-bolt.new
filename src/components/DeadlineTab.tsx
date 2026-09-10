@@ -10,6 +10,7 @@ import {
   categorizeDeadline,
   CATEGORY_META,
   relativeDeadlineLabel,
+  groupDeadlinesByDate,
   type DeadlineCategory,
 } from '@/utils/deadlines';
 import type { Deadline } from '@/types';
@@ -220,27 +221,28 @@ export function DeadlineTab({ subjectId, semesterId }: Props) {
                 <h3 className="text-xs font-semibold text-ink-400 uppercase tracking-wide mb-2">
                   Active ({active.length})
                 </h3>
-                <div className="space-y-5">
-                  {categories.map((cat) => {
-                    const items = active.filter((d) => categorizeDeadline(d) === cat);
-                    if (items.length === 0) return null;
-                    const meta = CATEGORY_META[cat];
-                    return (
-                      <div key={cat}>
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className={`w-2 h-2 rounded-full ${meta.dot}`} />
-                          <h4 className={`text-xs font-semibold uppercase tracking-wide ${meta.text}`}>
-                            {meta.label} ({items.length})
-                          </h4>
-                        </div>
-                        <div className="space-y-2">
-                          {items.map((d) => (
-                            <DeadlineItem key={d.id} deadline={d} onEdit={setEditingDeadline} />
-                          ))}
-                        </div>
+                <div className="space-y-6">
+                  {groupDeadlinesByDate(active).map((group) => (
+                    <div key={group.id}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className={`w-2 h-2 rounded-full ${group.dot}`} />
+                        <h4 className={`text-xs font-semibold uppercase tracking-wide ${group.text} flex items-center gap-1.5`}>
+                          <span>{group.label}</span>
+                          {group.sublabel && (
+                            <span className="text-[11px] font-normal normal-case text-ink-400">
+                              ({group.sublabel})
+                            </span>
+                          )}
+                          <span className="text-ink-400 font-normal">({group.items.length})</span>
+                        </h4>
                       </div>
-                    );
-                  })}
+                      <div className="space-y-2">
+                        {group.items.map((d) => (
+                          <DeadlineItem key={d.id} deadline={d} onEdit={setEditingDeadline} />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </section>
               {done.length > 0 && (

@@ -25,6 +25,7 @@ import {
   categorizeDeadline,
   CATEGORY_META,
   relativeDeadlineLabel,
+  groupDeadlinesByDate,
   type DeadlineCategory,
 } from '@/utils/deadlines';
 import { DownloadMenu } from '@/components/DownloadMenu';
@@ -207,31 +208,31 @@ function DateWiseDeadlines({
   subjects: Subject[];
   onEdit?: (deadline: Deadline) => void;
 }) {
-  const categories: DeadlineCategory[] = ['overdue', 'today', 'thisWeek', 'later'];
-  const sorted = [...deadlines].sort((a, b) => a.dueDate - b.dueDate);
+  const groups = groupDeadlinesByDate(deadlines);
 
   return (
-    <div className="space-y-5">
-      {categories.map((cat) => {
-        const items = sorted.filter((d) => categorizeDeadline(d) === cat);
-        if (items.length === 0) return null;
-        const meta = CATEGORY_META[cat];
-        return (
-          <div key={cat}>
-            <div className="flex items-center gap-2 mb-2">
-              <span className={`w-2 h-2 rounded-full ${meta.dot}`} />
-              <h3 className={`text-xs font-semibold uppercase tracking-wide ${meta.text}`}>
-                {meta.label} ({items.length})
-              </h3>
-            </div>
-            <div className="space-y-2">
-              {items.map((d) => (
-                <DeadlineRow key={d.id} deadline={d} subjects={subjects} onEdit={onEdit} />
-              ))}
-            </div>
+    <div className="space-y-6">
+      {groups.map((group) => (
+        <div key={group.id}>
+          <div className="flex items-center gap-2 mb-2.5">
+            <span className={`w-2.5 h-2.5 rounded-full ${group.dot}`} />
+            <h3 className={`text-xs font-semibold uppercase tracking-wide ${group.text} flex items-center gap-1.5`}>
+              <span>{group.label}</span>
+              {group.sublabel && (
+                <span className="text-[11px] font-normal normal-case text-ink-400">
+                  ({group.sublabel})
+                </span>
+              )}
+              <span className="text-ink-400 font-normal">({group.items.length})</span>
+            </h3>
           </div>
-        );
-      })}
+          <div className="space-y-2">
+            {group.items.map((d) => (
+              <DeadlineRow key={d.id} deadline={d} subjects={subjects} onEdit={onEdit} />
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
