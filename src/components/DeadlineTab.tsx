@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Plus, Clock, CheckCircle2, Circle, Trash2, Flag, LayoutList, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Clock, CheckCircle2, Circle, Trash2, Flag, LayoutList, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
 import { db } from '@/db/database';
 import { useDeadlines, useSubject, useSubjects } from '@/hooks/useQueries';
 import { AddDeadlineModal } from '@/components/AddDeadlineModal';
+import { EditDeadlineModal } from '@/components/EditDeadlineModal';
 import { DownloadMenu } from '@/components/DownloadMenu';
 import { syncUpdateDeadline, syncDeleteDeadline } from '@/lib/apiSync';
 import {
@@ -24,6 +25,7 @@ export function DeadlineTab({ subjectId, semesterId }: Props) {
   const subject = useSubject(subjectId);
   const deadlines = allDeadlines.filter((d) => d.subjectId === subjectId);
   const [showAdd, setShowAdd] = useState(false);
+  const [editingDeadline, setEditingDeadline] = useState<Deadline | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -233,7 +235,7 @@ export function DeadlineTab({ subjectId, semesterId }: Props) {
                         </div>
                         <div className="space-y-2">
                           {items.map((d) => (
-                            <DeadlineItem key={d.id} deadline={d} />
+                            <DeadlineItem key={d.id} deadline={d} onEdit={setEditingDeadline} />
                           ))}
                         </div>
                       </div>
@@ -248,7 +250,7 @@ export function DeadlineTab({ subjectId, semesterId }: Props) {
                   </h3>
                   <div className="space-y-2">
                     {done.map((d) => (
-                      <DeadlineItem key={d.id} deadline={d} />
+                      <DeadlineItem key={d.id} deadline={d} onEdit={setEditingDeadline} />
                     ))}
                   </div>
                 </section>
@@ -265,11 +267,24 @@ export function DeadlineTab({ subjectId, semesterId }: Props) {
         subjects={subjects}
         defaultSubjectId={subjectId}
       />
+
+      <EditDeadlineModal
+        open={!!editingDeadline}
+        onClose={() => setEditingDeadline(null)}
+        deadline={editingDeadline}
+        subjects={subjects}
+      />
     </div>
   );
 }
 
-function DeadlineItem({ deadline }: { deadline: Deadline }) {
+function DeadlineItem({
+  deadline,
+  onEdit,
+}: {
+  deadline: Deadline;
+  onEdit?: (deadline: Deadline) => void;
+}) {
   const cat = categorizeDeadline(deadline);
   const meta = CATEGORY_META[cat];
 
@@ -322,8 +337,16 @@ function DeadlineItem({ deadline }: { deadline: Deadline }) {
           {relativeDeadlineLabel(deadline)}
         </span>
         <button
+          onClick={() => onEdit?.(deadline)}
+          className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-paper-100 text-ink-300 hover:text-accent-600 transition-all"
+          title="Edit deadline"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
+        <button
           onClick={remove}
           className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-paper-100 text-ink-300 hover:text-crimson-500 transition-all"
+          title="Delete deadline"
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>

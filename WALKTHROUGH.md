@@ -1,5 +1,13 @@
 # eStudesk System Walkthrough & Architectural Reference
 
+## Recent Update: In-Place Deadline Editing & Modification
+- **Unified Edit Option**: Added a dedicated `Edit` (Pencil icon) button alongside the Delete button on every deadline row across both the **Semester Dashboard** (Date-wise and Subject-wise views) and individual **Subject Deadline Tabs** (List and Category views).
+- **Interactive Edit Modal (`EditDeadlineModal.tsx`)**:
+  - Pre-fills current deadline details (`title`, `subjectId`, `dueDate`, `description`).
+  - Supports reassigning deadlines across any semester subject or assigning to general "Other".
+  - Preserves local timezone calendar input conversion with accurate timestamp preservation.
+- **Dual-Storage Synchronization**: Persists deadline updates immediately to local IndexedDB (`db.deadlines.update`) and automatically syncs changes to the Turso edge database (`syncUpdateDeadline`).
+
 ## Recent Update: Semester Dashboard View Resolution Fix
 - **Resilient Semester View Rendering**: Removed strict parent guard in `App.tsx` that caused the dashboard to render a blank white page whenever `currentSemester` was temporarily unresolved during live query initialization.
 - **Dedicated `useSemester` Reactive Hook**: Added `useSemester(semesterId)` in `useQueries.ts` to allow `SemesterDashboard` to independently and reactively query its metadata from Dexie.

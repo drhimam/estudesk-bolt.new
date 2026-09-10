@@ -12,12 +12,14 @@ import {
   Calendar,
   List,
   FolderTree,
+  Pencil,
 } from 'lucide-react';
 import { db } from '@/db/database';
 import { useSubjects, useSemesterMaterials, useDeadlines, useSemester } from '@/hooks/useQueries';
 import { setView } from '@/store/appState';
 import { COLOR_HEX, COLOR_LIGHT, COLOR_TEXT } from '@/utils/colors';
 import { AddDeadlineModal } from '@/components/AddDeadlineModal';
+import { EditDeadlineModal } from '@/components/EditDeadlineModal';
 import { syncUpdateDeadline, syncDeleteDeadline } from '@/lib/apiSync';
 import {
   categorizeDeadline,
@@ -41,6 +43,7 @@ export function SemesterDashboard({ semesterId, semesterName }: Props) {
   const materials = useSemesterMaterials(semesterId);
   const deadlines = useDeadlines(semesterId);
   const [showAddDeadline, setShowAddDeadline] = useState(false);
+  const [editingDeadline, setEditingDeadline] = useState<Deadline | null>(null);
   const [deadlineView, setDeadlineView] = useState<DeadlineView>('date');
 
   const displayName = semester?.name || semesterName || 'Semester';
@@ -149,9 +152,9 @@ export function SemesterDashboard({ semesterId, semesterName }: Props) {
               <p className="text-xs text-ink-300">Add one to stay on track</p>
             </div>
           ) : deadlineView === 'date' ? (
-            <DateWiseDeadlines deadlines={deadlines} subjects={subjects} />
+            <DateWiseDeadlines deadlines={deadlines} subjects={subjects} onEdit={setEditingDeadline} />
           ) : deadlineView === 'subject' ? (
-            <SubjectWiseDeadlines deadlines={deadlines} subjects={subjects} />
+            <SubjectWiseDeadlines deadlines={deadlines} subjects={subjects} onEdit={setEditingDeadline} />
           ) : (
             <CalendarDeadlines deadlines={deadlines} subjects={subjects} />
           )}
@@ -182,6 +185,13 @@ export function SemesterDashboard({ semesterId, semesterName }: Props) {
         semesterId={semesterId}
         subjects={subjects}
       />
+
+      <EditDeadlineModal
+        open={!!editingDeadline}
+        onClose={() => setEditingDeadline(null)}
+        deadline={editingDeadline}
+        subjects={subjects}
+      />
     </div>
   );
 }
@@ -191,9 +201,11 @@ export function SemesterDashboard({ semesterId, semesterName }: Props) {
 function DateWiseDeadlines({
   deadlines,
   subjects,
+  onEdit,
 }: {
   deadlines: Deadline[];
   subjects: Subject[];
+  onEdit?: (deadline: Deadline) => void;
 }) {
   const categories: DeadlineCategory[] = ['overdue', 'today', 'thisWeek', 'later'];
   const sorted = [...deadlines].sort((a, b) => a.dueDate - b.dueDate);
@@ -214,7 +226,7 @@ function DateWiseDeadlines({
             </div>
             <div className="space-y-2">
               {items.map((d) => (
-                <DeadlineRow key={d.id} deadline={d} subjects={subjects} />
+                <DeadlineRow key={d.id} deadline={d} subjects={subjects} onEdit={onEdit} />
               ))}
             </div>
           </div>
@@ -229,9 +241,11 @@ function DateWiseDeadlines({
 function SubjectWiseDeadlines({
   deadlines,
   subjects,
+  onEdit,
 }: {
   deadlines: Deadline[];
   subjects: Subject[];
+  onEdit?: (deadline: Deadline) => void;
 }) {
   const sorted = [...deadlines].sort((a, b) => a.dueDate - b.dueDate);
   const withSubject = subjects.filter((s) =>
@@ -258,7 +272,7 @@ function SubjectWiseDeadlines({
             </div>
             <div className="space-y-2 ml-4 pl-3 border-l-2" style={{ borderColor: `${hex}40` }}>
               {items.map((d) => (
-                <DeadlineRow key={d.id} deadline={d} subjects={subjects} />
+                <DeadlineRow key={d.id} deadline={d} subjects={subjects} onEdit={onEdit} />
               ))}
             </div>
           </div>
@@ -274,7 +288,7 @@ function SubjectWiseDeadlines({
           </div>
           <div className="space-y-2 ml-4 pl-3 border-l-2 border-paper-300">
             {noSubject.map((d) => (
-              <DeadlineRow key={d.id} deadline={d} subjects={subjects} />
+              <DeadlineRow key={d.id} deadline={d} subjects={subjects} onEdit={onEdit} />
             ))}
           </div>
         </div>
@@ -461,9 +475,11 @@ function SubjectCard({ subject }: { subject: Subject }) {
 function DeadlineRow({
   deadline,
   subjects,
+  onEdit,
 }: {
   deadline: Deadline;
   subjects: Subject[];
+  onEdit?: (deadline: Deadline) => void;
 }) {
   const subject = subjects.find((s) => s.id === deadline.subjectId);
   const cat = categorizeDeadline(deadline);
@@ -533,8 +549,16 @@ function DeadlineRow({
           <span>{relativeDeadlineLabel(deadline)}</span>
         </div>
         <button
+          onClick={() => onEdit?.(deadline)}
+          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-paper-100 text-ink-300 hover:text-accent-600 transition-all"
+          title="Edit deadline"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
+        <button
           onClick={remove}
           className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-paper-100 text-ink-300 hover:text-crimson-500 transition-all"
+          title="Delete deadline"
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
