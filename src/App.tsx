@@ -262,10 +262,10 @@ function App() {
         </div>
 
         {view.kind === 'home' && <HomeView />}
-        {view.kind === 'semester' && currentSemester && (
+        {view.kind === 'semester' && (
           <SemesterDashboard
-            semesterId={currentSemester.id}
-            semesterName={currentSemester.name}
+            semesterId={view.semesterId}
+            semesterName={currentSemester?.name}
           />
         )}
         {view.kind === 'subject' && <SubjectView subjectId={view.subjectId} />}

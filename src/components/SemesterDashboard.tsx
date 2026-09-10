@@ -14,7 +14,7 @@ import {
   FolderTree,
 } from 'lucide-react';
 import { db } from '@/db/database';
-import { useSubjects, useSemesterMaterials, useDeadlines } from '@/hooks/useQueries';
+import { useSubjects, useSemesterMaterials, useDeadlines, useSemester } from '@/hooks/useQueries';
 import { setView } from '@/store/appState';
 import { COLOR_HEX, COLOR_LIGHT, COLOR_TEXT } from '@/utils/colors';
 import { AddDeadlineModal } from '@/components/AddDeadlineModal';
@@ -30,17 +30,20 @@ import type { Subject, Deadline } from '@/types';
 
 interface Props {
   semesterId: string;
-  semesterName: string;
+  semesterName?: string;
 }
 
 type DeadlineView = 'date' | 'subject' | 'calendar';
 
 export function SemesterDashboard({ semesterId, semesterName }: Props) {
+  const semester = useSemester(semesterId);
   const subjects = useSubjects(semesterId);
   const materials = useSemesterMaterials(semesterId);
   const deadlines = useDeadlines(semesterId);
   const [showAddDeadline, setShowAddDeadline] = useState(false);
   const [deadlineView, setDeadlineView] = useState<DeadlineView>('date');
+
+  const displayName = semester?.name || semesterName || 'Semester';
 
   const upcomingDeadlines = deadlines
     .filter((d) => !d.completed)
@@ -59,7 +62,7 @@ export function SemesterDashboard({ semesterId, semesterName }: Props) {
               <span>Semester</span>
             </div>
             <h1 className="font-serif text-3xl lg:text-4xl font-semibold text-ink-800 tracking-tight">
-              {semesterName}
+              {displayName}
             </h1>
           </div>
         </div>

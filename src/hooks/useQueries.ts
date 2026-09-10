@@ -11,6 +11,14 @@ export function useSemesters(): Semester[] {
   });
 }
 
+export function useSemester(semesterId: string | null | undefined): Semester | undefined {
+  const data = useLiveQuery(
+    () => (semesterId ? db.semesters.get(semesterId) : undefined),
+    [semesterId],
+  );
+  return data;
+}
+
 export function useSubjects(semesterId?: string): Subject[] {
   const data = useLiveQuery(
     () =>

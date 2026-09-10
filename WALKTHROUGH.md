@@ -1,5 +1,9 @@
 # eStudesk System Walkthrough & Architectural Reference
 
+## Recent Update: Semester Dashboard View Resolution Fix
+- **Resilient Semester View Rendering**: Removed strict parent guard in `App.tsx` that caused the dashboard to render a blank white page whenever `currentSemester` was temporarily unresolved during live query initialization.
+- **Dedicated `useSemester` Reactive Hook**: Added `useSemester(semesterId)` in `useQueries.ts` to allow `SemesterDashboard` to independently and reactively query its metadata from Dexie.
+
 ## Recent Update: Subject-Scoped Deadline Association Fix
 - **Subject-Specific Deadline Creation**: When opening the Add Deadline modal from inside a specific subject page (`DeadlineTab`), the current subject ID is automatically preselected via `defaultSubjectId` and linked to the new deadline.
 - **Accurate Dashboard Categorization**: Deadlines added from a subject view are now accurately filed under that specific subject rather than being categorized as "Other" in the Semester Dashboard and deadline tables.
