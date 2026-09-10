@@ -606,7 +606,7 @@ app.post('/api/notifications/test-email', async (c) => {
       success: result.success,
       messageId: result.messageId,
       error: result.error,
-      gateway: c.env.ZEPTOMAIL_API_URL || 'https://api.zeptomail.ca/v1.1/email',
+      gateway: 'eStudesk Cloud Mail',
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);

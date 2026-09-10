@@ -1,5 +1,11 @@
 # eStudesk System Walkthrough & Architectural Reference
 
+## Recent Update: eStudesk Cloud Mail & Notification Engine Enhancements
+- **Clean eStudesk Branding**: All customer-facing templates, verification emails, digest alerts, test emails, and settings UI are strictly branded under **eStudesk Cloud Mail** with zero third-party leakage.
+- **Robust High-Contrast Toggle Switches**: Replaced fragile checkbox styling with accessible, high-contrast `ToggleSwitch` components that provide persistent visibility and clear Active/Disabled status indicators.
+- **Graceful Control Retention**: When notification features are paused, configuration controls remain visible in a dimmed state with informative guidance rather than abruptly disappearing.
+- **Safe Preference Saving Pipeline**: Strict server-side and client-side payload sanitization ensuring weekly digest schedules, hourly alert thresholds, timezones, and formats save reliably without schema or type mismatch errors.
+
 ## Recent Update: Dynamic Per-User IndexedDB Storage Isolation
 - **Problem Solved**: When multiple users share the same browser/computer, local IndexedDB caches could leak semesters, subjects, materials, and notes across sessions.
 - **Architecture**:

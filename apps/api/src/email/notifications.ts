@@ -159,7 +159,7 @@ export async function sendTestEmailNotification(
   const res = await sendZeptoMail({
     toEmail: user.email,
     toName: user.name || user.email.split('@')[0],
-    subject: '✓ ZeptoMail Canada Connection Verified - eStudesk',
+    subject: '✓ eStudesk Cloud Mail Connection Verified',
     htmlBody: html,
     textBody: text,
     apiKey: env.ZEPTOMAIL_API_KEY,
@@ -434,7 +434,7 @@ export async function updateNotificationPreferences(
     weeklyDigestDay: string;
     weeklyDigestTime: string;
     deadlineAlertEnabled: boolean;
-    deadlineAlertHoursBefore: number;
+    deadlineAlertHoursBefore: number | string;
     timezone: string;
     emailFormat: 'html' | 'plain';
   }>
@@ -442,9 +442,33 @@ export async function updateNotificationPreferences(
   await getNotificationPreferences(db, userId); // ensure row exists
 
   const updates: Record<string, unknown> = {
-    ...prefs,
     updatedAt: new Date(),
   };
+
+  if (typeof prefs.weeklyDigestEnabled === 'boolean') {
+    updates.weeklyDigestEnabled = prefs.weeklyDigestEnabled;
+  }
+  if (typeof prefs.weeklyDigestDay === 'string' && prefs.weeklyDigestDay.trim()) {
+    updates.weeklyDigestDay = prefs.weeklyDigestDay.trim();
+  }
+  if (typeof prefs.weeklyDigestTime === 'string' && prefs.weeklyDigestTime.trim()) {
+    updates.weeklyDigestTime = prefs.weeklyDigestTime.trim();
+  }
+  if (typeof prefs.deadlineAlertEnabled === 'boolean') {
+    updates.deadlineAlertEnabled = prefs.deadlineAlertEnabled;
+  }
+  if (prefs.deadlineAlertHoursBefore !== undefined && prefs.deadlineAlertHoursBefore !== null) {
+    const hours = Number(prefs.deadlineAlertHoursBefore);
+    if (!isNaN(hours) && hours > 0) {
+      updates.deadlineAlertHoursBefore = hours;
+    }
+  }
+  if (typeof prefs.timezone === 'string' && prefs.timezone.trim()) {
+    updates.timezone = prefs.timezone.trim();
+  }
+  if (prefs.emailFormat === 'html' || prefs.emailFormat === 'plain') {
+    updates.emailFormat = prefs.emailFormat;
+  }
 
   await db
     .update(schema.notificationPreferences)

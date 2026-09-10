@@ -9,11 +9,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-  ShieldCheck,
-  Zap,
   History,
   Sparkles,
-  RefreshCw,
+  Info,
 } from 'lucide-react';
 import { useAppState, closeNotificationModal } from '@/store/appState';
 import { API_BASE_URL } from '@/lib/authClient';
@@ -36,6 +34,44 @@ interface NotificationLogItem {
   status: string;
   errorMessage?: string | null;
   createdAt: string | number;
+}
+
+interface ToggleSwitchProps {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  id?: string;
+  label?: string;
+  disabled?: boolean;
+}
+
+function ToggleSwitch({ checked, onChange, id, label, disabled = false }: ToggleSwitchProps) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <span className={`text-[11px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-md transition-colors ${
+        checked ? 'bg-accent-100 text-accent-800' : 'bg-paper-200 text-ink-400'
+      }`}>
+        {checked ? 'Active' : 'Disabled'}
+      </span>
+      <button
+        id={id}
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={label || 'Toggle notification'}
+        disabled={disabled}
+        onClick={() => onChange(!checked)}
+        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-accent-500 focus:ring-offset-2 ${
+          checked ? 'bg-accent-600' : 'bg-ink-200 hover:bg-ink-300'
+        } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+      >
+        <span
+          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+            checked ? 'translate-x-5' : 'translate-x-0'
+          }`}
+        />
+      </button>
+    </div>
+  );
 }
 
 export function NotificationSettingsModal() {
@@ -74,7 +110,15 @@ export function NotificationSettingsModal() {
         if (prefsRes.ok && isMounted) {
           const json = await prefsRes.json();
           if (json.data) {
-            setPrefs((prev) => ({ ...prev, ...json.data }));
+            setPrefs({
+              weeklyDigestEnabled: json.data.weeklyDigestEnabled ?? true,
+              weeklyDigestDay: json.data.weeklyDigestDay || 'monday',
+              weeklyDigestTime: json.data.weeklyDigestTime || '08:00',
+              deadlineAlertEnabled: json.data.deadlineAlertEnabled ?? true,
+              deadlineAlertHoursBefore: Number(json.data.deadlineAlertHoursBefore) || 24,
+              timezone: json.data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+              emailFormat: json.data.emailFormat || 'html',
+            });
           }
         }
 
@@ -106,23 +150,32 @@ export function NotificationSettingsModal() {
     setStatusMessage(null);
 
     try {
+      const payload = {
+        userId: currentUser.id,
+        weeklyDigestEnabled: Boolean(prefs.weeklyDigestEnabled),
+        weeklyDigestDay: prefs.weeklyDigestDay,
+        weeklyDigestTime: prefs.weeklyDigestTime,
+        deadlineAlertEnabled: Boolean(prefs.deadlineAlertEnabled),
+        deadlineAlertHoursBefore: Number(prefs.deadlineAlertHoursBefore),
+        timezone: prefs.timezone,
+        emailFormat: prefs.emailFormat,
+      };
+
       const res = await fetch(`${API_BASE_URL}/api/notifications/preferences`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: currentUser.id,
-          ...prefs,
-        }),
+        body: JSON.stringify(payload),
       });
 
-      if (!res.ok) {
-        throw new Error('Failed to update notification preferences.');
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.error) {
+        throw new Error(json.error || 'Failed to update notification preferences.');
       }
 
-      setStatusMessage({ type: 'success', text: 'Notification preferences saved successfully.' });
+      setStatusMessage({ type: 'success', text: '✓ Notification preferences saved successfully.' });
       setTimeout(() => setStatusMessage(null), 4000);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Save error';
+      const msg = err instanceof Error ? err.message : 'Failed to save settings';
       setStatusMessage({ type: 'error', text: msg });
     } finally {
       setSaving(false);
@@ -145,7 +198,7 @@ export function NotificationSettingsModal() {
         }),
       });
 
-      const json = await res.json();
+      const json = await res.json().catch(() => ({}));
       if (!res.ok || json.error) {
         throw new Error(json.error || 'Failed to dispatch test email.');
       }
@@ -181,14 +234,14 @@ export function NotificationSettingsModal() {
         body: JSON.stringify({ userId: currentUser.id }),
       });
 
-      const json = await res.json();
+      const json = await res.json().catch(() => ({}));
       if (!res.ok || json.error) {
         throw new Error(json.error || 'Failed to dispatch weekly digest.');
       }
 
       setStatusMessage({
         type: 'success',
-        text: `✓ Weekly deadline digest sent to ${currentUser.email}.`,
+        text: `✓ Weekly deadline digest dispatched to ${currentUser.email}.`,
       });
 
       // Refresh logs
@@ -219,13 +272,13 @@ export function NotificationSettingsModal() {
             </div>
             <div>
               <h2 className="font-serif text-lg font-bold tracking-tight text-white flex items-center gap-2">
-                <span>Email & Notification Settings</span>
+                <span>Email &amp; Notification Settings</span>
                 <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 border border-emerald-400/30">
                   Cloud Mail
                 </span>
               </h2>
               <p className="text-xs text-paper-200">
-                Configure deadline digests, alerts, and transactional email deliverability
+                Configure deadline digests, urgent alerts, and study schedule deliverability
               </p>
             </div>
           </div>
@@ -257,10 +310,10 @@ export function NotificationSettingsModal() {
             </div>
           )}
 
-          {/* Mailbox Gateway Status Card */}
+          {/* Mailbox Connection Status Card */}
           <div className="p-4 rounded-2xl bg-[#f7f3ec] border border-[#e2dcd0] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-accent-100 flex items-center justify-center text-accent-700">
+              <div className="w-9 h-9 rounded-xl bg-accent-100 flex items-center justify-center text-accent-700 shadow-sm">
                 <Mail className="w-4 h-4" />
               </div>
               <div>
@@ -269,7 +322,7 @@ export function NotificationSettingsModal() {
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 </div>
                 <div className="text-[11px] text-ink-500">
-                  Status: <span className="font-medium text-emerald-700">Connected &amp; Active</span>
+                  Service Status: <span className="font-medium text-emerald-700">Operational &amp; Connected</span>
                 </div>
               </div>
             </div>
@@ -298,10 +351,12 @@ export function NotificationSettingsModal() {
 
           <form onSubmit={handleSave} className="space-y-5">
             {/* Section 1: Weekly Deadline Digest */}
-            <div className="p-4 rounded-2xl bg-white border border-paper-200 shadow-soft space-y-4">
+            <div className="p-5 rounded-2xl bg-white border border-paper-200 shadow-soft space-y-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <Calendar className="w-4 h-4 text-accent-600" />
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-accent-50 text-accent-600 flex items-center justify-center">
+                    <Calendar className="w-4 h-4" />
+                  </div>
                   <div>
                     <h3 className="text-xs font-bold text-ink-800">Weekly Deadline Digest</h3>
                     <p className="text-[11px] text-ink-500">
@@ -309,25 +364,31 @@ export function NotificationSettingsModal() {
                     </p>
                   </div>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={prefs.weeklyDigestEnabled}
-                    onChange={(e) => setPrefs({ ...prefs, weeklyDigestEnabled: e.target.checked })}
-                    className="sr-only peer"
-                  />
-                  <div className="w-9 h-5 bg-paper-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-paper-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent-600"></div>
-                </label>
+                <ToggleSwitch
+                  id="toggle-weekly-digest"
+                  checked={prefs.weeklyDigestEnabled}
+                  onChange={(val) => setPrefs((prev) => ({ ...prev, weeklyDigestEnabled: val }))}
+                  label="Toggle Weekly Deadline Digest"
+                  disabled={loading}
+                />
               </div>
 
-              {prefs.weeklyDigestEnabled && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-paper-100">
+              {/* Sub-options for weekly digest */}
+              <div
+                className={`transition-all duration-200 ${
+                  prefs.weeklyDigestEnabled
+                    ? 'opacity-100'
+                    : 'opacity-50 pointer-events-none'
+                }`}
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-paper-100">
                   <div>
                     <label className="block text-[11px] font-semibold text-ink-600 mb-1">Dispatch Day</label>
                     <select
                       value={prefs.weeklyDigestDay}
-                      onChange={(e) => setPrefs({ ...prefs, weeklyDigestDay: e.target.value })}
-                      className="w-full text-xs bg-paper-50 border border-paper-300 rounded-xl px-2.5 py-2 text-ink-800 focus:outline-none focus:border-accent-500"
+                      disabled={!prefs.weeklyDigestEnabled}
+                      onChange={(e) => setPrefs((prev) => ({ ...prev, weeklyDigestDay: e.target.value }))}
+                      className="w-full text-xs bg-paper-50 border border-paper-300 rounded-xl px-2.5 py-2 text-ink-800 focus:outline-none focus:border-accent-500 disabled:bg-paper-100"
                     >
                       <option value="monday">Monday (Recommended)</option>
                       <option value="sunday">Sunday Evening</option>
@@ -343,8 +404,9 @@ export function NotificationSettingsModal() {
                     <label className="block text-[11px] font-semibold text-ink-600 mb-1">Delivery Time</label>
                     <select
                       value={prefs.weeklyDigestTime}
-                      onChange={(e) => setPrefs({ ...prefs, weeklyDigestTime: e.target.value })}
-                      className="w-full text-xs bg-paper-50 border border-paper-300 rounded-xl px-2.5 py-2 text-ink-800 focus:outline-none focus:border-accent-500"
+                      disabled={!prefs.weeklyDigestEnabled}
+                      onChange={(e) => setPrefs((prev) => ({ ...prev, weeklyDigestTime: e.target.value }))}
+                      className="w-full text-xs bg-paper-50 border border-paper-300 rounded-xl px-2.5 py-2 text-ink-800 focus:outline-none focus:border-accent-500 disabled:bg-paper-100"
                     >
                       <option value="07:00">07:00 AM</option>
                       <option value="08:00">08:00 AM (Default)</option>
@@ -358,20 +420,29 @@ export function NotificationSettingsModal() {
                     <label className="block text-[11px] font-semibold text-ink-600 mb-1">Email Format</label>
                     <select
                       value={prefs.emailFormat}
-                      onChange={(e) => setPrefs({ ...prefs, emailFormat: e.target.value as 'html' | 'plain' })}
-                      className="w-full text-xs bg-paper-50 border border-paper-300 rounded-xl px-2.5 py-2 text-ink-800 focus:outline-none focus:border-accent-500"
+                      disabled={!prefs.weeklyDigestEnabled}
+                      onChange={(e) => setPrefs((prev) => ({ ...prev, emailFormat: e.target.value as 'html' | 'plain' }))}
+                      className="w-full text-xs bg-paper-50 border border-paper-300 rounded-xl px-2.5 py-2 text-ink-800 focus:outline-none focus:border-accent-500 disabled:bg-paper-100"
                     >
                       <option value="html">Rich Academic HTML</option>
                       <option value="plain">Accessible Plain Text</option>
                     </select>
                   </div>
 
-                  <div className="sm:col-span-3 flex justify-end pt-1">
+                  <div className="sm:col-span-3 flex items-center justify-between pt-1">
+                    {!prefs.weeklyDigestEnabled ? (
+                      <span className="text-[11px] text-ink-400 italic flex items-center gap-1">
+                        <Info className="w-3.5 h-3.5" /> Digest is paused. Toggle switch above to re-enable schedule.
+                      </span>
+                    ) : (
+                      <span />
+                    )}
+
                     <button
                       type="button"
                       onClick={handleSendWeeklyDigest}
-                      disabled={digestSending || loading}
-                      className="px-3 py-1.5 rounded-lg bg-paper-100 hover:bg-paper-200 text-ink-700 text-xs font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                      disabled={digestSending || loading || !prefs.weeklyDigestEnabled}
+                      className="px-3 py-1.5 rounded-lg bg-paper-100 hover:bg-paper-200 text-ink-700 text-xs font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50 ml-auto"
                     >
                       {digestSending ? (
                         <>
@@ -387,47 +458,62 @@ export function NotificationSettingsModal() {
                     </button>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
 
             {/* Section 2: Urgent Deadline Alerts */}
-            <div className="p-4 rounded-2xl bg-white border border-paper-200 shadow-soft space-y-4">
+            <div className="p-5 rounded-2xl bg-white border border-paper-200 shadow-soft space-y-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <Clock className="w-4 h-4 text-accent-600" />
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                    <Clock className="w-4 h-4" />
+                  </div>
                   <div>
                     <h3 className="text-xs font-bold text-ink-800">Urgent Deadline Reminders</h3>
                     <p className="text-[11px] text-ink-500">
-                      Dispatches immediate notices prior to assignment & exam deadlines
+                      Dispatches immediate notices prior to assignment &amp; exam deadlines
                     </p>
                   </div>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={prefs.deadlineAlertEnabled}
-                    onChange={(e) => setPrefs({ ...prefs, deadlineAlertEnabled: e.target.checked })}
-                    className="sr-only peer"
-                  />
-                  <div className="w-9 h-5 bg-paper-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-paper-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent-600"></div>
-                </label>
+                <ToggleSwitch
+                  id="toggle-deadline-alert"
+                  checked={prefs.deadlineAlertEnabled}
+                  onChange={(val) => setPrefs((prev) => ({ ...prev, deadlineAlertEnabled: val }))}
+                  label="Toggle Urgent Deadline Reminders"
+                  disabled={loading}
+                />
               </div>
 
-              {prefs.deadlineAlertEnabled && (
-                <div className="pt-2 border-t border-paper-100 flex items-center gap-3">
-                  <label className="text-xs font-semibold text-ink-600">Remind me:</label>
-                  <select
-                    value={prefs.deadlineAlertHoursBefore}
-                    onChange={(e) => setPrefs({ ...prefs, deadlineAlertHoursBefore: parseInt(e.target.value, 10) })}
-                    className="text-xs bg-paper-50 border border-paper-300 rounded-xl px-2.5 py-1.5 text-ink-800 focus:outline-none focus:border-accent-500"
-                  >
-                    <option value="12">12 hours before</option>
-                    <option value="24">24 hours before (Default)</option>
-                    <option value="48">48 hours before</option>
-                    <option value="72">72 hours before (3 days)</option>
-                  </select>
+              <div
+                className={`transition-all duration-200 ${
+                  prefs.deadlineAlertEnabled
+                    ? 'opacity-100'
+                    : 'opacity-50 pointer-events-none'
+                }`}
+              >
+                <div className="pt-3 border-t border-paper-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <label className="text-xs font-semibold text-ink-600">Remind me:</label>
+                    <select
+                      value={prefs.deadlineAlertHoursBefore}
+                      disabled={!prefs.deadlineAlertEnabled}
+                      onChange={(e) => setPrefs((prev) => ({ ...prev, deadlineAlertHoursBefore: parseInt(e.target.value, 10) }))}
+                      className="text-xs bg-paper-50 border border-paper-300 rounded-xl px-2.5 py-1.5 text-ink-800 focus:outline-none focus:border-accent-500 disabled:bg-paper-100"
+                    >
+                      <option value="12">12 hours before</option>
+                      <option value="24">24 hours before (Default)</option>
+                      <option value="48">48 hours before</option>
+                      <option value="72">72 hours before (3 days)</option>
+                    </select>
+                  </div>
+
+                  {!prefs.deadlineAlertEnabled && (
+                    <span className="text-[11px] text-ink-400 italic flex items-center gap-1">
+                      <Info className="w-3.5 h-3.5" /> Urgent alerts are paused.
+                    </span>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
 
             {/* Save Button */}
@@ -435,7 +521,7 @@ export function NotificationSettingsModal() {
               <button
                 type="submit"
                 disabled={saving || loading}
-                className="px-5 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-xs font-semibold shadow-card hover:shadow-glow transition-all flex items-center gap-2 disabled:opacity-60"
+                className="px-5 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-xs font-semibold shadow-card hover:shadow-glow transition-all flex items-center gap-2 disabled:opacity-60 cursor-pointer"
               >
                 {saving ? (
                   <>
@@ -473,7 +559,7 @@ export function NotificationSettingsModal() {
                     <tr>
                       <th className="py-2.5 px-3">Type</th>
                       <th className="py-2.5 px-3">Status</th>
-                      <th className="py-2.5 px-3">Gateway</th>
+                      <th className="py-2.5 px-3">Service</th>
                       <th className="py-2.5 px-3">Sent At</th>
                     </tr>
                   </thead>
@@ -499,8 +585,8 @@ export function NotificationSettingsModal() {
                             {log.status}
                           </span>
                         </td>
-                        <td className="py-2 px-3 text-ink-500 font-mono text-[10px]">
-                          {log.provider === 'zeptomail' ? 'Cloud Mail' : log.provider}
+                        <td className="py-2 px-3 text-ink-500 font-medium text-[11px]">
+                          eStudesk Cloud Mail
                         </td>
                         <td className="py-2 px-3 text-ink-400 text-[11px]">
                           {new Date(log.createdAt).toLocaleString(undefined, {

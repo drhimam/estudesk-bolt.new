@@ -19,7 +19,7 @@ export interface AuthResponse<T = unknown> {
 }
 
 /**
- * Request password reset link via Zoho ZeptoMail Canada
+ * Request password reset link via eStudesk Cloud Mail
  */
 export async function forgetPassword(options: { email: string; redirectTo?: string }): Promise<AuthResponse> {
   try {
@@ -63,7 +63,7 @@ export async function resetPassword(options: { newPassword: string; token: strin
 }
 
 /**
- * Send email verification link via Zoho ZeptoMail Canada
+ * Send email verification link via eStudesk Cloud Mail
  */
 export async function sendVerificationEmail(options: { email: string; callbackURL?: string }): Promise<AuthResponse> {
   try {
