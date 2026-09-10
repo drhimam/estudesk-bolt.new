@@ -42,6 +42,7 @@ import { COLOR_HEX, COLOR_LIGHT, COLOR_TEXT } from '@/utils/colors';
 import { askAI } from '@/utils/aiClient';
 import { fetchUrlContent, extractUrls } from '@/utils/webReader';
 import { syncCreateMaterial } from '@/lib/apiSync';
+import { getFileTimestamp, sanitizeFilename } from '@/utils/filename';
 import type { ChatMessage, ChatConversation, Attachment, AttachmentType, StudyMaterial } from '@/types';
 
 const ATTACHMENT_TYPES: { type: AttachmentType; label: string; icon: React.ReactNode }[] = [
@@ -348,11 +349,13 @@ export function AskAIPanel() {
   async function exportConversation(conv: ChatConversation, format: 'text' | 'json') {
     const msgs = await db.messages.where('conversationId').equals(conv.id).toArray();
     msgs.sort((a, b) => a.createdAt - b.createdAt);
+    const stamp = getFileTimestamp();
+    const baseSlug = sanitizeFilename(conv.title || 'chat');
     let content: string;
     let filename: string;
     if (format === 'json') {
       content = JSON.stringify({ conversation: conv, messages: msgs }, null, 2);
-      filename = `${sanitizeFilename(conv.title)}.json`;
+      filename = `${baseSlug}_${stamp}.json`;
     } else {
       const lines: string[] = [`# ${conv.title}`, `Date: ${new Date(conv.createdAt).toLocaleString()}`, ''];
       for (const m of msgs) {
@@ -366,7 +369,7 @@ export function AskAIPanel() {
         lines.push('');
       }
       content = lines.join('\n');
-      filename = `${sanitizeFilename(conv.title)}.txt`;
+      filename = `${baseSlug}_${stamp}.txt`;
     }
     downloadFile(filename, content);
   }
@@ -379,8 +382,9 @@ export function AskAIPanel() {
       msgs.sort((a, b) => a.createdAt - b.createdAt);
       exportData.push({ conversation: conv, messages: msgs });
     }
+    const stamp = getFileTimestamp();
     const content = JSON.stringify({ exportedAt: new Date().toISOString(), conversations: exportData }, null, 2);
-    downloadFile(`estudesk-chat-history-${Date.now()}.json`, content);
+    downloadFile(`estudesk-chat-history_${stamp}.json`, content);
   }
 
   async function importConversations(file: File) {

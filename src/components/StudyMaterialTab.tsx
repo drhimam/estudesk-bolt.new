@@ -24,6 +24,7 @@ import { COLOR_HEX, COLOR_LIGHT, COLOR_TEXT } from '@/utils/colors';
 import { GenerationStudio } from '@/components/GenerationStudio';
 import { MaterialViewer } from '@/components/MaterialViewer';
 import { syncUpdateMaterial, syncDeleteMaterial } from '@/lib/apiSync';
+import { getFileTimestamp, sanitizeFilename } from '@/utils/filename';
 import type { MaterialType, StudyMaterial, SubjectColor } from '@/types';
 
 type SubTab = MaterialType;
@@ -221,33 +222,36 @@ function MaterialCard({
     setMenuOpen(false);
 
     let content = '';
-    let filename = material.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'material';
+    const baseSlug = sanitizeFilename(material.title || 'material');
+    const stamp = getFileTimestamp();
+    let ext = '.md';
 
     if (material.contentMarkdown) {
       content = material.contentMarkdown;
-      filename += '.md';
+      ext = '.md';
     } else if (material.contentHtml) {
       content = material.contentHtml;
-      filename += '.html';
+      ext = '.html';
     } else if (material.flashcards) {
       content = material.flashcards.map(c => `Q: ${c.front}\nA: ${c.back}`).join('\n\n');
-      filename += '.txt';
+      ext = '.txt';
     } else if (material.quiz) {
       content = material.quiz.map(q => {
         const ans = q.type === 'short' ? '(short answer)' : q.correctAnswer.join(', ');
         return `Q: ${q.question}\nOptions: ${q.options.join(' | ')}\nAnswer: ${ans}${q.explanation ? `\nExplanation: ${q.explanation}` : ''}`;
       }).join('\n\n');
-      filename += '.txt';
+      ext = '.txt';
     } else if (material.slides) {
       content = material.slides.map(s =>
         `## ${s.title}\n${s.points.map(p => `- ${p}`).join('\n')}${s.notes ? `\n\nNotes: ${s.notes}` : ''}`
       ).join('\n\n---\n\n');
-      filename += '.md';
+      ext = '.md';
     } else if (material.sourceSnippet) {
       content = material.sourceSnippet;
-      filename += '.md';
+      ext = '.md';
     }
 
+    const filename = `${baseSlug}_${stamp}${ext}`;
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

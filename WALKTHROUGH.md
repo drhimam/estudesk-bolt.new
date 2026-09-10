@@ -1,5 +1,24 @@
 # eStudesk System Walkthrough & Architectural Reference
 
+## Recent Update: Timestamped Filenames for All Exports & Downloads
+- **Standardized Timestamp Engine (`src/utils/filename.ts`)**:
+  - Implemented `getFileTimestamp(date?: Date)` providing cross-platform safe timestamps in `YYYY-MM-DD_HH-mm` format (e.g. `2026-09-10_16-05`).
+  - Implemented `sanitizeFilename(name: string)` ensuring filenames are safe across Windows, macOS, and Linux file systems by replacing forbidden characters (`\ / : * ? " < > | .`) and normalizing spaces into clean underscores.
+- **Timestamp Coverage Across Application**:
+  1. **Semester & Subject Deadline Downloads (`src/utils/download.ts`)**:
+     - Text export: `deadlines-{semester}-{subject}_{YYYY-MM-DD_HH-mm}.txt`
+     - PDF export: `deadlines-{semester}-{subject}_{YYYY-MM-DD_HH-mm}.pdf`
+  2. **Study Material Exports (`src/components/StudyMaterialTab.tsx` & `src/components/MaterialViewer.tsx`)**:
+     - Markdown downloads: `{material-title}_{YYYY-MM-DD_HH-mm}.md`
+     - HTML downloads: `{material-title}_{YYYY-MM-DD_HH-mm}.html`
+     - TXT downloads: `{material-title}_{YYYY-MM-DD_HH-mm}.txt`
+  3. **Printable Document & PDF Titles (`src/utils/pdfExport.ts`)**:
+     - Print dialog document `<title>` set to `{title} - {YYYY-MM-DD_HH-mm}`, automatically suggesting the timestamped name when saving to PDF from browser print dialogs.
+  4. **Ask AI Chat History Exports (`src/components/AskAIPanel.tsx`)**:
+     - Single conversation JSON: `{chat-title}_{YYYY-MM-DD_HH-mm}.json`
+     - Single conversation TXT transcript: `{chat-title}_{YYYY-MM-DD_HH-mm}.txt`
+     - Full chat history backup: `estudesk-chat-history_{YYYY-MM-DD_HH-mm}.json`
+
 ## Recent Update: Academic Pastel Background Highlights & Print-Friendly PDF Exporter
 - **Soft Pastel Background Highlights**:
   - Replaced harsh left borders (`border-l-4`) with soft, academic-friendly background highlight cards across both the **Semester Dashboard** and **Subject Deadline Tab**.

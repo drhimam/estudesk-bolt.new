@@ -1,7 +1,8 @@
 import { jsPDF } from 'jspdf';
 import type { Deadline, Subject, SubjectColor } from '@/types';
 import { groupDeadlinesByDate, relativeDeadlineLabel } from '@/utils/deadlines';
-import { COLOR_HEX, COLOR_TEXT } from '@/utils/colors';
+import { COLOR_HEX } from '@/utils/colors';
+import { getFileTimestamp } from '@/utils/filename';
 
 export type ExportGrouping = 'category' | 'subject';
 
@@ -175,8 +176,11 @@ export function downloadDeadlinesAsText(opts: ExportOptions): void {
   const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
+  const semSlug = semesterName ? semesterName.replace(/\s+/g, '-').toLowerCase() : 'semester';
+  const scopeSlug = scopeLabel ? scopeLabel.replace(/\s+/g, '-').toLowerCase() : 'all';
+  const stamp = getFileTimestamp();
   a.href = url;
-  a.download = `deadlines-${semesterName.replace(/\s+/g, '-').toLowerCase()}-${scopeLabel.replace(/\s+/g, '-').toLowerCase()}.txt`;
+  a.download = `deadlines-${semSlug}-${scopeSlug}_${stamp}.txt`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -426,5 +430,8 @@ export function downloadDeadlinesAsPDF(opts: ExportOptions): void {
     doc.text(`Page ${i} of ${pageCount}`, pageW - margin, pageH - 6.5, { align: 'right' });
   }
 
-  doc.save(`deadlines-${semesterName.replace(/\s+/g, '-').toLowerCase()}-${scopeLabel.replace(/\s+/g, '-').toLowerCase()}.pdf`);
+  const semSlug = semesterName ? semesterName.replace(/\s+/g, '-').toLowerCase() : 'semester';
+  const scopeSlug = scopeLabel ? scopeLabel.replace(/\s+/g, '-').toLowerCase() : 'all';
+  const stamp = getFileTimestamp();
+  doc.save(`deadlines-${semSlug}-${scopeSlug}_${stamp}.pdf`);
 }

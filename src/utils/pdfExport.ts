@@ -6,6 +6,7 @@
 
 import type { StudyMaterial, SubjectColor } from '@/types';
 import { COLOR_HEX, COLOR_LIGHT, COLOR_TEXT } from '@/utils/colors';
+import { getFileTimestamp } from '@/utils/filename';
 
 interface ExportPdfOptions {
   material: StudyMaterial;
@@ -265,12 +266,13 @@ function buildPrintDocumentHtml(options: ExportPdfOptions): string {
     `;
   }
 
+  const fileStamp = getFileTimestamp();
   return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>${material.title} - ${subjectName || 'Study Material'} | eStudesk</title>
+  <title>${material.title} - ${subjectName || 'Study Material'}_${fileStamp} | eStudesk</title>
   <style>
     @page {
       size: A4 portrait;
