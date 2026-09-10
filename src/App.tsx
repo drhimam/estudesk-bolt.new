@@ -153,7 +153,7 @@ function App() {
         : null;
 
   return (
-    <div className="h-screen flex bg-[#fbf5eb] overflow-hidden">
+    <div key={currentUser.id} className="h-screen flex bg-[#fbf5eb] overflow-hidden">
       <Sidebar />
       <AuthModal />
       <NotificationSettingsModal />

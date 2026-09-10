@@ -1,5 +1,13 @@
 # eStudesk System Walkthrough & Architectural Reference
 
+## Recent Update: Dynamic Per-User IndexedDB Storage Isolation
+- **Problem Solved**: When multiple users share the same browser/computer, local IndexedDB caches could leak semesters, subjects, materials, and notes across sessions.
+- **Architecture**:
+  1. **Dynamic Database Provisioning**: Dexie database name is dynamically computed as `estudesk_${userId}` (or `estudesk_guest`).
+  2. **Transparent ES6 Database Proxy**: The exported `db` singleton transparently proxies all table and query accesses to the currently active user database.
+  3. **Auth-Aware Switching**: `switchUserDatabase()` is triggered during login, registration, and logout events in `src/store/appState.ts`.
+  4. **Component Lifecycle Keying**: App layout in `src/App.tsx` is keyed by `currentUser.id` to cleanly remount reactive queries and teardown stale subscribers.
+
 ## Recent Update: Zoho ZeptoMail Canada Integration
 - **Gateway**: `https://api.zeptomail.ca/v1.1/email` (Zoho Canada regional endpoint)
 - **Features**:
@@ -354,7 +362,49 @@ flowchart LR
 
 ---
 
-## 8. Verification & Quality Assurance
+## 8. Client-Side Multi-Tenant Storage Isolation (Dexie IndexedDB)
+
+To prevent cross-user data leakage when multiple students use the same browser/workstation, eStudesk partitions local client storage dynamically by user account.
+
+```mermaid
+flowchart TD
+    subgraph Auth ["Authentication Lifecycle"]
+        Login["User A Signs In"]
+        Logout["User Signs Out"]
+        LoginB["User B Signs In"]
+    end
+
+    subgraph StateStore ["src/store/appState.ts"]
+        SetUser["setCurrentUser(user)"]
+        SwitchDB["switchUserDatabase(user.id)"]
+    end
+
+    subgraph IndexedDB ["Browser IndexedDB Instances"]
+        DBA[("estudesk_usr_userA\n(User A Folders, Notes, Quizzes)")]
+        DBG[("estudesk_guest\n(Ephemeral Guest Data)")]
+        DBB[("estudesk_usr_userB\n(User B Folders, Notes, Quizzes)")]
+    end
+
+    Login --> SetUser --> SwitchDB --> DBA
+    Logout --> SetUser --> SwitchDB --> DBG
+    LoginB --> SetUser --> SwitchDB --> DBB
+```
+
+### Key Architectural Safeguards:
+1. **Dynamic Database Names (`src/db/database.ts`)**:
+   - Instead of a single static `new Dexie('estudesk')`, instances are scoped to `estudesk_${sanitizedUserId}`.
+   - If unauthenticated or logged out, Dexie defaults to `estudesk_guest`.
+2. **Transparent ES6 Database Proxy**:
+   - `export const db` is an ES6 Proxy forwarding all table access (`db.semesters`, `db.subjects`, `db.materials`, `db.deadlines`, `db.messages`, `db.drafts`, `db.conversations`) to the active user's Dexie database instance.
+   - No queries or components require refactoring when accessing tables.
+3. **Graceful Connection Management (`switchUserDatabase`)**:
+   - Closes the previous database connection cleanly before opening the new tenant database.
+4. **React Tree Remount Keying (`src/App.tsx`)**:
+   - Authenticated view wrapper is keyed with `key={currentUser.id}`, guaranteeing that Dexie reactive live queries (`useLiveQuery`) cleanly tear down previous listeners and initialize fresh listeners bound exclusively to the logged-in user.
+
+---
+
+## 9. Verification & Quality Assurance
 
 All features have been validated with strict TypeScript compilation and production builds:
 ```bash
@@ -367,4 +417,4 @@ npm run build
 - **Build Status**: Exit Code 0 (0 errors).
 - **Frontend URL**: [https://estudesk-bolt-new.pages.dev](https://estudesk-bolt-new.pages.dev)
 - **API Worker URL**: [https://estudesk-api.rifa-numis.workers.dev](https://estudesk-api.rifa-numis.workers.dev)
-- **Runtime Testing**: Tested auth gating, 3-panel color scheme, deletion sync with Turso, mobile view responsiveness, study material & deadline creation/edit/deletion cloud writes, and Cloudflare edge deployments.
+- **Runtime Testing**: Tested auth gating, 3-panel color scheme, deletion sync with Turso, mobile view responsiveness, study material & deadline creation/edit/deletion cloud writes, per-user dynamic IndexedDB isolation, and Cloudflare edge deployments.

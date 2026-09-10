@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { db, uid } from '@/db/database';
+import { db, uid, switchUserDatabase } from '@/db/database';
 import type { Semester, Subject, SubjectColor } from '@/types';
 
 export interface UserProfile {
@@ -182,10 +182,12 @@ export function setCurrentUser(user: UserProfile | null) {
     try {
       localStorage.setItem('estudesk_user', JSON.stringify(user));
     } catch {}
+    switchUserDatabase(user.id);
   } else {
     try {
       localStorage.removeItem('estudesk_user');
     } catch {}
+    switchUserDatabase(null);
   }
   emit();
 }
