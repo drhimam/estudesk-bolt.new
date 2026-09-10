@@ -21,7 +21,7 @@
 - **Backend API Stack (`apps/api`)**: Cloudflare Workers + Hono framework.
 - **Database & ORM**: **Turso (libSQL/SQLite at Edge)** (`@libsql/client` + `drizzle-orm/libsql` with 18-table schema in `apps/api/src/db/schema.ts`). Up to 9GB storage, 500 databases, and 1 billion row reads/month.
 - **Auth Engine**: Better Auth running inside Cloudflare Worker with Drizzle SQLite adapter.
-- **AI Router Engine**: Multi-provider router (`custom`, `deepseek`, `gemini`, `openai`, `mistral`) in `apps/api/src/ai/router.ts`. Integrated with live `/api/chat` endpoint and Xiaomi MiMo model `mimo-v2.5-pro` (`https://api.xiaomimimo.com/v1`).
+- **AI Router Engine**: Multi-provider router (`deepseek`, `gemini`, `openai`, `mistral`) in `apps/api/src/ai/router.ts`. Integrated with live `/api/chat` endpoint and DeepSeek model `deepseek-chat` (`https://api.deepseek.com/v1`).
 
 ---
 
@@ -36,11 +36,11 @@ DATABASE_URL=libsql://your-db-org.turso.io
 BETTER_AUTH_SECRET=your_better_auth_secret_32_characters_long
 BETTER_AUTH_URL=http://localhost:3000
 
-# Active Verified AI Provider (Xiaomi MiMo)
-AI_PROVIDER=custom
+# Active Verified AI Provider (DeepSeek)
+AI_PROVIDER=deepseek
 AI_API_KEY=your_ai_api_key_here
-AI_BASE_URL=https://api.xiaomimimo.com/v1
-AI_MODEL=mimo-v2.5-pro
+AI_BASE_URL=https://api.deepseek.com/v1
+AI_MODEL=deepseek-chat
 
 R2_BUCKET=estudesk-sources
 ```

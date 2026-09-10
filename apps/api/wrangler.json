@@ -7,10 +7,9 @@
   "vars": {
     "ENVIRONMENT": "production",
     "TURSO_DATABASE_URL": "libsql://estudesk-db-drhimam.aws-us-east-2.turso.io",
-    "AI_PROVIDER": "custom",
-    "AI_API_KEY": "sk-sdj3mf8lollo3erf31u564gkjawwlpf3hzsxygqhz6ozrcld",
-    "AI_BASE_URL": "https://api.xiaomimimo.com/v1",
-    "AI_MODEL": "mimo-v2.5-pro",
+    "AI_PROVIDER": "deepseek",
+    "AI_BASE_URL": "https://api.deepseek.com/v1",
+    "AI_MODEL": "deepseek-chat",
     "ZEPTOMAIL_API_URL": "https://api.zeptomail.ca/v1.1/email",
     "EMAIL_FROM_ADDRESS": "noreply@estudesk.com",
     "EMAIL_FROM_NAME": "eStudesk",

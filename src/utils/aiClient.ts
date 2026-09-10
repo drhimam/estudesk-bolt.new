@@ -7,13 +7,11 @@
 
 import { extractUrls, fetchUrlContent } from './webReader';
 
-const AI_API_KEY =
-  import.meta.env.VITE_AI_API_KEY ||
-  'sk-sdj3mf8lollo3erf31u564gkjawwlpf3hzsxygqhz6ozrcld';
+const AI_API_KEY = import.meta.env.VITE_AI_API_KEY || '';
 const AI_BASE_URL = (
-  import.meta.env.VITE_AI_BASE_URL || 'https://api.xiaomimimo.com/v1'
+  import.meta.env.VITE_AI_BASE_URL || 'https://api.deepseek.com/v1'
 ).replace(/\/+$/, '');
-const AI_MODEL = import.meta.env.VITE_AI_MODEL || 'mimo-v2.5-pro';
+const AI_MODEL = import.meta.env.VITE_AI_MODEL || 'deepseek-chat';
 
 export interface ChatCompletionMessage {
   role: 'system' | 'user' | 'assistant';
