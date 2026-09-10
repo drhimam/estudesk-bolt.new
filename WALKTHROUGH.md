@@ -1,5 +1,10 @@
 # eStudesk System Walkthrough & Architectural Reference
 
+## Recent Update: Subject-Scoped Deadline Association Fix
+- **Subject-Specific Deadline Creation**: When opening the Add Deadline modal from inside a specific subject page (`DeadlineTab`), the current subject ID is automatically preselected via `defaultSubjectId` and linked to the new deadline.
+- **Accurate Dashboard Categorization**: Deadlines added from a subject view are now accurately filed under that specific subject rather than being categorized as "Other" in the Semester Dashboard and deadline tables.
+- **Semester Dashboard Flexibility Preserved**: When creating deadlines from the main Semester Dashboard, the full subject dropdown (with all semester subjects and "Other") remains completely selectable as before.
+
 ## Recent Update: eStudesk Cloud Mail & Notification Engine Enhancements
 - **Weekly Digest Preview Guarantee**: "Send Digest Preview Now" always dispatches an authentic preview email immediately, displaying active assignments or a formatted "All Caught Up!" briefing when no deadlines are pending.
 - **Strict Monthly Rate Limiting (1 send/month/user)**:

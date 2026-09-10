@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Calendar, Flag } from 'lucide-react';
 import { db, uid } from '@/db/database';
 import { syncCreateDeadline } from '@/lib/apiSync';
@@ -9,13 +9,23 @@ interface Props {
   onClose: () => void;
   semesterId: string;
   subjects: Subject[];
+  defaultSubjectId?: string;
 }
 
-export function AddDeadlineModal({ open, onClose, semesterId, subjects }: Props) {
+export function AddDeadlineModal({ open, onClose, semesterId, subjects, defaultSubjectId }: Props) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [subjectId, setSubjectId] = useState<string>('');
+  const [subjectId, setSubjectId] = useState<string>(defaultSubjectId || '');
   const [dueDate, setDueDate] = useState('');
+
+  useEffect(() => {
+    if (open) {
+      setSubjectId(defaultSubjectId || '');
+      setTitle('');
+      setDescription('');
+      setDueDate('');
+    }
+  }, [open, defaultSubjectId]);
 
   if (!open) return null;
 
@@ -37,7 +47,7 @@ export function AddDeadlineModal({ open, onClose, semesterId, subjects }: Props)
     syncCreateDeadline(newDeadline);
     setTitle('');
     setDescription('');
-    setSubjectId('');
+    setSubjectId(defaultSubjectId || '');
     setDueDate('');
     onClose();
   }

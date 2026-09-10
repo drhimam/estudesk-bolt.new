@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Plus, Clock, CheckCircle2, Circle, Trash2, Flag, LayoutList, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { db } from '@/db/database';
-import { useDeadlines, useSubject } from '@/hooks/useQueries';
+import { useDeadlines, useSubject, useSubjects } from '@/hooks/useQueries';
 import { AddDeadlineModal } from '@/components/AddDeadlineModal';
 import { DownloadMenu } from '@/components/DownloadMenu';
 import { syncUpdateDeadline, syncDeleteDeadline } from '@/lib/apiSync';
@@ -20,6 +20,7 @@ interface Props {
 
 export function DeadlineTab({ subjectId, semesterId }: Props) {
   const allDeadlines = useDeadlines(semesterId);
+  const subjects = useSubjects(semesterId);
   const subject = useSubject(subjectId);
   const deadlines = allDeadlines.filter((d) => d.subjectId === subjectId);
   const [showAdd, setShowAdd] = useState(false);
@@ -261,7 +262,8 @@ export function DeadlineTab({ subjectId, semesterId }: Props) {
         open={showAdd}
         onClose={() => setShowAdd(false)}
         semesterId={semesterId}
-        subjects={[]}
+        subjects={subjects}
+        defaultSubjectId={subjectId}
       />
     </div>
   );
