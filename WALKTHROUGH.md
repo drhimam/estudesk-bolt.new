@@ -1,6 +1,11 @@
 # eStudesk System Walkthrough & Architectural Reference
 
 ## Recent Update: eStudesk Cloud Mail & Notification Engine Enhancements
+- **Weekly Digest Preview Guarantee**: "Send Digest Preview Now" always dispatches an authentic preview email immediately, displaying active assignments or a formatted "All Caught Up!" briefing when no deadlines are pending.
+- **Strict Monthly Rate Limiting (1 send/month/user)**:
+  1. **Test Email Quota**: Enforced 1 test email dispatch per 30 days per user to prevent mailbox flooding.
+  2. **Digest Preview Quota**: Enforced 1 manual digest preview dispatch per 30 days per user.
+  3. **Cooldown & Reset Timing**: Calculated dynamically from `notification_logs` table, exposing exact reset dates (`Next available on [Date]`) in API responses and frontend badges.
 - **Clean eStudesk Branding**: All customer-facing templates, verification emails, digest alerts, test emails, and settings UI are strictly branded under **eStudesk Cloud Mail** with zero third-party leakage.
 - **Robust High-Contrast Toggle Switches**: Replaced fragile checkbox styling with accessible, high-contrast `ToggleSwitch` components that provide persistent visibility and clear Active/Disabled status indicators.
 - **Graceful Control Retention**: When notification features are paused, configuration controls remain visible in a dimmed state with informative guidance rather than abruptly disappearing.

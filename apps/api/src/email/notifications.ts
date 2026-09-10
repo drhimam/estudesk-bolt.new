@@ -139,8 +139,53 @@ export async function sendResetPasswordNotification(
   return res;
 }
 
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
 /**
- * Send a Test Email to verify Zoho ZeptoMail Canada pipeline
+ * Check rate limit for on-demand emails (1 per month per user)
+ */
+export async function checkRateLimit(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: any,
+  userId: string,
+  notificationType: 'test_email' | 'weekly_digest_preview'
+): Promise<{ allowed: boolean; nextAllowedAt?: Date; remainingDays?: number }> {
+  try {
+    const logs = await db
+      .select()
+      .from(schema.notificationLogs)
+      .where(
+        and(
+          eq(schema.notificationLogs.userId, userId),
+          eq(schema.notificationLogs.notificationType, notificationType),
+          eq(schema.notificationLogs.status, 'sent')
+        )
+      )
+      .orderBy(sql`${schema.notificationLogs.createdAt} DESC`)
+      .limit(1);
+
+    if (!logs || logs.length === 0) {
+      return { allowed: true };
+    }
+
+    const lastSent = new Date(logs[0].createdAt);
+    const timeSince = Date.now() - lastSent.getTime();
+
+    if (timeSince < THIRTY_DAYS_MS) {
+      const nextAllowedAt = new Date(lastSent.getTime() + THIRTY_DAYS_MS);
+      const remainingDays = Math.max(1, Math.ceil((nextAllowedAt.getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
+      return { allowed: false, nextAllowedAt, remainingDays };
+    }
+
+    return { allowed: true };
+  } catch (err) {
+    console.error('[RateLimitCheck] Error checking rate limit:', err);
+    return { allowed: true };
+  }
+}
+
+/**
+ * Send a Test Email to verify eStudesk Cloud Mail pipeline (Limit: 1 per month per user)
  */
 export async function sendTestEmailNotification(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -148,6 +193,20 @@ export async function sendTestEmailNotification(
   env: EmailEnvBindings,
   user: { id: string; name?: string | null; email: string }
 ) {
+  // Enforce 1 test email per month limit
+  const limit = await checkRateLimit(db, user.id, 'test_email');
+  if (!limit.allowed) {
+    const nextDate = limit.nextAllowedAt?.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    return {
+      success: false,
+      error: `Monthly limit reached (1 test email per month). Next test email will be available on ${nextDate || 'in a few days'}.`,
+    };
+  }
+
   const apiUrl = env.ZEPTOMAIL_API_URL || 'https://api.zeptomail.ca/v1.1/email';
   const { html, text } = renderTestEmail({
     userName: user.name || user.email.split('@')[0],
@@ -182,13 +241,30 @@ export async function sendTestEmailNotification(
 
 /**
  * Build and send Weekly Deadline Digest for a specific user
+ * @param isPreview When true, triggered on-demand (subject to 1/month preview limit & always dispatches email even if 0 items)
  */
 export async function sendWeeklyDigestForUser(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   db: any,
   env: EmailEnvBindings,
-  userId: string
+  userId: string,
+  isPreview = false
 ) {
+  if (isPreview) {
+    const limit = await checkRateLimit(db, userId, 'weekly_digest_preview');
+    if (!limit.allowed) {
+      const nextDate = limit.nextAllowedAt?.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+      return {
+        success: false,
+        error: `Monthly limit reached (1 digest preview per month). Next preview will be available on ${nextDate || 'in a few days'}.`,
+      };
+    }
+  }
+
   // Fetch user
   const users = await db.select().from(schema.user).where(eq(schema.user.id, userId)).limit(1);
   if (users.length === 0) {
@@ -216,7 +292,8 @@ export async function sendWeeklyDigestForUser(
     .from(schema.deadlines)
     .where(and(eq(schema.deadlines.userId, userId), eq(schema.deadlines.isCompleted, false)));
 
-  if (allDeadlines.length === 0) {
+  // Automated scheduled cron skip if no deadlines, but PREVIEW always dispatches!
+  if (!isPreview && allDeadlines.length === 0) {
     return { success: true, message: 'No active deadlines to digest; skipped sending.' };
   }
 
@@ -255,7 +332,7 @@ export async function sendWeeklyDigestForUser(
     }
   }
 
-  const activeFolderName = userFolders[0]?.name || 'Academic Term';
+  const activeFolderName = userFolders[0]?.name || 'Current Term';
   const frontendUrl = env.FRONTEND_URL || 'https://estudesk.com';
 
   const { html, text } = renderWeeklyDigestEmail({
@@ -268,10 +345,16 @@ export async function sendWeeklyDigestForUser(
     later,
   });
 
+  const subjectPrefix = isPreview ? '[Preview] ' : '';
+  const totalItemCount = overdue.length + dueToday.length + dueThisWeek.length;
+  const subjectLine = totalItemCount > 0
+    ? `${subjectPrefix}Your week ahead — ${totalItemCount} deadlines in ${activeFolderName}`
+    : `${subjectPrefix}Weekly Briefing — All caught up in ${activeFolderName}`;
+
   const res = await sendZeptoMail({
     toEmail: user.email,
     toName: user.name || user.email.split('@')[0],
-    subject: `Your week ahead — ${overdue.length + dueToday.length + dueThisWeek.length} deadlines in ${activeFolderName}`,
+    subject: subjectLine,
     htmlBody: html,
     textBody: text,
     apiKey: env.ZEPTOMAIL_API_KEY,
@@ -282,7 +365,7 @@ export async function sendWeeklyDigestForUser(
 
   await logNotification(db, {
     userId: user.id,
-    notificationType: 'weekly_digest',
+    notificationType: isPreview ? 'weekly_digest_preview' : 'weekly_digest',
     provider: 'zeptomail',
     providerMessageId: res.messageId,
     status: res.success ? 'sent' : 'failed',

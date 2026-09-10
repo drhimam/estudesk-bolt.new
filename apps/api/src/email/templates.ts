@@ -243,12 +243,25 @@ export function renderWeeklyDigestEmail(props: WeeklyDigestTemplateProps): { htm
     </div>
     <div class="content">
       <div class="greeting">Good morning, ${userName || 'Scholar'}!</div>
+      ${
+        totalCount === 0
+          ? `
+      <p>Here is your weekly academic briefing for <strong>${semesterName}</strong>.</p>
+      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; margin: 20px 0; text-align: center;">
+        <div style="font-size: 16px; font-weight: 700; color: #166534; margin-bottom: 4px;">🎉 All Caught Up!</div>
+        <div style="font-size: 13px; color: #15803d; line-height: 1.5;">You currently have zero pending deadlines or overdue assignments scheduled for this term.</div>
+      </div>
+      <p style="font-size: 13px; color: #64748b;">Whenever you add assignments or exam dates in eStudesk, they will automatically be summarized and categorized in this weekly briefing.</p>
+      `
+          : `
       <p>Here is your weekly academic briefing. You have <strong>${totalCount} active items</strong> requiring your attention this week:</p>
 
       ${renderList(overdue, '#dc2626', '🔴 Overdue')}
       ${renderList(dueToday, '#ea580c', '🟠 Due Today')}
       ${renderList(dueThisWeek, '#d97706', '🟡 Due This Week')}
       ${renderList(later, '#475569', '⚪ Coming Up Later')}
+      `
+      }
 
       <div style="text-align: center; margin-top: 28px;">
         <a href="${appUrl}" class="btn" target="_blank">Open eStudesk Study Desk</a>

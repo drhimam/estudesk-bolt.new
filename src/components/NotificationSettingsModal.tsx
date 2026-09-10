@@ -88,13 +88,20 @@ export function NotificationSettingsModal() {
   });
 
   const [logs, setLogs] = useState<NotificationLogItem[]>([]);
+  const [limits, setLimits] = useState<{
+    testEmail: { allowed: boolean; nextAllowedAt?: string | null; remainingDays?: number };
+    digestPreview: { allowed: boolean; nextAllowedAt?: string | null; remainingDays?: number };
+  }>({
+    testEmail: { allowed: true },
+    digestPreview: { allowed: true },
+  });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testSending, setTestSending] = useState(false);
   const [digestSending, setDigestSending] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Load preferences and logs when modal opens
+  // Load preferences, limits and logs when modal opens
   useEffect(() => {
     if (!notificationModalOpen || !currentUser) return;
 
@@ -119,6 +126,9 @@ export function NotificationSettingsModal() {
               timezone: json.data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
               emailFormat: json.data.emailFormat || 'html',
             });
+          }
+          if (json.limits) {
+            setLimits(json.limits);
           }
         }
 
@@ -208,7 +218,16 @@ export function NotificationSettingsModal() {
         text: `✓ Test email dispatched to ${currentUser.email}!`,
       });
 
-      // Refresh logs
+      // Update test email limit locally and refresh logs
+      setLimits((prev) => ({
+        ...prev,
+        testEmail: {
+          allowed: false,
+          nextAllowedAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          remainingDays: 30,
+        },
+      }));
+
       const logsRes = await fetch(`${API_BASE_URL}/api/notifications/logs?userId=${encodeURIComponent(currentUser.id)}`);
       if (logsRes.ok) {
         const logData = await logsRes.json();
@@ -231,20 +250,29 @@ export function NotificationSettingsModal() {
       const res = await fetch(`${API_BASE_URL}/api/notifications/send-digest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUser.id }),
+        body: JSON.stringify({ userId: currentUser.id, isPreview: true }),
       });
 
       const json = await res.json().catch(() => ({}));
       if (!res.ok || json.error) {
-        throw new Error(json.error || 'Failed to dispatch weekly digest.');
+        throw new Error(json.error || 'Failed to dispatch weekly digest preview.');
       }
 
       setStatusMessage({
         type: 'success',
-        text: `✓ Weekly deadline digest dispatched to ${currentUser.email}.`,
+        text: `✓ Weekly deadline digest preview dispatched to ${currentUser.email}.`,
       });
 
-      // Refresh logs
+      // Update digest preview limit locally and refresh logs
+      setLimits((prev) => ({
+        ...prev,
+        digestPreview: {
+          allowed: false,
+          nextAllowedAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          remainingDays: 30,
+        },
+      }));
+
       const logsRes = await fetch(`${API_BASE_URL}/api/notifications/logs?userId=${encodeURIComponent(currentUser.id)}`);
       if (logsRes.ok) {
         const logData = await logsRes.json();
@@ -323,21 +351,28 @@ export function NotificationSettingsModal() {
                 </div>
                 <div className="text-[11px] text-ink-500">
                   Service Status: <span className="font-medium text-emerald-700">Operational &amp; Connected</span>
+                  <span className="ml-2 text-ink-400">&bull; Test Limit: 1/month</span>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="flex flex-col sm:items-end gap-1 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={handleSendTestEmail}
-                disabled={testSending || loading}
-                className="flex-1 sm:flex-none px-3 py-1.5 rounded-xl bg-white border border-paper-300 hover:border-accent-500 text-ink-700 text-xs font-semibold shadow-soft hover:shadow-card transition-all flex items-center justify-center gap-1.5 disabled:opacity-60"
+                disabled={testSending || loading || !limits.testEmail.allowed}
+                title={!limits.testEmail.allowed ? `Monthly limit reached. Next available: ${limits.testEmail.nextAllowedAt ? new Date(limits.testEmail.nextAllowedAt).toLocaleDateString() : 'next month'}` : 'Send test verification email (1 per month)'}
+                className="w-full sm:w-auto px-3 py-1.5 rounded-xl bg-white border border-paper-300 hover:border-accent-500 text-ink-700 text-xs font-semibold shadow-soft hover:shadow-card transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {testSending ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-accent-600" />
                     <span>Sending...</span>
+                  </>
+                ) : !limits.testEmail.allowed ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-ink-400" />
+                    <span>Test Sent (1/month)</span>
                   </>
                 ) : (
                   <>
@@ -346,6 +381,11 @@ export function NotificationSettingsModal() {
                   </>
                 )}
               </button>
+              {!limits.testEmail.allowed && limits.testEmail.nextAllowedAt && (
+                <span className="text-[10px] text-ink-400 text-center sm:text-right">
+                  Next available on {new Date(limits.testEmail.nextAllowedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                </span>
+              )}
             </div>
           </div>
 
@@ -429,25 +469,36 @@ export function NotificationSettingsModal() {
                     </select>
                   </div>
 
-                  <div className="sm:col-span-3 flex items-center justify-between pt-1">
+                  <div className="sm:col-span-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
                     {!prefs.weeklyDigestEnabled ? (
                       <span className="text-[11px] text-ink-400 italic flex items-center gap-1">
                         <Info className="w-3.5 h-3.5" /> Digest is paused. Toggle switch above to re-enable schedule.
                       </span>
                     ) : (
-                      <span />
+                      <span className="text-[11px] text-ink-400">
+                        Manual Preview Limit: <strong className="text-ink-600">1/month</strong>
+                        {!limits.digestPreview.allowed && limits.digestPreview.nextAllowedAt && (
+                          <span> (Next: {new Date(limits.digestPreview.nextAllowedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })})</span>
+                        )}
+                      </span>
                     )}
 
                     <button
                       type="button"
                       onClick={handleSendWeeklyDigest}
-                      disabled={digestSending || loading || !prefs.weeklyDigestEnabled}
-                      className="px-3 py-1.5 rounded-lg bg-paper-100 hover:bg-paper-200 text-ink-700 text-xs font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50 ml-auto"
+                      disabled={digestSending || loading || !prefs.weeklyDigestEnabled || !limits.digestPreview.allowed}
+                      title={!limits.digestPreview.allowed ? `Monthly limit reached. Next available: ${limits.digestPreview.nextAllowedAt ? new Date(limits.digestPreview.nextAllowedAt).toLocaleDateString() : 'next month'}` : 'Dispatch a preview digest to your email (1 per month)'}
+                      className="px-3 py-1.5 rounded-lg bg-paper-100 hover:bg-paper-200 text-ink-700 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed sm:ml-auto"
                     >
                       {digestSending ? (
                         <>
                           <Loader2 className="w-3.5 h-3.5 animate-spin text-accent-600" />
                           <span>Generating Digest...</span>
+                        </>
+                      ) : !limits.digestPreview.allowed ? (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5 text-ink-400" />
+                          <span>Preview Sent (1/month)</span>
                         </>
                       ) : (
                         <>

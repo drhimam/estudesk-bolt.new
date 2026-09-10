@@ -14,6 +14,7 @@ import {
   sendTestEmailNotification,
   sendWeeklyDigestForUser,
   processDeadlineAlerts,
+  checkRateLimit,
 } from './email/notifications';
 
 export type Bindings = {
@@ -541,7 +542,27 @@ app.get('/api/notifications/preferences', async (c) => {
 
     const { db } = getDb(c.env);
     const prefs = await getNotificationPreferences(db, userId);
-    return c.json({ data: prefs });
+
+    const [testLimit, digestLimit] = await Promise.all([
+      checkRateLimit(db, userId, 'test_email'),
+      checkRateLimit(db, userId, 'weekly_digest_preview'),
+    ]);
+
+    return c.json({
+      data: prefs,
+      limits: {
+        testEmail: {
+          allowed: testLimit.allowed,
+          nextAllowedAt: testLimit.nextAllowedAt ? testLimit.nextAllowedAt.toISOString() : null,
+          remainingDays: testLimit.remainingDays ?? 0,
+        },
+        digestPreview: {
+          allowed: digestLimit.allowed,
+          nextAllowedAt: digestLimit.nextAllowedAt ? digestLimit.nextAllowedAt.toISOString() : null,
+          remainingDays: digestLimit.remainingDays ?? 0,
+        },
+      },
+    });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     return c.json({ error: msg }, 500);
@@ -588,7 +609,7 @@ app.get('/api/notifications/logs', async (c) => {
   }
 });
 
-// Send a test email via Zoho ZeptoMail Canada
+// Send a test email via Zoho ZeptoMail Canada (1 per month per user limit)
 app.post('/api/notifications/test-email', async (c) => {
   try {
     const body = await c.req.json<{ userId: string; email: string; name?: string }>();
@@ -617,11 +638,12 @@ app.post('/api/notifications/test-email', async (c) => {
 // Trigger Weekly Deadline Digest manually or via cron
 app.post('/api/notifications/send-digest', async (c) => {
   try {
-    const body = await c.req.json<{ userId: string }>();
+    const body = await c.req.json<{ userId: string; isPreview?: boolean }>();
     if (!body.userId) return c.json({ error: 'User ID is required' }, 400);
 
     const { db } = getDb(c.env);
-    const result = await sendWeeklyDigestForUser(db, c.env, body.userId);
+    const isPreview = body.isPreview !== undefined ? body.isPreview : true;
+    const result = await sendWeeklyDigestForUser(db, c.env, body.userId, isPreview);
     return c.json({
       success: result.success,
       messageId: result.messageId,
