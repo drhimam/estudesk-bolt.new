@@ -166,22 +166,56 @@ function App() {
       {/* Center Main Panel (Warm Academic Linen / Parchment) */}
       <div className="flex-1 min-h-0 flex flex-col min-w-0 relative bg-[#fbf5eb]">
         {/* Mobile top bar */}
-        {!sidebarOpen && (
-          <div className="lg:hidden flex items-center gap-2 px-4 py-3 border-b border-[#dfd2be] bg-[#f3ead8]">
+        <div className="lg:hidden flex items-center justify-between px-3.5 py-2.5 border-b border-[#dfd2be] bg-[#f3ead8] shrink-0 z-10">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-2 rounded-lg hover:bg-paper-200 text-ink-500 transition-colors"
+              className="p-2 rounded-xl hover:bg-[#e6dcce] text-ink-700 transition-colors"
+              aria-label="Open sidebar"
             >
-              <Menu className="w-4 h-4" />
+              <Menu className="w-5 h-5" />
             </button>
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-accent-500 to-accent-700 flex items-center justify-center shadow-soft">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-accent-500 to-accent-700 flex items-center justify-center shadow-soft">
                 <GraduationCap className="w-4 h-4 text-white" />
               </div>
-              <span className="font-serif text-base font-semibold text-ink-800">eStudesk</span>
+              <span className="font-serif text-sm font-semibold text-ink-800">eStudesk</span>
             </div>
           </div>
-        )}
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => openTourModal(0, 'walkthrough')}
+              className="p-2 rounded-xl bg-accent-50 text-accent-800 border border-accent-200 hover:bg-accent-100 transition-colors"
+              title="Interactive Feature Guide & Tour"
+              aria-label="Feature Guide & Tour"
+            >
+              <HelpCircle className="w-4 h-4 text-accent-600" />
+            </button>
+
+            <button
+              onClick={() => setShowGlobalSearch(true)}
+              className="p-2 rounded-xl bg-white/95 text-ink-600 border border-[#dfd2be] hover:text-accent-600 transition-colors"
+              title="Global Search"
+              aria-label="Global Search"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={toggleAIPanel}
+              className={`p-2 rounded-xl transition-all ${
+                aiPanelOpen
+                  ? 'bg-indigo-600 text-white shadow-glow'
+                  : 'bg-white/95 text-ink-600 border border-[#dfd2be] hover:border-indigo-300 hover:text-indigo-600'
+              }`}
+              title="Ask AI"
+              aria-label="Ask AI"
+            >
+              <Sparkles className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
 
         {/* Desktop expand button when sidebar is collapsed */}
         {!sidebarOpen && (
@@ -195,35 +229,35 @@ function App() {
           </button>
         )}
 
-        {/* Top utility buttons: Feature Guide, Search, Ask AI */}
-        <div className="absolute top-4 right-4 z-30 flex items-center gap-2">
+        {/* Desktop floating top utility buttons: Feature Guide, Search, Ask AI */}
+        <div className="hidden lg:flex absolute top-4 right-4 z-30 items-center gap-2">
           <button
             onClick={() => openTourModal(0, 'walkthrough')}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-soft bg-accent-50 text-accent-800 border border-accent-200 hover:bg-accent-100 hover:border-accent-300 hover:shadow-card"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-soft bg-accent-50 text-accent-800 border border-accent-200 hover:bg-accent-100 hover:border-accent-300 hover:shadow-card cursor-pointer"
             title="Interactive Feature Guide & Tour"
           >
             <HelpCircle className="w-4 h-4 text-accent-600" />
-            <span className="hidden sm:inline">Guide & Tour</span>
+            <span>Guide & Tour</span>
           </button>
 
           <button
             onClick={() => setShowGlobalSearch(true)}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all shadow-soft bg-white/95 text-ink-600 border border-[#dfd2be] hover:border-accent-300 hover:text-accent-600 hover:shadow-card"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all shadow-soft bg-white/95 text-ink-600 border border-[#dfd2be] hover:border-accent-300 hover:text-accent-600 hover:shadow-card cursor-pointer"
           >
             <Search className="w-4 h-4" />
-            <span className="hidden sm:inline">Search</span>
+            <span>Search</span>
           </button>
 
           <button
             onClick={toggleAIPanel}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all shadow-soft ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all shadow-soft cursor-pointer ${
               aiPanelOpen
                 ? 'bg-indigo-600 text-white shadow-glow'
                 : 'bg-white/95 text-ink-600 border border-[#dfd2be] hover:border-indigo-300 hover:text-indigo-600 hover:shadow-card'
             }`}
           >
             <Sparkles className="w-4 h-4" />
-            <span className="hidden sm:inline">Ask AI</span>
+            <span>Ask AI</span>
           </button>
         </div>
 

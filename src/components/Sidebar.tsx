@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { db, uid } from '@/db/database';
 import { useSemesters, useSubjects } from '@/hooks/useQueries';
-import { setView, toggleSidebar, useAppState, openAuthModal, logoutUser, openNotificationModal } from '@/store/appState';
+import { setView, toggleSidebar, setSidebarOpen, useAppState, openAuthModal, logoutUser, openNotificationModal } from '@/store/appState';
 import { signOut } from '@/lib/authClient';
 import { COLOR_HEX } from '@/utils/colors';
 import {
@@ -85,48 +85,57 @@ export function Sidebar() {
   if (!sidebarOpen) return null;
 
   return (
-    <aside
-      className="relative shrink-0 border-r border-[#bed6c7] bg-[#e6f0ea] flex flex-col h-full z-20 transition-all duration-75 select-none"
-      style={{
-        width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${sidebarWidth}px` : undefined,
-      }}
-    >
-      {/* Desktop resize handle on the right border */}
+    <>
+      {/* Mobile backdrop overlay - tapping closes the sidebar */}
       <div
-        onMouseDown={(e) => {
-          e.preventDefault();
-          setIsResizing(true);
-        }}
-        onDoubleClick={() => {
-          setSidebarWidth(288);
-          try {
-            localStorage.setItem('estudesk_sidebar_width', '288');
-          } catch {}
-        }}
-        className="hidden lg:flex absolute -right-1.5 top-0 bottom-0 w-3 cursor-col-resize items-center justify-center z-30 group hover:bg-emerald-600/20 active:bg-emerald-600/30 transition-colors select-none"
-        title="Drag to resize sidebar (Double-click to reset width)"
-      >
-        <div className="w-1 h-10 rounded-full bg-emerald-600/40 group-hover:bg-emerald-600 group-hover:h-14 group-active:bg-emerald-700 transition-all shadow-sm" />
-      </div>
+        className="lg:hidden fixed inset-0 bg-ink-950/40 backdrop-blur-[2px] z-40 animate-fade-in"
+        onClick={() => setSidebarOpen(false)}
+        aria-hidden="true"
+      />
 
-      <SidebarHeader />
-      <nav className="flex-1 overflow-y-auto scrollbar-thin px-3 py-3 select-text">
-        {semesters.length === 0 && (
-          <div className="p-3 mb-2 rounded-xl bg-white/70 border border-dashed border-[#b4cec0] text-center">
-            <FolderTree className="w-6 h-6 text-accent-600 mx-auto mb-1.5 opacity-80" />
-            <p className="text-xs font-semibold text-ink-700">No Folders Yet</p>
-            <p className="text-[11px] text-ink-400 mt-0.5 leading-relaxed">
-              Create your first semester or rotation below.
-            </p>
-          </div>
-        )}
-        {semesters.map((s) => (
-          <SemesterFolder key={s.id} semester={s} />
-        ))}
-        <AddSemesterButton />
-      </nav>
-      <SidebarFooter />
-    </aside>
+      <aside
+        className="fixed lg:relative inset-y-0 left-0 z-50 lg:z-20 w-[85vw] max-w-[320px] lg:w-auto shrink-0 border-r border-[#bed6c7] bg-[#e6f0ea] flex flex-col h-full shadow-2xl lg:shadow-none transition-all duration-75 select-none animate-slide-in-left lg:animate-none"
+        style={{
+          width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${sidebarWidth}px` : undefined,
+        }}
+      >
+        {/* Desktop resize handle on the right border */}
+        <div
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setIsResizing(true);
+          }}
+          onDoubleClick={() => {
+            setSidebarWidth(288);
+            try {
+              localStorage.setItem('estudesk_sidebar_width', '288');
+            } catch {}
+          }}
+          className="hidden lg:flex absolute -right-1.5 top-0 bottom-0 w-3 cursor-col-resize items-center justify-center z-30 group hover:bg-emerald-600/20 active:bg-emerald-600/30 transition-colors select-none"
+          title="Drag to resize sidebar (Double-click to reset width)"
+        >
+          <div className="w-1 h-10 rounded-full bg-emerald-600/40 group-hover:bg-emerald-600 group-hover:h-14 group-active:bg-emerald-700 transition-all shadow-sm" />
+        </div>
+
+        <SidebarHeader />
+        <nav className="flex-1 overflow-y-auto scrollbar-thin px-3 py-3 select-text">
+          {semesters.length === 0 && (
+            <div className="p-3 mb-2 rounded-xl bg-white/70 border border-dashed border-[#b4cec0] text-center">
+              <FolderTree className="w-6 h-6 text-accent-600 mx-auto mb-1.5 opacity-80" />
+              <p className="text-xs font-semibold text-ink-700">No Folders Yet</p>
+              <p className="text-[11px] text-ink-400 mt-0.5 leading-relaxed">
+                Create your first semester or rotation below.
+              </p>
+            </div>
+          )}
+          {semesters.map((s) => (
+            <SemesterFolder key={s.id} semester={s} />
+          ))}
+          <AddSemesterButton />
+        </nav>
+        <SidebarFooter />
+      </aside>
+    </>
   );
 }
 
@@ -134,8 +143,11 @@ function SidebarHeader() {
   return (
     <div className="flex items-center justify-between px-4 py-4 border-b border-[#bed6c7] bg-[#d6e7dc]">
       <button
-        onClick={() => setView({ kind: 'home' })}
-        className="flex items-center gap-2.5 group"
+        onClick={() => {
+          setView({ kind: 'home' });
+          if (window.innerWidth < 1024) setSidebarOpen(false);
+        }}
+        className="flex items-center gap-2.5 group cursor-pointer"
       >
         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent-500 to-accent-700 flex items-center justify-center shadow-card group-hover:shadow-glow transition-shadow">
           <GraduationCap className="w-5 h-5 text-white" strokeWidth={2.2} />
@@ -148,12 +160,13 @@ function SidebarHeader() {
         </div>
       </button>
       <button
-        onClick={toggleSidebar}
-        className="p-1.5 rounded-lg hover:bg-[#c8ded0] text-ink-500 hover:text-ink-800 transition-colors"
-        aria-label="Collapse sidebar"
-        title="Collapse sidebar"
+        onClick={() => setSidebarOpen(false)}
+        className="p-2 rounded-xl hover:bg-[#c8ded0] text-ink-600 hover:text-ink-900 transition-colors cursor-pointer"
+        aria-label="Close sidebar"
+        title="Close sidebar"
       >
-        <PanelLeftClose className="w-4 h-4" />
+        <PanelLeftClose className="w-4 h-4 hidden lg:block" />
+        <X className="w-5 h-5 lg:hidden" />
       </button>
     </div>
   );
@@ -175,6 +188,7 @@ function SemesterFolder({ semester }: { semester: Semester }) {
           onClick={() => {
             setExpanded(!expanded);
             setView({ kind: 'semester', semesterId: semester.id });
+            if (window.innerWidth < 1024) setSidebarOpen(false);
           }}
           className={`w-full flex items-center gap-1.5 px-2.5 py-2 pr-8 rounded-lg text-sm font-bold uppercase tracking-wide transition-all ${
             isActive && view.kind === 'semester'
@@ -411,7 +425,10 @@ function SubjectLink({ subject }: { subject: Subject }) {
   return (
     <div className="relative group">
       <button
-        onClick={() => setView({ kind: 'subject', subjectId: subject.id })}
+        onClick={() => {
+          setView({ kind: 'subject', subjectId: subject.id });
+          if (window.innerWidth < 1024) setSidebarOpen(false);
+        }}
         className={`w-full flex items-center gap-2.5 px-2.5 py-2 pr-7 rounded-lg text-sm transition-all ${
           isActive
             ? 'bg-white text-ink-900 font-semibold shadow-soft'
