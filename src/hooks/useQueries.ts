@@ -54,6 +54,25 @@ export function useMaterials(subjectId: string | null): StudyMaterial[] {
   return data ?? [];
 }
 
+export function useAllMaterials(): StudyMaterial[] {
+  const data = useLiveQuery(() => db.materials.toArray(), []);
+  return data ?? [];
+}
+
+export function useSemesterMaterials(semesterId?: string): StudyMaterial[] {
+  const data = useLiveQuery(
+    async () => {
+      if (!semesterId) return [];
+      const subjects = await db.subjects.where('semesterId').equals(semesterId).toArray();
+      const subjectIds = subjects.map((s) => s.id);
+      if (subjectIds.length === 0) return [];
+      return db.materials.where('subjectId').anyOf(subjectIds).toArray();
+    },
+    [semesterId],
+  );
+  return data ?? [];
+}
+
 export function useDeadlines(folderId?: string): Deadline[] {
   const data = useLiveQuery(
     () =>

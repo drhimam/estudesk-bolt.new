@@ -14,7 +14,7 @@ import {
   FolderTree,
 } from 'lucide-react';
 import { db } from '@/db/database';
-import { useSubjects, useDeadlines } from '@/hooks/useQueries';
+import { useSubjects, useSemesterMaterials, useDeadlines } from '@/hooks/useQueries';
 import { setView } from '@/store/appState';
 import { COLOR_HEX, COLOR_LIGHT, COLOR_TEXT } from '@/utils/colors';
 import { AddDeadlineModal } from '@/components/AddDeadlineModal';
@@ -37,6 +37,7 @@ type DeadlineView = 'date' | 'subject' | 'calendar';
 
 export function SemesterDashboard({ semesterId, semesterName }: Props) {
   const subjects = useSubjects(semesterId);
+  const materials = useSemesterMaterials(semesterId);
   const deadlines = useDeadlines(semesterId);
   const [showAddDeadline, setShowAddDeadline] = useState(false);
   const [deadlineView, setDeadlineView] = useState<DeadlineView>('date');
@@ -75,7 +76,7 @@ export function SemesterDashboard({ semesterId, semesterName }: Props) {
           <StatCard
             icon={<FileText className="w-5 h-5" />}
             label="Study materials"
-            value={subjects.length}
+            value={materials.length}
             colorClass="from-blue-50 to-blue-100"
             iconColor="text-blue-600"
           />

@@ -24,7 +24,7 @@ import {
   RotateCcw,
   Sparkle,
 } from 'lucide-react';
-import { useSemesters, useSubjects, useMaterials } from '@/hooks/useQueries';
+import { useSemesters, useSubjects, useAllMaterials } from '@/hooks/useQueries';
 import { setView, openTourModal, seedData, clearAllData } from '@/store/appState';
 import { COLOR_LIGHT, COLOR_TEXT } from '@/utils/colors';
 import { db, uid } from '@/db/database';
@@ -33,7 +33,7 @@ import { syncCreateFolder } from '@/lib/apiSync';
 export function HomeView() {
   const semesters = useSemesters();
   const subjects = useSubjects();
-  const totalMaterials = useMaterials(null).length;
+  const totalMaterials = useAllMaterials().length;
 
   const [newSemesterName, setNewSemesterName] = useState('');
   const [isCreatingSemester, setIsCreatingSemester] = useState(false);
