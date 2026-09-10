@@ -5,6 +5,7 @@ import { useDeadlines, useSubject, useSubjects } from '@/hooks/useQueries';
 import { AddDeadlineModal } from '@/components/AddDeadlineModal';
 import { EditDeadlineModal } from '@/components/EditDeadlineModal';
 import { DownloadMenu } from '@/components/DownloadMenu';
+import { ShareMenu } from '@/components/ShareMenu';
 import { syncUpdateDeadline, syncDeleteDeadline } from '@/lib/apiSync';
 import {
   categorizeDeadline,
@@ -84,13 +85,21 @@ export function DeadlineTab({ subjectId, semesterId }: Props) {
           </div>
 
           <div className="flex items-center gap-2">
+            <ShareMenu
+              studentName=""
+              semesterName=""
+              scopeLabel={subject ? subject.name : 'subject'}
+              deadlines={deadlines}
+              subjects={subject ? [subject] : []}
+              grouping="category"
+            />
             <DownloadMenu
               studentName=""
               semesterName=""
               scopeLabel={subject ? subject.name : 'subject'}
               deadlines={deadlines}
               subjects={subject ? [subject] : []}
-              grouping="subject"
+              grouping="category"
             />
             <button
               onClick={() => setShowAdd(true)}

@@ -1,5 +1,17 @@
 # eStudesk System Walkthrough & Architectural Reference
 
+## Recent Update: Multi-Channel Share Option for Academic Deadlines
+- **Dedicated Share Menu Component (`src/components/ShareMenu.tsx`)**:
+  - Integrated alongside the existing `DownloadMenu` across both the **Semester Dashboard** and **Subject Deadline Tab**.
+  - Respects the currently selected view orientation (Date-wise week-by-week grouping or Subject-wise grouping).
+- **Comprehensive Sharing Channels**:
+  1. 📱 **Native OS Share Sheet (`navigator.share`)**: Seamlessly triggers mobile & desktop system share sheets (AirDrop, Messages, WhatsApp, Slack, Teams, Mail, Telegram).
+  2. 📋 **Copy Formatted Summary Text**: Generates a clean text report with instant animated checkmark and floating tooltip feedback (`✓ Copied deadline summary!`).
+  3. 📝 **Copy as Markdown**: Exports structured Markdown with task checkboxes (`- [ ]`), due date highlights, subject tags, and notes—ideal for pasting directly into Notion, Obsidian, Slack, or GitHub.
+  4. ✉️ **Share via Email (`mailto:`)**: Auto-constructs pre-formatted email drafts with academic agenda subject lines and body text.
+- **Export & Share Utility Architecture (`src/utils/download.ts`)**:
+  - Modularized `generateDeadlinesText`, `generateDeadlinesMarkdown`, and `generateDeadlinesPDFDoc` to share underlying aggregation logic between download and sharing pipelines.
+
 ## Recent Update: Week-by-Week Date-Wise Weekly Deadline Email Digest
 - **Synchronized Date-Wise Layout (`apps/api/src/email/templates.ts`)**:
   - Upgraded `renderWeeklyDigestEmail` and `groupDeadlinesForEmail` to mirror the frontend date-wise week-by-week table layout.

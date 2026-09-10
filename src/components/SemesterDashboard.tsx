@@ -29,6 +29,7 @@ import {
   type DeadlineCategory,
 } from '@/utils/deadlines';
 import { DownloadMenu } from '@/components/DownloadMenu';
+import { ShareMenu } from '@/components/ShareMenu';
 import type { Subject, Deadline } from '@/types';
 
 interface Props {
@@ -104,6 +105,14 @@ export function SemesterDashboard({ semesterId, semesterName }: Props) {
               Deadlines
             </h2>
             <div className="flex items-center gap-2">
+              <ShareMenu
+                studentName=""
+                semesterName={semesterName || 'Current Term'}
+                scopeLabel="all-subjects"
+                deadlines={deadlines}
+                subjects={subjects}
+                grouping={deadlineView === 'subject' ? 'subject' : 'category'}
+              />
               <DownloadMenu
                 studentName=""
                 semesterName={semesterName || 'Current Term'}
