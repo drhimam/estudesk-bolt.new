@@ -305,7 +305,11 @@ function DeadlineItem({
 
   return (
     <div
-      className={`flex items-center gap-3 ${meta.rowBg} rounded-lg border border-paper-200 border-l-4 ${meta.border} px-4 py-3 group hover:shadow-soft transition-all`}
+      className={`flex items-center gap-3 ${
+        deadline.completed
+          ? 'bg-paper-100/70 border-paper-200 text-ink-400'
+          : `${meta.rowBg} ${meta.border}`
+      } rounded-2xl border px-4 py-3.5 group hover:shadow-soft transition-all`}
     >
       <button onClick={toggle} className="shrink-0">
         {deadline.completed ? (
@@ -316,38 +320,47 @@ function DeadlineItem({
       </button>
       <div className="flex-1 min-w-0">
         <p
-          className={`text-sm font-medium ${
+          className={`text-sm font-semibold truncate ${
             deadline.completed
-              ? 'text-ink-400 line-through'
-              : 'text-ink-700'
+              ? 'text-ink-400 line-through font-normal'
+              : 'text-ink-800'
           }`}
         >
           {deadline.title}
         </p>
-        {deadline.description && (
-          <p className="text-xs text-ink-400 mt-0.5">{deadline.description}</p>
-        )}
-        <p className="text-xs text-ink-400 mt-1">
-          Due {new Date(deadline.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-        </p>
+        <div className="flex items-center gap-2 mt-1 text-xs text-ink-500">
+          <span className="font-medium text-ink-600">
+            Due {new Date(deadline.dueDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+          </span>
+          {deadline.description && (
+            <>
+              <span className="text-ink-300">•</span>
+              <span className="truncate text-ink-500">{deadline.description}</span>
+            </>
+          )}
+        </div>
       </div>
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center gap-2.5 shrink-0">
         <span
-          className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md ${meta.bg} ${meta.text}`}
+          className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${
+            deadline.completed
+              ? 'bg-paper-200 text-ink-400'
+              : `${meta.badgeBg} ${meta.badgeText}`
+          } shadow-xs`}
         >
-          <Clock className="w-3 h-3" />
+          <Clock className="w-3.5 h-3.5" />
           {relativeDeadlineLabel(deadline)}
         </span>
         <button
           onClick={() => onEdit?.(deadline)}
-          className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-paper-100 text-ink-300 hover:text-accent-600 transition-all"
+          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-white/80 text-ink-400 hover:text-accent-600 transition-all shadow-xs"
           title="Edit deadline"
         >
           <Pencil className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={remove}
-          className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-paper-100 text-ink-300 hover:text-crimson-500 transition-all"
+          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-white/80 text-ink-400 hover:text-crimson-500 transition-all shadow-xs"
           title="Delete deadline"
         >
           <Trash2 className="w-3.5 h-3.5" />

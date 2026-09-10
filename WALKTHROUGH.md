@@ -1,5 +1,20 @@
 # eStudesk System Walkthrough & Architectural Reference
 
+## Recent Update: Academic Pastel Background Highlights & Print-Friendly PDF Exporter
+- **Soft Pastel Background Highlights**:
+  - Replaced harsh left borders (`border-l-4`) with soft, academic-friendly background highlight cards across both the **Semester Dashboard** and **Subject Deadline Tab**.
+  - Tailored light-shaded pastel palettes:
+    - 🔴 **Overdue**: Soft blush rose (`bg-[#fff1f2]`, subtle `border-rose-200`, `text-rose-800`).
+    - 🟡 **Today**: Soft warm amber (`bg-[#fffbeb]`, subtle `border-amber-200`, `text-amber-800`).
+    - 🔵 **This Week**: Soft sky blue (`bg-[#f0f9ff]`, subtle `border-sky-200`, `text-sky-800`).
+    - 🟣 **Next Week**: Soft lavender periwinkle (`bg-[#eef2ff]`, subtle `border-[#c7d2fe]`, `text-indigo-800`).
+    - 🟢 **Future Weeks**: Soft academic sage (`bg-[#f4f8f5]`, subtle `border-[#d3e4d9]`, `text-[#2e543e]`).
+  - Added rounded pill badges for status, subjects, and relative countdown chips.
+- **Visually Stunning, Print-Friendly PDF Exporter (`download.ts`)**:
+  - Replaced plain text listings with distinct, rounded pastel deadline item cards (`roundedRect`) and category/week banners.
+  - Formatted with colorful light-shaded fills that look beautiful on digital screens and remain strictly print-friendly (preventing heavy ink drainage).
+  - Added structured header cards with student metadata chips, subject tags, status pill badges, and clean multi-page pagination.
+
 ## Recent Update: Week-by-Week Date-Wise Deadline Grouping
 - **Granular Date-Wise Breakdown**: Replaced the previous monolithic "Later" bucket with an intelligent, chronological week-by-week grouping engine (`groupDeadlinesByDate` in `src/utils/deadlines.ts`).
 - **Structured Chronological Progression**:

@@ -4,43 +4,81 @@ export type DeadlineCategory = 'overdue' | 'today' | 'thisWeek' | 'later';
 
 export const CATEGORY_META: Record<
   DeadlineCategory,
-  { label: string; bg: string; rowBg: string; text: string; dot: string; border: string; hex: string }
+  {
+    label: string;
+    bg: string;
+    rowBg: string;
+    text: string;
+    dot: string;
+    border: string;
+    badgeBg: string;
+    badgeText: string;
+    hex: string;
+    pdfBg: [number, number, number];
+    pdfText: [number, number, number];
+    pdfBorder: [number, number, number];
+    pdfItemBg: [number, number, number];
+  }
 > = {
   overdue: {
     label: 'Overdue',
-    bg: 'bg-red-50',
-    rowBg: 'bg-red-50/60',
-    text: 'text-crimson-600',
-    dot: 'bg-crimson-500',
-    border: 'border-l-crimson-400',
-    hex: '#b04545',
+    bg: 'bg-rose-100/70',
+    rowBg: 'bg-[#fff1f2]',
+    text: 'text-rose-800',
+    dot: 'bg-rose-500',
+    border: 'border-rose-200',
+    badgeBg: 'bg-rose-100',
+    badgeText: 'text-rose-800',
+    hex: '#e11d48',
+    pdfBg: [255, 241, 242],
+    pdfText: [159, 18, 57],
+    pdfBorder: [254, 205, 211],
+    pdfItemBg: [255, 248, 248],
   },
   today: {
     label: 'Today',
-    bg: 'bg-orange-50',
-    rowBg: 'bg-orange-50/60',
-    text: 'text-orange-600',
-    dot: 'bg-orange-500',
-    border: 'border-l-orange-400',
-    hex: '#e07a3c',
+    bg: 'bg-amber-100/70',
+    rowBg: 'bg-[#fffbeb]',
+    text: 'text-amber-800',
+    dot: 'bg-amber-500',
+    border: 'border-amber-200',
+    badgeBg: 'bg-amber-100',
+    badgeText: 'text-amber-900',
+    hex: '#d97706',
+    pdfBg: [254, 243, 199],
+    pdfText: [146, 64, 14],
+    pdfBorder: [253, 230, 138],
+    pdfItemBg: [255, 252, 242],
   },
   thisWeek: {
     label: 'This week',
-    bg: 'bg-amber-50',
-    rowBg: 'bg-amber-50/50',
-    text: 'text-amber-700',
-    dot: 'bg-amber-500',
-    border: 'border-l-amber-400',
-    hex: '#c08a3e',
+    bg: 'bg-sky-100/70',
+    rowBg: 'bg-[#f0f9ff]',
+    text: 'text-sky-800',
+    dot: 'bg-sky-500',
+    border: 'border-sky-200',
+    badgeBg: 'bg-sky-100',
+    badgeText: 'text-sky-800',
+    hex: '#0284c7',
+    pdfBg: [240, 249, 255],
+    pdfText: [7, 89, 133],
+    pdfBorder: [186, 230, 253],
+    pdfItemBg: [246, 252, 255],
   },
   later: {
     label: 'Later',
-    bg: 'bg-paper-100',
-    rowBg: 'bg-paper-50',
-    text: 'text-ink-400',
-    dot: 'bg-ink-300',
-    border: 'border-l-paper-300',
-    hex: '#8a8a82',
+    bg: 'bg-emerald-100/70',
+    rowBg: 'bg-[#f4f8f5]',
+    text: 'text-[#2e543e]',
+    dot: 'bg-[#4a8a64]',
+    border: 'border-[#d3e4d9]',
+    badgeBg: 'bg-[#e3eee6]',
+    badgeText: 'text-[#274835]',
+    hex: '#4a8a64',
+    pdfBg: [241, 248, 243],
+    pdfText: [39, 72, 53],
+    pdfBorder: [211, 228, 217],
+    pdfItemBg: [250, 253, 251],
   },
 };
 
@@ -89,7 +127,13 @@ export interface DateDeadlineGroup {
   rowBg: string;
   text: string;
   border: string;
+  badgeBg: string;
+  badgeText: string;
   hex: string;
+  pdfBg: [number, number, number];
+  pdfText: [number, number, number];
+  pdfBorder: [number, number, number];
+  pdfItemBg: [number, number, number];
   items: Deadline[];
 }
 
@@ -200,11 +244,17 @@ export function groupDeadlinesByDate(deadlines: Deadline[]): DateDeadlineGroup[]
       sublabel: formatWeekRange(new Date(nextWeekStart), new Date(nextWeekEnd)),
       category: 'thisWeek',
       dot: 'bg-indigo-500',
-      bg: 'bg-indigo-50',
-      rowBg: 'bg-indigo-50/40',
-      text: 'text-indigo-700',
-      border: 'border-l-indigo-400',
+      bg: 'bg-indigo-100/70',
+      rowBg: 'bg-[#eef2ff]',
+      text: 'text-indigo-800',
+      border: 'border-[#c7d2fe]',
+      badgeBg: 'bg-indigo-100',
+      badgeText: 'text-indigo-800',
       hex: '#4f46e5',
+      pdfBg: [238, 242, 255],
+      pdfText: [55, 48, 163],
+      pdfBorder: [199, 210, 254],
+      pdfItemBg: [245, 247, 255],
       items: nextWeekItems,
     });
   }
@@ -218,12 +268,18 @@ export function groupDeadlinesByDate(deadlines: Deadline[]): DateDeadlineGroup[]
       id: `week-${weekTs}`,
       label: `Week of ${rangeStr}`,
       category: 'later',
-      dot: 'bg-ink-400',
-      bg: 'bg-paper-100',
-      rowBg: 'bg-paper-50',
-      text: 'text-ink-600',
-      border: 'border-l-paper-300',
-      hex: '#64748b',
+      dot: 'bg-[#4a8a64]',
+      bg: 'bg-emerald-50/80',
+      rowBg: 'bg-[#f4f8f5]',
+      text: 'text-[#2e543e]',
+      border: 'border-[#d3e4d9]',
+      badgeBg: 'bg-[#e3eee6]',
+      badgeText: 'text-[#274835]',
+      hex: '#4a8a64',
+      pdfBg: [241, 248, 243],
+      pdfText: [39, 72, 53],
+      pdfBorder: [211, 228, 217],
+      pdfItemBg: [250, 253, 251],
       items: weekData.items,
     });
   }

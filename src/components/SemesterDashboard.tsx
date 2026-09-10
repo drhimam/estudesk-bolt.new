@@ -499,7 +499,11 @@ function DeadlineRow({
 
   return (
     <div
-      className={`flex items-center gap-3 ${meta.rowBg} rounded-xl border border-paper-200 border-l-4 ${meta.border} px-4 py-3 group hover:shadow-soft card-hover`}
+      className={`flex items-center gap-3 ${
+        deadline.completed
+          ? 'bg-paper-100/70 border-paper-200 text-ink-400'
+          : `${meta.rowBg} ${meta.border}`
+      } rounded-2xl border px-4 py-3.5 group hover:shadow-soft card-hover transition-all`}
     >
       <button onClick={toggle} className="shrink-0">
         {deadline.completed ? (
@@ -511,17 +515,17 @@ function DeadlineRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <p
-            className={`text-sm font-medium truncate ${
+            className={`text-sm font-semibold truncate ${
               deadline.completed
-                ? 'text-ink-400 line-through'
-                : 'text-ink-700'
+                ? 'text-ink-400 line-through font-normal'
+                : 'text-ink-800'
             }`}
           >
             {deadline.title}
           </p>
           {subject && (
             <span
-              className="text-xs px-2 py-0.5 rounded-md font-medium shrink-0"
+              className="text-xs px-2.5 py-0.5 rounded-full font-medium shrink-0 shadow-xs"
               style={{
                 backgroundColor: COLOR_LIGHT[subject.color],
                 color: COLOR_TEXT[subject.color],
@@ -531,40 +535,44 @@ function DeadlineRow({
             </span>
           )}
           {!subject && (
-            <span className="text-xs px-2 py-0.5 rounded-md font-medium bg-paper-200 text-ink-400 shrink-0">
+            <span className="text-xs px-2.5 py-0.5 rounded-full font-medium bg-paper-200 text-ink-500 shrink-0">
               Other
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 mt-0.5 text-xs text-ink-400">
-          <span>
-            Due {new Date(deadline.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+        <div className="flex items-center gap-2 mt-1 text-xs text-ink-500">
+          <span className="font-medium text-ink-600">
+            Due {new Date(deadline.dueDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
           </span>
           {deadline.description && (
             <>
-              <span>•</span>
-              <span className="truncate">{deadline.description}</span>
+              <span className="text-ink-300">•</span>
+              <span className="truncate text-ink-500">{deadline.description}</span>
             </>
           )}
         </div>
       </div>
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex items-center gap-2.5 shrink-0">
         <div
-          className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg ${meta.bg} ${meta.text}`}
+          className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${
+            deadline.completed
+              ? 'bg-paper-200 text-ink-400'
+              : `${meta.badgeBg} ${meta.badgeText}`
+          } shadow-xs`}
         >
           <Clock className="w-3.5 h-3.5" />
           <span>{relativeDeadlineLabel(deadline)}</span>
         </div>
         <button
           onClick={() => onEdit?.(deadline)}
-          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-paper-100 text-ink-300 hover:text-accent-600 transition-all"
+          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-white/80 text-ink-400 hover:text-accent-600 transition-all shadow-xs"
           title="Edit deadline"
         >
           <Pencil className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={remove}
-          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-paper-100 text-ink-300 hover:text-crimson-500 transition-all"
+          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-white/80 text-ink-400 hover:text-crimson-500 transition-all shadow-xs"
           title="Delete deadline"
         >
           <Trash2 className="w-3.5 h-3.5" />
