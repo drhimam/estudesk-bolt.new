@@ -444,6 +444,58 @@ export async function processDeadlineAlerts(
 }
 
 /**
+ * Process scheduled weekly digests for all users based on their day & time preferences
+ */
+export async function processScheduledWeeklyDigests(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: any,
+  env: EmailEnvBindings
+) {
+  const prefs = await db
+    .select()
+    .from(schema.notificationPreferences)
+    .where(eq(schema.notificationPreferences.weeklyDigestEnabled, true));
+
+  const now = new Date();
+  let dispatched = 0;
+
+  for (const pref of prefs) {
+    try {
+      const userTz = pref.timezone || 'UTC';
+      const userDateStr = now.toLocaleDateString('en-US', { timeZone: userTz, weekday: 'long' }).toLowerCase();
+      const userHourStr = now.toLocaleTimeString('en-US', { timeZone: userTz, hour12: false, hour: '2-digit' });
+
+      const targetDay = (pref.weeklyDigestDay || 'monday').toLowerCase();
+      const targetHour = (pref.weeklyDigestTime || '08:00').split(':')[0].padStart(2, '0');
+
+      if (userDateStr === targetDay && userHourStr === targetHour) {
+        // Prevent duplicate sending within the same 20-hour window
+        const recentLogs = await db
+          .select()
+          .from(schema.notificationLogs)
+          .where(
+            and(
+              eq(schema.notificationLogs.userId, pref.userId),
+              eq(schema.notificationLogs.notificationType, 'weekly_digest'),
+              gte(schema.notificationLogs.createdAt, new Date(now.getTime() - 20 * 60 * 60 * 1000))
+            )
+          )
+          .limit(1);
+
+        if (recentLogs.length === 0) {
+          await sendWeeklyDigestForUser(db, env, pref.userId, false);
+          dispatched++;
+        }
+      }
+    } catch (e) {
+      console.error(`[Weekly Digest Cron] Failed for user ${pref.userId}:`, e);
+    }
+  }
+
+  return { dispatched };
+}
+
+/**
  * Get or create default notification preferences for a user
  */
 export async function getNotificationPreferences(

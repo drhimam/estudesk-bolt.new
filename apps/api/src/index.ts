@@ -14,6 +14,7 @@ import {
   sendTestEmailNotification,
   sendWeeklyDigestForUser,
   processDeadlineAlerts,
+  processScheduledWeeklyDigests,
   checkRateLimit,
 } from './email/notifications';
 
@@ -667,6 +668,18 @@ app.post('/api/notifications/send-deadline-alerts', async (c) => {
   }
 });
 
+// Trigger Scheduled Weekly Digests scan across all matching users
+app.post('/api/notifications/send-scheduled-digests', async (c) => {
+  try {
+    const { db } = getDb(c.env);
+    const result = await processScheduledWeeklyDigests(db, c.env);
+    return c.json({ success: true, dispatchedCount: result.dispatched });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
 // Export worker handler with scheduled cron support
 export default {
   fetch: app.fetch,
@@ -674,11 +687,16 @@ export default {
     console.log(`[Worker Cron Triggered] Pattern: ${event.cron}`);
     const { db } = getDb(env);
 
-    // Run deadline alerts every 15 minutes
+    // Run deadline alerts (every 15 min) and scheduled weekly digests (hourly)
     ctx.waitUntil(
-      processDeadlineAlerts(db, env).catch((err) => {
-        console.error('[Worker Cron Error in Deadline Alerts]', err);
-      })
+      Promise.all([
+        processDeadlineAlerts(db, env).catch((err) => {
+          console.error('[Worker Cron Error in Deadline Alerts]', err);
+        }),
+        processScheduledWeeklyDigests(db, env).catch((err) => {
+          console.error('[Worker Cron Error in Weekly Digest]', err);
+        }),
+      ])
     );
   },
 };
