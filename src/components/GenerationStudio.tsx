@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   X,
   Send,
@@ -1937,6 +1937,145 @@ function ConfigPanel({
   );
 }
 
+function InfographicDraftPreview({ html }: { html: string }) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [iframeHeight, setIframeHeight] = useState<number>(600);
+
+  const updateHeight = useCallback(() => {
+    try {
+      const iframe = iframeRef.current;
+      if (!iframe) return;
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (doc) {
+        const body = doc.body;
+        const htmlElem = doc.documentElement;
+        const height = Math.max(
+          body ? body.scrollHeight : 0,
+          body ? body.offsetHeight : 0,
+          htmlElem ? htmlElem.scrollHeight : 0,
+          htmlElem ? htmlElem.offsetHeight : 0,
+          300
+        );
+        if (height > 50) {
+          setIframeHeight(height + 24);
+        }
+      }
+    } catch {
+      // Ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    let resizeObserver: ResizeObserver | null = null;
+
+    const handleLoad = () => {
+      updateHeight();
+      try {
+        const doc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (doc && doc.body) {
+          resizeObserver = new ResizeObserver(() => {
+            updateHeight();
+          });
+          resizeObserver.observe(doc.body);
+        }
+      } catch {
+        // Ignore
+      }
+    };
+
+    iframe.addEventListener('load', handleLoad);
+    if (iframe.contentDocument?.readyState === 'complete') {
+      handleLoad();
+    }
+
+    const timer1 = setTimeout(updateHeight, 300);
+    const timer2 = setTimeout(updateHeight, 1000);
+
+    return () => {
+      iframe.removeEventListener('load', handleLoad);
+      if (resizeObserver) resizeObserver.disconnect();
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
+  }, [html, updateHeight]);
+
+  const processedHtml = useMemo(() => {
+    if (!html) return '';
+    const resetStyle = `
+      <style>
+        html, body {
+          overflow: hidden !important;
+          margin: 0 !important;
+          padding: 8px 0 !important;
+          background: transparent !important;
+          max-width: 100% !important;
+          box-sizing: border-box !important;
+        }
+        *, *:before, *:after {
+          box-sizing: border-box !important;
+        }
+        .container, .infographic-container {
+          max-width: 100% !important;
+          width: 100% !important;
+          margin: 0 auto !important;
+          box-shadow: none !important;
+        }
+      </style>
+    `;
+
+    if (html.includes('</head>')) {
+      return html.replace('</head>', `${resetStyle}</head>`);
+    } else if (html.includes('<html') || html.includes('<body')) {
+      return `${resetStyle}${html}`;
+    }
+
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  ${resetStyle}
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #1e293b;
+    }
+  </style>
+</head>
+<body>
+  ${html}
+</body>
+</html>`;
+  }, [html]);
+
+  return (
+    <div className="w-full">
+      <iframe
+        ref={iframeRef}
+        srcDoc={processedHtml}
+        title="Preview"
+        sandbox="allow-same-origin allow-scripts"
+        className="w-full border-0 bg-transparent block"
+        style={{
+          height: `${iframeHeight}px`,
+          minHeight: '300px',
+          width: '100%',
+          overflow: 'hidden',
+          transition: 'height 0.15s ease-out',
+        }}
+        scrolling="no"
+        onLoad={updateHeight}
+      />
+    </div>
+  );
+}
+
 function DraftPreview({
   draft,
   hex,
@@ -1969,21 +2108,15 @@ function DraftPreview({
   }
   if (draft.contentHtml) {
     return (
-      <div className="bg-white rounded-2xl border border-paper-200 overflow-hidden shadow-card">
-        <div className="flex justify-end p-3 bg-paper-50 border-b border-paper-200">
+      <div className="space-y-3 animate-fade-in">
+        <div className="flex justify-end">
           <CopyButton
             text={draft.contentHtml}
             label="Copy HTML Layout"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-ink-700 bg-white hover:bg-paper-100 border border-paper-300 transition-all shadow-sm active:scale-95"
           />
         </div>
-        <iframe
-          srcDoc={draft.contentHtml}
-          title="Preview"
-          sandbox="allow-same-origin"
-          className="w-full border-0"
-          style={{ minHeight: '500px' }}
-        />
+        <InfographicDraftPreview html={draft.contentHtml} />
       </div>
     );
   }

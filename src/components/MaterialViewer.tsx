@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   ArrowLeft,
@@ -481,7 +481,11 @@ export function MaterialViewer({ material, subjectColor, onBack, onRenamed }: Pr
           {/* Main Content Area */}
           <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
             <div
-              className="max-w-4xl mx-auto px-6 lg:px-12 py-10 animate-fade-in"
+              className={`mx-auto px-6 lg:px-12 py-10 animate-fade-in ${
+                material.type === 'infographic' || material.type === 'presentation'
+                  ? 'max-w-5xl'
+                  : 'max-w-4xl'
+              }`}
               style={{ fontSize: `${fontSize}px` }}
             >
               {material.type === 'notes' && (
@@ -704,7 +708,13 @@ export function MaterialViewer({ material, subjectColor, onBack, onRenamed }: Pr
       </header>
 
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
-        <div className="max-w-3xl mx-auto px-4 lg:px-8 py-8 animate-fade-in">
+        <div
+          className={`mx-auto px-4 lg:px-8 py-8 animate-fade-in ${
+            material.type === 'infographic' || material.type === 'presentation'
+              ? 'max-w-5xl'
+              : 'max-w-3xl'
+          }`}
+        >
           {material.type === 'notes' && (
             <div className="prose-studesk">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -752,14 +762,139 @@ export function MaterialViewer({ material, subjectColor, onBack, onRenamed }: Pr
 }
 
 function InfographicViewer({ html }: { html: string }) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [iframeHeight, setIframeHeight] = useState<number>(600);
+
+  const updateHeight = useCallback(() => {
+    try {
+      const iframe = iframeRef.current;
+      if (!iframe) return;
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (doc) {
+        const body = doc.body;
+        const htmlElem = doc.documentElement;
+        const height = Math.max(
+          body ? body.scrollHeight : 0,
+          body ? body.offsetHeight : 0,
+          htmlElem ? htmlElem.scrollHeight : 0,
+          htmlElem ? htmlElem.offsetHeight : 0,
+          300
+        );
+        if (height > 50) {
+          setIframeHeight(height + 24);
+        }
+      }
+    } catch {
+      // Ignore cross-origin issues
+    }
+  }, []);
+
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    let resizeObserver: ResizeObserver | null = null;
+
+    const handleLoad = () => {
+      updateHeight();
+      try {
+        const doc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (doc && doc.body) {
+          resizeObserver = new ResizeObserver(() => {
+            updateHeight();
+          });
+          resizeObserver.observe(doc.body);
+        }
+      } catch {
+        // Ignore
+      }
+    };
+
+    iframe.addEventListener('load', handleLoad);
+    if (iframe.contentDocument?.readyState === 'complete') {
+      handleLoad();
+    }
+
+    const timer1 = setTimeout(updateHeight, 300);
+    const timer2 = setTimeout(updateHeight, 1000);
+
+    return () => {
+      iframe.removeEventListener('load', handleLoad);
+      if (resizeObserver) resizeObserver.disconnect();
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
+  }, [html, updateHeight]);
+
+  const processedHtml = useMemo(() => {
+    if (!html) return '';
+    const resetStyle = `
+      <style>
+        html, body {
+          overflow: hidden !important;
+          margin: 0 !important;
+          padding: 8px 0 !important;
+          background: transparent !important;
+          max-width: 100% !important;
+          box-sizing: border-box !important;
+        }
+        *, *:before, *:after {
+          box-sizing: border-box !important;
+        }
+        .container, .infographic-container {
+          max-width: 100% !important;
+          width: 100% !important;
+          margin: 0 auto !important;
+          box-shadow: none !important;
+        }
+      </style>
+    `;
+
+    if (html.includes('</head>')) {
+      return html.replace('</head>', `${resetStyle}</head>`);
+    } else if (html.includes('<html') || html.includes('<body')) {
+      return `${resetStyle}${html}`;
+    }
+
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  ${resetStyle}
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #1e293b;
+    }
+  </style>
+</head>
+<body>
+  ${html}
+</body>
+</html>`;
+  }, [html]);
+
   return (
-    <div className="bg-white rounded-xl border border-paper-200 overflow-hidden shadow-card">
+    <div className="w-full animate-fade-in">
       <iframe
-        srcDoc={html}
+        ref={iframeRef}
+        srcDoc={processedHtml}
         title="Infographic"
-        sandbox="allow-same-origin"
-        className="w-full border-0"
-        style={{ minHeight: '500px' }}
+        sandbox="allow-same-origin allow-scripts"
+        className="w-full border-0 bg-transparent block"
+        style={{
+          height: `${iframeHeight}px`,
+          minHeight: '300px',
+          width: '100%',
+          overflow: 'hidden',
+          transition: 'height 0.15s ease-out',
+        }}
+        scrolling="no"
+        onLoad={updateHeight}
       />
     </div>
   );
