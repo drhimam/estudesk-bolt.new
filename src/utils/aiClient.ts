@@ -7,11 +7,19 @@
 
 import { extractUrls, fetchUrlContent } from './webReader';
 
-const AI_API_KEY = import.meta.env.VITE_AI_API_KEY || '';
+const AI_API_KEY =
+  (import.meta.env.VITE_AI_API_KEY as string) ||
+  (import.meta.env.AI_API_KEY as string) ||
+  '';
 const AI_BASE_URL = (
-  import.meta.env.VITE_AI_BASE_URL || 'https://api.deepseek.com/v1'
+  (import.meta.env.VITE_AI_BASE_URL as string) ||
+  (import.meta.env.AI_BASE_URL as string) ||
+  'https://api.deepseek.com/v1'
 ).replace(/\/+$/, '');
-const AI_MODEL = import.meta.env.VITE_AI_MODEL || 'deepseek-chat';
+const AI_MODEL =
+  (import.meta.env.VITE_AI_MODEL as string) ||
+  (import.meta.env.AI_MODEL as string) ||
+  'deepseek-chat';
 
 export interface ChatCompletionMessage {
   role: 'system' | 'user' | 'assistant';
