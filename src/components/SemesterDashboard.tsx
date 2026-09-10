@@ -535,11 +535,17 @@ function DeadlineRow({
             </span>
           )}
         </div>
-        {deadline.description && (
-          <p className="text-xs text-ink-400 mt-0.5 truncate">
-            {deadline.description}
-          </p>
-        )}
+        <div className="flex items-center gap-2 mt-0.5 text-xs text-ink-400">
+          <span>
+            Due {new Date(deadline.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </span>
+          {deadline.description && (
+            <>
+              <span>•</span>
+              <span className="truncate">{deadline.description}</span>
+            </>
+          )}
+        </div>
       </div>
       <div className="flex items-center gap-3 shrink-0">
         <div

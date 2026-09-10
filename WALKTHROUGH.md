@@ -1,5 +1,10 @@
 # eStudesk System Walkthrough & Architectural Reference
 
+## Recent Update: Due Date Timezone Shift Fix
+- **Root Cause Resolved**: `<input type="date">` produces `YYYY-MM-DD` strings (e.g. `2026-09-29`). When previously passed to `new Date(dueDate).getTime()`, JavaScript parsed it as UTC midnight (`2026-09-29T00:00:00.000Z`). In timezones behind UTC (such as North American Eastern/Central/Pacific time), this shifted the date to the previous evening (e.g. Sept 28 at 8 PM), displaying as the day before.
+- **Local Noon Parsing**: Updated `AddDeadlineModal.tsx` and `EditDeadlineModal.tsx` to extract `[year, month, day]` and construct `new Date(year, month - 1, day, 12, 0, 0).getTime()`. This anchors the deadline to local noon, completely preventing any timezone or DST drift across all calendar views, tables, and PDF reports.
+- **Explicit Due Date in Semester Dashboard**: Added explicit formatted due date badges (`Due Sep 29`) to `DeadlineRow` in `SemesterDashboard.tsx` alongside relative countdown labels.
+
 ## Recent Update: In-Place Deadline Editing & Modification
 - **Unified Edit Option**: Added a dedicated `Edit` (Pencil icon) button alongside the Delete button on every deadline row across both the **Semester Dashboard** (Date-wise and Subject-wise views) and individual **Subject Deadline Tabs** (List and Category views).
 - **Interactive Edit Modal (`EditDeadlineModal.tsx`)**:

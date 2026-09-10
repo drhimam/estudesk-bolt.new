@@ -33,13 +33,17 @@ export function AddDeadlineModal({ open, onClose, semesterId, subjects, defaultS
 
   async function save() {
     if (!title.trim() || !dueDate) return;
+
+    const [year, month, day] = dueDate.split('-').map(Number);
+    const dueTimestamp = new Date(year, month - 1, day, 12, 0, 0).getTime();
+
     const newDeadline: Deadline = {
       id: uid(),
       folderId: semesterId,
       subjectId: isOther ? null : subjectId || null,
       title: title.trim(),
       description: description.trim() || undefined,
-      dueDate: new Date(dueDate).getTime(),
+      dueDate: dueTimestamp,
       completed: false,
       createdAt: Date.now(),
     };
