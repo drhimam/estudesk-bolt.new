@@ -434,6 +434,7 @@ export const subscriptions = sqliteTable('subscriptions', {
   id: text('id').primaryKey().$defaultFn(randomId),
   userId: text('user_id')
     .notNull()
+    .unique()
     .references(() => user.id, { onDelete: 'cascade' }),
   planId: text('plan_id')
     .notNull()

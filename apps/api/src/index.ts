@@ -842,22 +842,47 @@ app.post('/api/billing/verify-paypal-subscription', async (c) => {
       ? new Date(verification.nextBillingTime)
       : new Date(Date.now() + durationMonths * 30 * 24 * 60 * 60 * 1000);
 
-    // 3. Upsert Active Subscription Record in Turso DB
-    const subId = crypto.randomUUID();
-    await db.insert(schema.subscriptions).values({
-      id: subId,
-      userId: body.userId,
-      planId: body.planId,
-      paypalSubscriptionId: body.subscriptionId,
-      paypalPayerId: verification.subscriberEmail || null,
-      status: 'active',
-      billingCycle: plan?.billingCycle || 'monthly',
-      currentPeriodStart: periodStart,
-      currentPeriodEnd: periodEnd,
-      cancelAtPeriodEnd: false,
-      createdAt: periodStart,
-      updatedAt: periodStart,
-    });
+    // 3. Upsert Active Subscription Record in Turso DB (Strict 1:1 row per user)
+    const existingSub = await db
+      .select()
+      .from(schema.subscriptions)
+      .where(eq(schema.subscriptions.userId, body.userId))
+      .get();
+
+    const subId = existingSub?.id || crypto.randomUUID();
+
+    if (existingSub) {
+      await db
+        .update(schema.subscriptions)
+        .set({
+          planId: body.planId,
+          paypalSubscriptionId: body.subscriptionId,
+          paypalPayerId: verification.subscriberEmail || null,
+          status: 'active',
+          billingCycle: plan?.billingCycle || 'monthly',
+          currentPeriodStart: periodStart,
+          currentPeriodEnd: periodEnd,
+          cancelAtPeriodEnd: false,
+          canceledAt: null,
+          updatedAt: periodStart,
+        })
+        .where(eq(schema.subscriptions.id, existingSub.id));
+    } else {
+      await db.insert(schema.subscriptions).values({
+        id: subId,
+        userId: body.userId,
+        planId: body.planId,
+        paypalSubscriptionId: body.subscriptionId,
+        paypalPayerId: verification.subscriberEmail || null,
+        status: 'active',
+        billingCycle: plan?.billingCycle || 'monthly',
+        currentPeriodStart: periodStart,
+        currentPeriodEnd: periodEnd,
+        cancelAtPeriodEnd: false,
+        createdAt: periodStart,
+        updatedAt: periodStart,
+      });
+    }
 
     // 4. Update User tier and grant credits
     await db
@@ -1170,20 +1195,42 @@ app.post('/api/billing/override-user', async (c) => {
         .set({ status: 'canceled', cancelAtPeriodEnd: false, updatedAt: now })
         .where(eq(schema.subscriptions.userId, body.userId));
     } else if (body.planId && body.planId !== 'free') {
-      const subId = crypto.randomUUID();
+      const existingSub = await db
+        .select()
+        .from(schema.subscriptions)
+        .where(eq(schema.subscriptions.userId, body.userId))
+        .get();
+
       const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-      await db.insert(schema.subscriptions).values({
-        id: subId,
-        userId: body.userId,
-        planId: body.planId,
-        status: 'active',
-        billingCycle: body.planId === 'pro_semester' ? 'semester' : 'monthly',
-        currentPeriodStart: now,
-        currentPeriodEnd: periodEnd,
-        cancelAtPeriodEnd: false,
-        createdAt: now,
-        updatedAt: now,
-      });
+
+      if (existingSub) {
+        await db
+          .update(schema.subscriptions)
+          .set({
+            planId: body.planId,
+            status: 'active',
+            billingCycle: body.planId === 'pro_semester' ? 'semester' : 'monthly',
+            currentPeriodStart: now,
+            currentPeriodEnd: periodEnd,
+            cancelAtPeriodEnd: false,
+            canceledAt: null,
+            updatedAt: now,
+          })
+          .where(eq(schema.subscriptions.id, existingSub.id));
+      } else {
+        await db.insert(schema.subscriptions).values({
+          id: crypto.randomUUID(),
+          userId: body.userId,
+          planId: body.planId,
+          status: 'active',
+          billingCycle: body.planId === 'pro_semester' ? 'semester' : 'monthly',
+          currentPeriodStart: now,
+          currentPeriodEnd: periodEnd,
+          cancelAtPeriodEnd: false,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
     }
 
     await db.insert(schema.creditTransactions).values({
