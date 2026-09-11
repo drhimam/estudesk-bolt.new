@@ -1,6 +1,26 @@
 # eStudesk System Walkthrough & Architectural Reference
 
+## Recent Update: Cloudflare Turnstile Bot Protection & Security Integration
+- **Dedicated Turnstile Widget Component (`src/components/TurnstileWidget.tsx`)**:
+  - Safely injects and lifecycle-manages Cloudflare's Turnstile API script (`https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit`).
+  - Supports theme auto-detection matching eStudesk's academic aesthetic with subtle loading skeletons and error fallbacks.
+  - Exposes imperative handles (`reset()` and `getResponse()`) and callback hooks (`onSuccess`, `onError`, `onExpire`).
+  - Pre-configured with Cloudflare's standard test sitekey (`1x00000000000000000000AA`) for zero-friction local development and automated testing.
+- **Authentication Modal Protection (`src/components/AuthModal.tsx`)**:
+  - 🛡️ **Account Creation (Sign Up)**: Blocks automated bot registrations and spam user creation.
+  - 🔑 **Password Recovery (Forgot Password)**: Guards against email flooding attacks, user enumeration, and unauthorized SMTP usage.
+  - ✉️ **Email Verification Portal (Resend Verification)**: Prevents mail gateway rate limit exhaustion.
+  - Automatic error state handling and widget auto-reset on form failure or modal tab navigation.
+- **Backend Worker Verification Endpoint (`apps/api/src/index.ts` & `apps/api/src/auth/turnstile.ts`)**:
+  - Implemented `POST /api/auth/verify-turnstile` route in the Cloudflare Worker Hono API.
+  - Validates tokens directly against `https://challenges.cloudflare.com/turnstile/v0/siteverify` using `CLOUDFLARE_TURNSTILE_SECRET_KEY` and client IP (`cf-connecting-ip` / `x-forwarded-for`).
+- **Client Auth Integration (`src/lib/authClient.ts`)**:
+  - Added `verifyTurnstileToken(token)` client helper to validate challenge tokens seamlessly.
+- **Global Types & Environment Variables (`src/types/turnstile.d.ts`, `src/vite-env.d.ts`, `.env`, `apps/api/.dev.vars`)**:
+  - Full TypeScript global augmentation for `window.turnstile` and `ImportMetaEnv.VITE_TURNSTILE_SITE_KEY`.
+
 ## Recent Update: Multi-Channel Share Option for Academic Deadlines
+
 - **Dedicated Share Menu Component (`src/components/ShareMenu.tsx`)**:
   - Integrated alongside the existing `DownloadMenu` across both the **Semester Dashboard** and **Subject Deadline Tab**.
   - Respects the currently selected view orientation (Date-wise week-by-week grouping or Subject-wise grouping).
