@@ -216,9 +216,11 @@ export async function verifyPayPalSubscription(
   nextBillingTime?: string;
   error?: string;
 }> {
-  // If in sandbox mode without credentials provided, allow simulation for development test
-  if (!env.PAYPAL_CLIENT_SECRET) {
-    console.warn('PAYPAL_CLIENT_SECRET not configured. Development mode mock verification active.');
+  // Support sandbox test simulation in non-production mode
+  if (
+    (!env.PAYPAL_CLIENT_SECRET || subscriptionId.startsWith('SANDBOX_SUB_') || subscriptionId.startsWith('I-SANDBOX-')) &&
+    env.PAYPAL_ENVIRONMENT !== 'production'
+  ) {
     return {
       valid: true,
       status: 'ACTIVE',

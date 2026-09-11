@@ -35,6 +35,7 @@ import {
 } from '@/store/appState';
 import { API_BASE_URL } from '@/lib/authClient';
 import type { SubscriptionPlan, InvoiceRecord, CreditTransaction, SessionItem } from '@/types';
+import { PayPalCheckoutModal } from './PayPalCheckoutModal';
 
 const INITIAL_DEFAULT_PLANS: SubscriptionPlan[] = [
   {
@@ -196,6 +197,7 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
 
   const [actionLoading, setActionLoading] = useState(false);
   const [billingNotice, setBillingNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [selectedCheckoutPlan, setSelectedCheckoutPlan] = useState<SubscriptionPlan | null>(null);
 
   // Delete state
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -369,6 +371,13 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
     const isCurrent = plan.id === activePlanId;
     if (isCurrent) return;
 
+    // Paid Plan Upgrade / Switch -> Open PayPal Checkout Modal
+    if (plan.id !== 'free') {
+      setSelectedCheckoutPlan(plan);
+      return;
+    }
+
+    // Downgrade to Free
     if (plan.id === 'free' && isPro) {
       const formattedEnd = formatDate(subscriptionDetails?.subscription?.currentPeriodEnd);
       if (!confirm(`Are you sure you want to downgrade to Free? Your Pro plan and credits will remain active until the end of your billing cycle on ${formattedEnd}, after which your plan will switch to Free. Proceed?`)) {
@@ -385,24 +394,18 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: currentUser.id,
-          planId: plan.id,
+          planId: 'free',
         }),
       });
 
       const json = await res.json();
       if (!res.ok) {
-        setBillingNotice({ type: 'error', text: json.error || 'Failed to change subscription plan.' });
+        setBillingNotice({ type: 'error', text: json.error || 'Failed to update subscription plan.' });
       } else {
         setBillingNotice({
           type: 'success',
-          text: json.message || `🎉 Successfully updated plan to ${plan.name}!`,
+          text: json.message || `Your plan is now set to Free.`,
         });
-        if (json.tier) {
-          setCurrentUser({
-            ...currentUser,
-            tier: json.tier,
-          });
-        }
         fetchPlansAndSubscription();
         fetchInvoices();
         fetchUsage();
@@ -1130,6 +1133,13 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
                             </span>
                           ) : plan.id === 'free' && isPro ? (
                             <span>Downgrade to Free</span>
+                          ) : activePlanId === 'pro_semester' && plan.id === 'pro_monthly' ? (
+                            <span>Switch to Monthly Plan</span>
+                          ) : activePlanId === 'pro_monthly' && plan.id === 'pro_semester' ? (
+                            <>
+                              <span>Switch to Semester (Save 10%)</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </>
                           ) : (
                             <>
                               <span>Upgrade to {plan.name}</span>
@@ -1493,6 +1503,30 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
             </div>
           </div>
         )}
+
+        {/* PayPal Checkout Modal */}
+        <PayPalCheckoutModal
+          isOpen={!!selectedCheckoutPlan}
+          onClose={() => setSelectedCheckoutPlan(null)}
+          plan={selectedCheckoutPlan}
+          userId={userId || ''}
+          userEmail={currentUser?.email}
+          onSuccess={(planName) => {
+            setBillingNotice({
+              type: 'success',
+              text: `🎉 Successfully activated ${planName}! 1,000 monthly credits added.`,
+            });
+            if (currentUser) {
+              setCurrentUser({
+                ...currentUser,
+                tier: 'Pro',
+              });
+            }
+            fetchPlansAndSubscription();
+            fetchInvoices();
+            fetchUsage();
+          }}
+        />
       </main>
     </div>
   );

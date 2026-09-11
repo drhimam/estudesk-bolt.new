@@ -992,68 +992,15 @@ app.post('/api/billing/change-plan', async (c) => {
       });
     }
 
-    // CASE 2: UPGRADE TO PRO (Immediate Activation)
-    const durationMonths = plan.durationMonths || 1;
-    const creditsToGrant = (plan.aiCreditsMonthly || 1000) * durationMonths;
-    const periodStart = now;
-    const periodEnd = new Date(now.getTime() + durationMonths * 30 * 24 * 60 * 60 * 1000);
-    const subId = crypto.randomUUID();
-
-    // Update user tier to premium immediately
-    await db
-      .update(schema.user)
-      .set({
-        generationTier: 'premium',
-        updatedAt: now,
-      })
-      .where(eq(schema.user.id, body.userId));
-
-    // Grant credits
-    await billing.grantUserCredits(
-      db,
-      body.userId,
-      creditsToGrant,
-      'monthly_grant',
-      `Subscribed to ${plan.name} (${creditsToGrant} credits)`
+    // CASE 2: PAID UPGRADE ATTEMPT WITHOUT PAYPAL VERIFICATION
+    // Paid upgrades (Pro Monthly, Pro Semester) MUST go through PayPal verification
+    return c.json(
+      {
+        error:
+          'Paid subscriptions must be completed securely through PayPal Checkout. Please click the Upgrade with PayPal button.',
+      },
+      400
     );
-
-    // Insert active subscription
-    await db.insert(schema.subscriptions).values({
-      id: subId,
-      userId: body.userId,
-      planId: plan.id,
-      status: 'active',
-      billingCycle: plan.billingCycle,
-      currentPeriodStart: periodStart,
-      currentPeriodEnd: periodEnd,
-      cancelAtPeriodEnd: false,
-      createdAt: periodStart,
-      updatedAt: periodStart,
-    });
-
-    // Record invoice
-    const invoiceNum = `INV-${now.getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-    await db.insert(schema.invoices).values({
-      id: crypto.randomUUID(),
-      userId: body.userId,
-      subscriptionId: subId,
-      invoiceNumber: invoiceNum,
-      amount: plan.priceAmount,
-      currency: 'USD',
-      status: 'paid',
-      planName: plan.name,
-      billingPeriod: `${periodStart.toLocaleDateString()} - ${periodEnd.toLocaleDateString()}`,
-      paidAt: periodStart,
-      createdAt: periodStart,
-    });
-
-    return c.json({
-      success: true,
-      tier: 'Pro',
-      planId: plan.id,
-      currentPeriodEnd: periodEnd.toISOString(),
-      message: `🎉 Successfully upgraded to ${plan.name}! ${creditsToGrant.toLocaleString()} credits activated.`,
-    });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     return c.json({ error: msg }, 500);

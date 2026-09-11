@@ -32,6 +32,7 @@ import {
 } from '@/store/appState';
 import { API_BASE_URL } from '@/lib/authClient';
 import type { SubscriptionPlan, InvoiceRecord, CreditTransaction, SessionItem } from '@/types';
+import { PayPalCheckoutModal } from './PayPalCheckoutModal';
 
 const INITIAL_DEFAULT_PLANS: SubscriptionPlan[] = [
   {
@@ -154,6 +155,7 @@ export function AccountSettingsModal() {
   const [loadingBilling, setLoadingBilling] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [billingNotice, setBillingNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [selectedCheckoutPlan, setSelectedCheckoutPlan] = useState<SubscriptionPlan | null>(null);
 
   // Delete modal state
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -325,31 +327,42 @@ export function AccountSettingsModal() {
     if (!plan.isActive) return;
     if (!currentUser?.id) return;
 
+    const activePlanId = subscriptionDetails?.planId || (isPro ? 'pro_monthly' : 'free');
+    if (plan.id === activePlanId) return;
+
+    // Paid Plan Upgrade / Switch -> Open PayPal Checkout Modal
+    if (plan.id !== 'free') {
+      setSelectedCheckoutPlan(plan);
+      return;
+    }
+
+    // Downgrade to Free
+    if (plan.id === 'free' && isPro) {
+      if (!confirm('Are you sure you want to downgrade to Free? Your Pro plan and credits will remain active until the end of your billing cycle.')) {
+        return;
+      }
+    }
+
     setActionLoading(true);
     setBillingNotice(null);
 
     try {
-      // Direct upgrade / Plan switch with full backend verification
       const res = await fetch(`${API_BASE_URL}/api/billing/change-plan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: currentUser.id,
-          planId: plan.id,
+          planId: 'free',
         }),
       });
 
       const json = await res.json();
       if (!res.ok) {
-        setBillingNotice({ type: 'error', text: json.error || 'Failed to change subscription plan.' });
+        setBillingNotice({ type: 'error', text: json.error || 'Failed to update subscription plan.' });
       } else {
         setBillingNotice({
           type: 'success',
-          text: `🎉 You are now subscribed to ${plan.name}! ${plan.aiCreditsMonthly * (plan.durationMonths || 1)} AI Credits activated.`,
-        });
-        setCurrentUser({
-          ...currentUser,
-          tier: plan.id === 'free' ? 'Free' : 'Pro',
+          text: json.message || `Your plan is now set to Free.`,
         });
         fetchPlansAndSubscription();
         fetchInvoices();
@@ -1311,6 +1324,29 @@ export function AccountSettingsModal() {
             Close
           </button>
         </div>
+        {/* PayPal Checkout Modal */}
+        <PayPalCheckoutModal
+          isOpen={!!selectedCheckoutPlan}
+          onClose={() => setSelectedCheckoutPlan(null)}
+          plan={selectedCheckoutPlan}
+          userId={userId || ''}
+          userEmail={currentUser?.email}
+          onSuccess={(planName) => {
+            setBillingNotice({
+              type: 'success',
+              text: `🎉 Successfully activated ${planName}! 1,000 monthly credits added.`,
+            });
+            if (currentUser) {
+              setCurrentUser({
+                ...currentUser,
+                tier: 'Pro',
+              });
+            }
+            fetchPlansAndSubscription();
+            fetchInvoices();
+            fetchUsage();
+          }}
+        />
       </div>
     </div>
   );
