@@ -483,6 +483,89 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
     }
   }
 
+  async function handleResetToFree() {
+    if (!currentUser?.id) return;
+    if (!confirm('Reset your account to default Free tier with 100 credits? Active subscriptions will be canceled.')) {
+      return;
+    }
+
+    setActionLoading(true);
+    setBillingNotice(null);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/billing/reset-to-free`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser.id }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        setBillingNotice({ type: 'error', text: json.error || 'Failed to reset account.' });
+      } else {
+        setBillingNotice({
+          type: 'success',
+          text: json.message || 'Account successfully reset to Free tier with 100 credits.',
+        });
+        setCurrentUser({
+          ...currentUser,
+          tier: 'Free',
+        });
+        updateUserCredits(100);
+        fetchPlansAndSubscription();
+        fetchInvoices();
+        fetchUsage();
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Network error';
+      setBillingNotice({ type: 'error', text: msg });
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleCustomOverride(tier: 'free' | 'pro', credits: number) {
+    if (!currentUser?.id) return;
+    setActionLoading(true);
+    setBillingNotice(null);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/billing/override-user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          tier: tier === 'pro' ? 'premium' : 'free',
+          creditBalance: credits,
+          planId: tier === 'pro' ? 'pro_monthly' : 'free',
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        setBillingNotice({ type: 'error', text: json.error || 'Failed to override user.' });
+      } else {
+        setBillingNotice({
+          type: 'success',
+          text: `User overridden: Tier=${tier.toUpperCase()}, Credits=${credits}`,
+        });
+        setCurrentUser({
+          ...currentUser,
+          tier: tier === 'pro' ? 'Pro' : 'Free',
+        });
+        updateUserCredits(credits);
+        fetchPlansAndSubscription();
+        fetchInvoices();
+        fetchUsage();
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Network error';
+      setBillingNotice({ type: 'error', text: msg });
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
   async function handleDownloadArchive() {
     if (!currentUser?.id) return;
     try {
@@ -1281,6 +1364,44 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Quick Reset & Testing Controls */}
+            <div className="bg-gradient-to-r from-paper-50 to-[#f3f7f5] rounded-3xl p-6 border border-[#d6e0db] shadow-soft">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-ink-700">
+                      Developer & Testing Controls
+                    </span>
+                    <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-200">
+                      Sandbox Database Overrides
+                    </span>
+                  </div>
+                  <p className="text-xs text-ink-500 mt-1 max-w-xl">
+                    Easily reset your account to Free tier (100 credits) or override credits directly in Turso DB for testing without writing SQL.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                  <button
+                    onClick={handleResetToFree}
+                    disabled={actionLoading}
+                    className="px-4 py-2.5 rounded-xl bg-white hover:bg-paper-100 text-ink-800 border border-paper-300 text-xs font-semibold shadow-soft hover:shadow-card transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-crimson-600" />
+                    <span>Reset to Free (100 Cr)</span>
+                  </button>
+                  <button
+                    onClick={() => handleCustomOverride('pro', 1000)}
+                    disabled={actionLoading}
+                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-soft hover:shadow-card transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    <Zap className="w-3.5 h-3.5" />
+                    <span>Set Pro (1,000 Cr)</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

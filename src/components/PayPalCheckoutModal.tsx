@@ -84,8 +84,9 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
   useEffect(() => {
     if (!isOpen || !plan || loadingConfig) return;
 
-    const clientId = paypalClientId || 'sb'; // Default sandbox fallback
+    const clientId = paypalClientId || 'sb';
     const scriptId = 'paypal-sdk-script';
+    const hasValidSubscriptionPlan = plan.paypalPlanId && plan.paypalPlanId.startsWith('P-');
 
     // Remove existing script if client ID changed
     const existingScript = document.getElementById(scriptId);
@@ -95,10 +96,9 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
 
     const script = document.createElement('script');
     script.id = scriptId;
-    // Load PayPal SDK for Vault / Subscriptions
-    script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(
-      clientId
-    )}&vault=true&intent=subscription&currency=USD`;
+    script.src = hasValidSubscriptionPlan
+      ? `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&vault=true&intent=subscription&currency=USD`
+      : `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=USD&intent=capture`;
     script.async = true;
 
     script.onload = () => {
@@ -123,45 +123,54 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
     if (!isOpen || !plan || !sdkLoaded || !window.paypal || !paypalContainerRef.current) return;
 
     paypalContainerRef.current.innerHTML = '';
+    const hasValidSubscriptionPlan = plan.paypalPlanId && plan.paypalPlanId.startsWith('P-');
 
     try {
-      window.paypal
-        .Buttons({
-          style: {
-            shape: 'rect',
-            color: 'gold',
-            layout: 'vertical',
-            label: 'subscribe',
-            height: 44,
-          },
-          createSubscription: function (_data: any, actions: any) {
-            // Use configured PayPal Plan ID if exists, or generate standard subscription
-            const planIdToUse =
-              plan.paypalPlanId ||
-              (plan.billingCycle === 'semester'
-                ? 'P-SEMESTER-SUBSCRIPTION'
-                : 'P-MONTHLY-SUBSCRIPTION');
+      const buttonConfig: any = {
+        style: {
+          shape: 'rect',
+          color: 'gold',
+          layout: 'vertical',
+          label: 'pay',
+          height: 44,
+        },
+        onApprove: async function (data: any) {
+          const subId = data.subscriptionID || data.orderID || `I-SANDBOX-${Date.now()}`;
+          await handleVerifySubscription(subId);
+        },
+        onError: function (err: any) {
+          console.warn('PayPal checkout notification:', err);
+          setErrorMessage('PayPal checkout encountered an issue. You can use the Instant Sandbox Test button below.');
+        },
+        onCancel: function () {
+          setErrorMessage('PayPal checkout was cancelled.');
+        },
+      };
 
-            return actions.subscription.create({
-              plan_id: planIdToUse,
-            }).catch(() => {
-              // If subscription plan ID is not configured on PayPal side, fallback to sandbox approval
-              return `I-SANDBOX-${plan.id.toUpperCase()}-${Date.now()}`;
-            });
-          },
-          onApprove: async function (data: any) {
-            const subId = data.subscriptionID || data.orderID || `I-SANDBOX-${Date.now()}`;
-            await handleVerifySubscription(subId);
-          },
-          onError: function (err: any) {
-            console.error('PayPal Buttons error:', err);
-            setErrorMessage('PayPal checkout encountered an issue. Please try again or use Sandbox test.');
-          },
-          onCancel: function () {
-            setErrorMessage('PayPal checkout was cancelled.');
-          },
-        })
-        .render(paypalContainerRef.current);
+      if (hasValidSubscriptionPlan) {
+        buttonConfig.style.label = 'subscribe';
+        buttonConfig.createSubscription = function (_data: any, actions: any) {
+          return actions.subscription.create({
+            plan_id: plan.paypalPlanId,
+          });
+        };
+      } else {
+        buttonConfig.createOrder = function (_data: any, actions: any) {
+          return actions.order.create({
+            purchase_units: [
+              {
+                description: `eStudesk ${plan.name} Subscription`,
+                amount: {
+                  currency_code: 'USD',
+                  value: plan.priceAmount.toFixed(2),
+                },
+              },
+            ],
+          });
+        };
+      }
+
+      window.paypal.Buttons(buttonConfig).render(paypalContainerRef.current);
     } catch (err) {
       console.warn('Could not render PayPal Buttons container:', err);
     }

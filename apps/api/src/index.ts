@@ -1079,6 +1079,135 @@ app.post('/api/billing/resume-subscription', async (c) => {
   }
 });
 
+// Admin / Developer Endpoint: Reset User to Free Tier with 100 Credits
+app.post('/api/billing/reset-to-free', async (c) => {
+  try {
+    const body = await c.req.json<{ userId: string }>();
+    if (!body.userId) return c.json({ error: 'User ID is required' }, 400);
+
+    const { db } = getDb(c.env);
+    const now = new Date();
+
+    // 1. Reset user tier and balance
+    await db
+      .update(schema.user)
+      .set({
+        generationTier: 'free',
+        creditBalance: 100,
+        updatedAt: now,
+      })
+      .where(eq(schema.user.id, body.userId));
+
+    // 2. Mark active subscriptions as canceled
+    await db
+      .update(schema.subscriptions)
+      .set({
+        status: 'canceled',
+        cancelAtPeriodEnd: false,
+        canceledAt: now,
+        updatedAt: now,
+      })
+      .where(eq(schema.subscriptions.userId, body.userId));
+
+    // 3. Log credit transaction
+    await db.insert(schema.creditTransactions).values({
+      id: crypto.randomUUID(),
+      userId: body.userId,
+      amount: 100,
+      type: 'initial_grant',
+      balanceAfter: 100,
+      description: 'Account manually reset to default Free tier (100 credits)',
+      createdAt: now,
+    });
+
+    return c.json({
+      success: true,
+      tier: 'free',
+      creditBalance: 100,
+      message: 'Account successfully reset to Free tier with 100 credits.',
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// Admin / Developer Endpoint: Override User Limit, Tier & Credits
+app.post('/api/billing/override-user', async (c) => {
+  try {
+    const body = await c.req.json<{
+      userId: string;
+      tier?: 'free' | 'premium' | 'pro';
+      creditBalance?: number;
+      planId?: string;
+    }>();
+
+    if (!body.userId) return c.json({ error: 'User ID is required' }, 400);
+
+    const { db } = getDb(c.env);
+    const now = new Date();
+
+    const newTier = body.tier || 'free';
+    const newCredits =
+      body.creditBalance !== undefined
+        ? body.creditBalance
+        : newTier === 'free'
+        ? 100
+        : 1000;
+
+    await db
+      .update(schema.user)
+      .set({
+        generationTier: newTier,
+        creditBalance: newCredits,
+        updatedAt: now,
+      })
+      .where(eq(schema.user.id, body.userId));
+
+    if (newTier === 'free') {
+      await db
+        .update(schema.subscriptions)
+        .set({ status: 'canceled', cancelAtPeriodEnd: false, updatedAt: now })
+        .where(eq(schema.subscriptions.userId, body.userId));
+    } else if (body.planId && body.planId !== 'free') {
+      const subId = crypto.randomUUID();
+      const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      await db.insert(schema.subscriptions).values({
+        id: subId,
+        userId: body.userId,
+        planId: body.planId,
+        status: 'active',
+        billingCycle: body.planId === 'pro_semester' ? 'semester' : 'monthly',
+        currentPeriodStart: now,
+        currentPeriodEnd: periodEnd,
+        cancelAtPeriodEnd: false,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    await db.insert(schema.creditTransactions).values({
+      id: crypto.randomUUID(),
+      userId: body.userId,
+      amount: newCredits,
+      type: 'bonus',
+      balanceAfter: newCredits,
+      description: `Manual admin override: set tier to ${newTier} with ${newCredits} credits`,
+      createdAt: now,
+    });
+
+    return c.json({
+      success: true,
+      tier: newTier,
+      creditBalance: newCredits,
+      message: `User overridden: Tier=${newTier}, Credits=${newCredits}`,
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
 // Get User Invoices & Receipts
 app.get('/api/billing/invoices', async (c) => {
   try {
