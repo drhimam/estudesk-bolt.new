@@ -6,6 +6,21 @@
  */
 
 import { extractUrls, fetchUrlContent } from './webReader';
+import { updateUserCredits } from '@/store/appState';
+
+function deductClientCredit(cost: number) {
+  try {
+    const saved = localStorage.getItem('estudesk_user');
+    if (!saved) return;
+    const user = JSON.parse(saved);
+    if (!user?.id) return;
+    const currentCredits = user.credits ?? (user.tier?.toLowerCase().includes('pro') ? 1000 : 100);
+    const newBal = Math.max(0, currentCredits - cost);
+    updateUserCredits(newBal);
+  } catch {
+    // Ignored local credit deduction error
+  }
+}
 
 const AI_API_KEY =
   (import.meta.env.VITE_AI_API_KEY as string) ||
@@ -337,6 +352,9 @@ Source Content: ${sourceText || 'Generate comprehensive material on the topic sp
     { temperature: 0.3, responseFormat: 'json' },
   );
 
+  const cost = ['presentation', 'infographic', 'assignment'].includes(type) ? 5 : 2;
+  deductClientCredit(cost);
+
   return extractJsonFromText(rawContent);
 }
 
@@ -394,6 +412,8 @@ export async function askAI(
     },
   ];
 
-  return chatCompletion(messages, { temperature: 0.4 });
+  const result = await chatCompletion(messages, { temperature: 0.4 });
+  deductClientCredit(1);
+  return result;
 }
 

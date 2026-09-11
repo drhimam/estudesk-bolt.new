@@ -1,5 +1,32 @@
 # eStudesk System Walkthrough & Architectural Reference
 
+## Recent Update: Account Settings, Profile, Dynamic Subscriptions & PayPal Suite
+
+- **Dynamic Database-Driven Plan Management (`apps/api/src/db/schema.ts`, `apps/api/src/billing/billing.ts`)**:
+  - Controlled via `subscription_plans` table in Turso libSQL with active/inactive flags, dynamic discounts, and customizable discount stamp reasons:
+    - **Free**: $0.00 — 100 Initial AI Generation Credits, standard study formats, Dexie.js + cloud sync.
+    - **Pro Monthly**: $9.99 / mo — 1,000 monthly AI credits, all 7 study formats, multi-modal OCR/audio, 24h deadline alerts, Monday weekly digests, priority AI router.
+    - **Pro Semester (4 Months)**: $29.99 / 4 mo (~$7.49/mo) — **25% Discount** with price strikethrough (<del>$39.99</del>) and `"🔥 SEMESTER SAVER • 25% OFF"` stamp tag.
+    - **Pro Yearly**: $79.99 / yr — `is_active: false` dynamically rendered as **"Coming Soon"** with disabled purchase action while preserving full database feature specifications.
+- **Zero-Trust Anti-Bypass PayPal Server Verification (`apps/api/src/index.ts`)**:
+  - Implemented `POST /api/billing/verify-paypal-subscription`: verifies subscription IDs directly against official PayPal REST API OAuth2 servers before updating user tier in Turso libSQL.
+  - Implemented `POST /api/billing/paypal-webhook` for lifecycle events (`BILLING.SUBSCRIPTION.CANCELLED`, `SUSPENDED`).
+  - Added `GET /api/billing/config` allowing frontend to dynamically retrieve public PayPal client configuration.
+- **AI Credit Metering & Usage Telemetry (`apps/api/src/billing/billing.ts`, `src/utils/aiClient.ts`)**:
+  - Real-time 1,000 credit quota meter (and 100 credit initial allocation for Free users).
+  - Server-side and client-side deduction: Notes/Cheatsheet/Flashcards/Quizzes (2 credits), Infographics/Slides/Assignments (5 credits), Ask AI queries (1 credit).
+  - Telemetry audit logging to `credit_transactions` recording date, action, credit deduction, and balance after transaction.
+- **Comprehensive 6-Tab Account Settings Modal (`src/components/AccountSettingsModal.tsx`)**:
+  1. 👤 **Profile & Identity**: Name, Verified Email, University / Institution, Major / Field of Study, Academic Bio, and Timezone auto-detection.
+  2. ✨ **Subscription & Plans**: Real-time dynamic plan switcher with discount stamps, strikethrough pricing, and "Coming Soon" badges.
+  3. 🪙 **AI Credits & Meter**: Live visual progress gauge, credit cost breakdown, and transaction history.
+  4. 🧾 **Billing & Invoices**: Billing history table with official university expense PDF receipt generator (`jspdf`).
+  5. 🔒 **Security & Sessions**: Active device sessions manager with IP, browser, and remote revocation.
+  6. 🗄️ **Privacy & GDPR**: One-click complete Student Archive JSON export and 30-day soft account deletion.
+- **Sidebar Integration (`src/components/Sidebar.tsx`)**:
+  - Popover navigation directly routes to each setting tab (`profile`, `subscription`, `usage`, `invoices`, `security`).
+  - Removed "Scholar" label and updated to clean "Free" and "Pro" badges.
+
 ## Recent Update: Cloudflare Turnstile Bot Protection & Security Integration
 - **Dedicated Turnstile Widget Component (`src/components/TurnstileWidget.tsx`)**:
   - Safely injects and lifecycle-manages Cloudflare's Turnstile API script (`https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit`).

@@ -8,6 +8,11 @@ export interface UserProfile {
   email: string;
   image?: string | null;
   tier?: string;
+  credits?: number;
+  institution?: string;
+  fieldOfStudy?: string;
+  bio?: string;
+  timezone?: string;
 }
 
 export type View =
@@ -17,6 +22,7 @@ export type View =
   | { kind: 'subject'; subjectId: string };
 
 export type AuthMode = 'signin' | 'signup' | 'forgot_password' | 'reset_password' | 'verify_email';
+export type AccountTab = 'profile' | 'subscription' | 'usage' | 'invoices' | 'security' | 'privacy';
 
 interface AppState {
   view: View;
@@ -29,6 +35,8 @@ interface AppState {
   authInitialNotice?: string | null;
   authInitialError?: string | null;
   notificationModalOpen: boolean;
+  accountModalOpen: boolean;
+  accountModalTab: AccountTab;
   currentUser: UserProfile | null;
   tourModalOpen: boolean;
   tourInitialStep: number;
@@ -68,6 +76,8 @@ let state: AppState = {
   authInitialNotice: null,
   authInitialError: null,
   notificationModalOpen: false,
+  accountModalOpen: false,
+  accountModalTab: 'profile',
   currentUser: getInitialUser(),
   tourModalOpen: false,
   tourInitialStep: 0,
@@ -166,6 +176,29 @@ export function closeNotificationModal() {
   emit();
 }
 
+export function openAccountModal(tab: AccountTab = 'profile') {
+  state = { ...state, accountModalOpen: true, accountModalTab: tab };
+  emit();
+}
+
+export function closeAccountModal() {
+  state = { ...state, accountModalOpen: false };
+  emit();
+}
+
+export function updateUserCredits(newCredits: number) {
+  if (state.currentUser) {
+    const updated = { ...state.currentUser, credits: newCredits };
+    state = { ...state, currentUser: updated };
+    try {
+      localStorage.setItem('estudesk_user', JSON.stringify(updated));
+    } catch {
+      // LocalStorage quota or access error
+    }
+    emit();
+  }
+}
+
 export function openTourModal(stepIndex: number = 0, tab: 'walkthrough' | 'all-features' = 'walkthrough') {
   state = { ...state, tourModalOpen: true, tourInitialStep: stepIndex, tourInitialTab: tab };
   emit();
@@ -181,12 +214,16 @@ export function setCurrentUser(user: UserProfile | null) {
   if (user) {
     try {
       localStorage.setItem('estudesk_user', JSON.stringify(user));
-    } catch {}
+    } catch {
+      // LocalStorage error
+    }
     switchUserDatabase(user.id);
   } else {
     try {
       localStorage.removeItem('estudesk_user');
-    } catch {}
+    } catch {
+      // LocalStorage error
+    }
     switchUserDatabase(null);
   }
   emit();

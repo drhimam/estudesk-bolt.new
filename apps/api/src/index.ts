@@ -18,6 +18,8 @@ import {
   processScheduledWeeklyDigests,
   checkRateLimit,
 } from './email/notifications';
+import * as billing from './billing/billing';
+import * as userOps from './user/user';
 
 export type Bindings = {
   TURSO_DATABASE_URL?: string;
@@ -40,6 +42,11 @@ export type Bindings = {
   EMAIL_FROM_ADDRESS?: string;
   EMAIL_FROM_NAME?: string;
   FRONTEND_URL?: string;
+  PAYPAL_CLIENT_ID?: string;
+  PAYPAL_CLIENT_SECRET?: string;
+  PAYPAL_ENVIRONMENT?: string;
+  PAYPAL_WEBHOOK_ID?: string;
+  VITE_PAYPAL_CLIENT_ID?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -493,9 +500,19 @@ app.delete('/api/deadlines/:id', async (c) => {
 app.post('/api/generate', async (c) => {
   const idempotencyKey = c.req.header('Idempotency-Key') || crypto.randomUUID();
   try {
-    const body = await c.req.json<Omit<GenerationRequest, 'idempotencyKey'>>();
+    const body = await c.req.json<Omit<GenerationRequest, 'idempotencyKey'> & { userId?: string }>();
     if (!body.type || !body.prompt) {
       return c.json({ error: 'Missing required parameters: type and prompt' }, 400);
+    }
+
+    const userId = c.req.query('userId') || body.userId;
+    if (userId) {
+      const { db } = getDb(c.env);
+      const cost = ['presentation', 'infographic', 'assignment'].includes(body.type) ? 5 : 2;
+      const creditRes = await billing.deductUserCredit(db, userId, cost, body.type, `Generated ${body.type}`);
+      if (!creditRes.success) {
+        return c.json({ error: creditRes.error || 'Insufficient AI generation credits' }, 403);
+      }
     }
 
     const genReq: GenerationRequest = {
@@ -520,11 +537,21 @@ app.post('/api/generate', async (c) => {
 app.post('/api/chat', async (c) => {
   try {
     const body = await c.req.json<{
+      userId?: string;
       message: string;
       sourceText?: string;
       contextSubjectNames?: string[];
       history?: Array<{ role: 'user' | 'assistant'; content: string }>;
     }>();
+
+    const userId = c.req.query('userId') || body.userId;
+    if (userId) {
+      const { db } = getDb(c.env);
+      const creditRes = await billing.deductUserCredit(db, userId, 1, 'chat', 'Ask AI query');
+      if (!creditRes.success) {
+        return c.json({ error: creditRes.error || 'Insufficient AI credits' }, 403);
+      }
+    }
 
     const apiKey = c.env.AI_API_KEY || c.env.OPENAI_API_KEY || c.env.DEEPSEEK_API_KEY;
     const baseUrl = (c.env.AI_BASE_URL || 'https://api.openai.com/v1').replace(/\/+$/, '');
@@ -719,6 +746,459 @@ app.post('/api/notifications/send-scheduled-digests', async (c) => {
     const { db } = getDb(c.env);
     const result = await processScheduledWeeklyDigests(db, c.env);
     return c.json({ success: true, dispatchedCount: result.dispatched });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// ==========================================
+// Billing, Subscriptions & PayPal Endpoints
+// ==========================================
+
+// Get Public PayPal Configuration
+app.get('/api/billing/config', (c) => {
+  const clientId = c.env.PAYPAL_CLIENT_ID || c.env.VITE_PAYPAL_CLIENT_ID || '';
+  const environment = c.env.PAYPAL_ENVIRONMENT || 'sandbox';
+  return c.json({
+    clientId,
+    environment,
+    isConfigured: Boolean(clientId),
+  });
+});
+
+// Get All Database-Driven Subscription Plans
+app.get('/api/billing/plans', async (c) => {
+  try {
+    const { db } = getDb(c.env);
+    const plans = await billing.getSubscriptionPlans(db);
+    return c.json({ data: plans });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ data: billing.DEFAULT_PLANS, error: msg });
+  }
+});
+
+// Get User Active Subscription, Credit Balance & Recent Usage
+app.get('/api/billing/subscription', async (c) => {
+  try {
+    const userId = c.req.query('userId');
+    if (!userId) return c.json({ error: 'User ID is required' }, 400);
+
+    const { db } = getDb(c.env);
+    const details = await billing.getUserSubscriptionDetails(db, userId);
+    if (!details) {
+      return c.json({
+        tier: 'free',
+        planId: 'free',
+        creditBalance: 100,
+        monthlyQuotaLimit: 100,
+        subscription: null,
+        recentTransactions: [],
+      });
+    }
+    return c.json({ data: details });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// Authoritative Server-to-Server PayPal Subscription Verification & Pro Activation
+app.post('/api/billing/verify-paypal-subscription', async (c) => {
+  try {
+    const body = await c.req.json<{
+      subscriptionId: string;
+      planId: string;
+      userId: string;
+    }>();
+
+    if (!body.subscriptionId || !body.planId || !body.userId) {
+      return c.json({ error: 'Missing required parameters: subscriptionId, planId, userId' }, 400);
+    }
+
+    const { db } = getDb(c.env);
+
+    // 1. Authoritative PayPal server verification
+    const verification = await billing.verifyPayPalSubscription(c.env, body.subscriptionId);
+    if (!verification.valid) {
+      return c.json({ error: verification.error || 'PayPal subscription could not be verified.' }, 403);
+    }
+
+    // 2. Fetch plan details
+    const plan = await db
+      .select()
+      .from(schema.subscriptionPlans)
+      .where(eq(schema.subscriptionPlans.id, body.planId))
+      .get();
+
+    const planName = plan?.name || 'Pro Plan';
+    const durationMonths = plan?.durationMonths || 1;
+    const priceAmount = plan?.priceAmount || 9.99;
+    const creditsToGrant = (plan?.aiCreditsMonthly || 1000) * durationMonths;
+
+    const periodStart = new Date();
+    const periodEnd = verification.nextBillingTime
+      ? new Date(verification.nextBillingTime)
+      : new Date(Date.now() + durationMonths * 30 * 24 * 60 * 60 * 1000);
+
+    // 3. Upsert Active Subscription Record in Turso DB
+    const subId = crypto.randomUUID();
+    await db.insert(schema.subscriptions).values({
+      id: subId,
+      userId: body.userId,
+      planId: body.planId,
+      paypalSubscriptionId: body.subscriptionId,
+      paypalPayerId: verification.subscriberEmail || null,
+      status: 'active',
+      billingCycle: plan?.billingCycle || 'monthly',
+      currentPeriodStart: periodStart,
+      currentPeriodEnd: periodEnd,
+      cancelAtPeriodEnd: false,
+      createdAt: periodStart,
+      updatedAt: periodStart,
+    });
+
+    // 4. Update User tier and grant credits
+    await db
+      .update(schema.user)
+      .set({
+        generationTier: 'premium',
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.user.id, body.userId));
+
+    await billing.grantUserCredits(
+      db,
+      body.userId,
+      creditsToGrant,
+      'monthly_grant',
+      `Subscribed to ${planName} via PayPal (${creditsToGrant} credits)`
+    );
+
+    // 5. Generate and store invoice record
+    const invoiceNum = `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    await db.insert(schema.invoices).values({
+      id: crypto.randomUUID(),
+      userId: body.userId,
+      subscriptionId: subId,
+      invoiceNumber: invoiceNum,
+      amount: priceAmount,
+      currency: 'USD',
+      status: 'paid',
+      planName: planName,
+      billingPeriod: `${periodStart.toLocaleDateString()} - ${periodEnd.toLocaleDateString()}`,
+      paypalOrderId: body.subscriptionId,
+      paidAt: periodStart,
+      createdAt: periodStart,
+    });
+
+    // 6. Save PayPal payment method
+    if (verification.subscriberEmail) {
+      await db.insert(schema.paymentMethods).values({
+        id: crypto.randomUUID(),
+        userId: body.userId,
+        type: 'paypal',
+        brand: 'paypal',
+        paypalEmail: verification.subscriberEmail,
+        isDefault: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    }
+
+    return c.json({
+      success: true,
+      tier: 'pro',
+      creditsGranted: creditsToGrant,
+      message: `Successfully activated ${planName}!`,
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// Direct Plan Switch / Dev Upgrade Endpoint
+app.post('/api/billing/change-plan', async (c) => {
+  try {
+    const body = await c.req.json<{
+      userId: string;
+      planId: string;
+    }>();
+
+    if (!body.userId || !body.planId) {
+      return c.json({ error: 'User ID and Plan ID are required' }, 400);
+    }
+
+    const { db } = getDb(c.env);
+    const plan = await db
+      .select()
+      .from(schema.subscriptionPlans)
+      .where(eq(schema.subscriptionPlans.id, body.planId))
+      .get();
+
+    if (!plan) return c.json({ error: 'Invalid plan selected' }, 400);
+
+    const isFree = plan.id === 'free';
+    const tier = isFree ? 'free' : 'premium';
+    const credits = isFree ? 100 : (plan.aiCreditsMonthly || 1000) * (plan.durationMonths || 1);
+
+    await db
+      .update(schema.user)
+      .set({
+        generationTier: tier,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.user.id, body.userId));
+
+    await billing.grantUserCredits(
+      db,
+      body.userId,
+      credits,
+      isFree ? 'initial_grant' : 'monthly_grant',
+      `Switched to ${plan.name} (${credits} credits)`
+    );
+
+    const periodStart = new Date();
+    const periodEnd = new Date(Date.now() + (plan.durationMonths || 1) * 30 * 24 * 60 * 60 * 1000);
+    const subId = crypto.randomUUID();
+
+    await db.insert(schema.subscriptions).values({
+      id: subId,
+      userId: body.userId,
+      planId: plan.id,
+      status: 'active',
+      billingCycle: plan.billingCycle,
+      currentPeriodStart: periodStart,
+      currentPeriodEnd: periodEnd,
+      cancelAtPeriodEnd: false,
+      createdAt: periodStart,
+      updatedAt: periodStart,
+    });
+
+    if (!isFree) {
+      const invoiceNum = `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      await db.insert(schema.invoices).values({
+        id: crypto.randomUUID(),
+        userId: body.userId,
+        subscriptionId: subId,
+        invoiceNumber: invoiceNum,
+        amount: plan.priceAmount,
+        currency: 'USD',
+        status: 'paid',
+        planName: plan.name,
+        billingPeriod: `${periodStart.toLocaleDateString()} - ${periodEnd.toLocaleDateString()}`,
+        paidAt: periodStart,
+        createdAt: periodStart,
+      });
+    }
+
+    return c.json({
+      success: true,
+      tier: isFree ? 'Free' : 'Pro',
+      message: `Plan changed to ${plan.name}`,
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// Cancel Subscription Renewal
+app.post('/api/billing/cancel-subscription', async (c) => {
+  try {
+    const body = await c.req.json<{ userId: string }>();
+    if (!body.userId) return c.json({ error: 'User ID is required' }, 400);
+
+    const { db } = getDb(c.env);
+    await db
+      .update(schema.subscriptions)
+      .set({
+        cancelAtPeriodEnd: true,
+        canceledAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.subscriptions.userId, body.userId));
+
+    return c.json({ success: true, message: 'Your subscription will not renew at the end of the billing period.' });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// Get User Invoices & Receipts
+app.get('/api/billing/invoices', async (c) => {
+  try {
+    const userId = c.req.query('userId');
+    if (!userId) return c.json({ error: 'User ID is required' }, 400);
+
+    const { db } = getDb(c.env);
+    const invoiceList = await db
+      .select()
+      .from(schema.invoices)
+      .where(eq(schema.invoices.userId, userId))
+      .all();
+
+    return c.json({ data: invoiceList });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// Get Credit Transactions Audit Log
+app.get('/api/billing/usage', async (c) => {
+  try {
+    const userId = c.req.query('userId');
+    if (!userId) return c.json({ error: 'User ID is required' }, 400);
+
+    const { db } = getDb(c.env);
+    const transactions = await db
+      .select()
+      .from(schema.creditTransactions)
+      .where(eq(schema.creditTransactions.userId, userId))
+      .all();
+
+    return c.json({ data: transactions });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// PayPal Webhook Receiver
+app.post('/api/billing/paypal-webhook', async (c) => {
+  try {
+    const body = await c.req.json<{
+      event_type?: string;
+      resource?: {
+        id?: string;
+        custom_id?: string;
+        status?: string;
+      };
+    }>();
+
+    console.log(`[PayPal Webhook Received]: ${body.event_type}`);
+    const { db } = getDb(c.env);
+
+    if (body.event_type === 'BILLING.SUBSCRIPTION.CANCELLED') {
+      const subId = body.resource?.id;
+      if (subId) {
+        await db
+          .update(schema.subscriptions)
+          .set({ status: 'canceled', canceledAt: new Date(), updatedAt: new Date() })
+          .where(eq(schema.subscriptions.paypalSubscriptionId, subId));
+      }
+    }
+
+    return c.json({ status: 'received' });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// ==========================================
+// User Profile, GDPR & Account Settings Endpoints
+// ==========================================
+
+// Get Full User Profile
+app.get('/api/user/profile', async (c) => {
+  try {
+    const userId = c.req.query('userId');
+    if (!userId) return c.json({ error: 'User ID is required' }, 400);
+
+    const { db } = getDb(c.env);
+    const profile = await userOps.getUserProfile(db, userId);
+    if (!profile) return c.json({ error: 'User not found' }, 404);
+    return c.json({ data: profile });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// Update User Profile
+app.put('/api/user/profile', async (c) => {
+  try {
+    const body = await c.req.json<{
+      userId: string;
+      name?: string;
+      image?: string | null;
+      institution?: string;
+      fieldOfStudy?: string;
+      bio?: string;
+      timezone?: string;
+    }>();
+
+    if (!body.userId) return c.json({ error: 'User ID is required' }, 400);
+
+    const { db } = getDb(c.env);
+    const updated = await userOps.updateUserProfile(db, body.userId, body);
+    return c.json({ data: updated });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// List User Active Sessions
+app.get('/api/user/sessions', async (c) => {
+  try {
+    const userId = c.req.query('userId');
+    if (!userId) return c.json({ error: 'User ID is required' }, 400);
+
+    const { db } = getDb(c.env);
+    const sessions = await userOps.getUserSessions(db, userId);
+    return c.json({ data: sessions });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// Revoke Specific Session
+app.delete('/api/user/sessions/:id', async (c) => {
+  try {
+    const sessionId = c.req.param('id');
+    const userId = c.req.query('userId');
+    if (!userId) return c.json({ error: 'User ID is required' }, 400);
+
+    const { db } = getDb(c.env);
+    await userOps.revokeUserSession(db, sessionId, userId);
+    return c.json({ success: true });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// GDPR Data Export Archive
+app.get('/api/user/export-data', async (c) => {
+  try {
+    const userId = c.req.query('userId');
+    if (!userId) return c.json({ error: 'User ID is required' }, 400);
+
+    const { db } = getDb(c.env);
+    const exportBundle = await userOps.exportUserData(db, userId);
+    return c.json({ data: exportBundle });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// GDPR Soft Account Deletion (30-day grace period)
+app.post('/api/user/delete-account', async (c) => {
+  try {
+    const body = await c.req.json<{ userId: string }>();
+    if (!body.userId) return c.json({ error: 'User ID is required' }, 400);
+
+    const { db } = getDb(c.env);
+    const result = await userOps.softDeleteUserAccount(db, body.userId);
+    return c.json(result);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     return c.json({ error: msg }, 500);

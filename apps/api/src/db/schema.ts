@@ -75,10 +75,15 @@ export const user = sqliteTable('user', {
   generationTier: text('generation_tier', { enum: ['free', 'premium', 'enterprise'] })
     .default('free')
     .notNull(),
+  creditBalance: integer('credit_balance').default(100).notNull(),
   dailyGenerationCount: integer('daily_generation_count').default(0).notNull(),
   monthlyGenerationCount: integer('monthly_generation_count').default(0).notNull(),
   dailyGenerationReset: integer('daily_generation_reset', { mode: 'timestamp_ms' }),
   monthlyGenerationReset: integer('monthly_generation_reset', { mode: 'timestamp_ms' }),
+  institution: text('institution'),
+  fieldOfStudy: text('field_of_study'),
+  bio: text('bio'),
+  billingAddress: text('billing_address', { mode: 'json' }),
   timezone: text('timezone').default('UTC').notNull(),
   deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }),
 });
@@ -398,3 +403,118 @@ export const generationEvents = sqliteTable('generation_events', {
     .default(sql`(CURRENT_TIMESTAMP)`)
     .notNull(),
 });
+
+// --- Subscription Plans (Database-Driven Dynamic Pricing) ---
+
+export const subscriptionPlans = sqliteTable('subscription_plans', {
+  id: text('id').primaryKey(), // 'free', 'pro_monthly', 'pro_semester', 'pro_yearly'
+  name: text('name').notNull(),
+  billingCycle: text('billing_cycle', { enum: ['once', 'monthly', 'semester', 'yearly'] }).notNull(),
+  durationMonths: integer('duration_months').default(1).notNull(),
+  priceAmount: real('price_amount').default(0).notNull(),
+  currency: text('currency').default('USD').notNull(),
+  discountPercent: integer('discount_percent').default(0).notNull(),
+  discountReason: text('discount_reason'),
+  isActive: integer('is_active', { mode: 'boolean' }).default(true).notNull(),
+  aiCreditsMonthly: integer('ai_credits_monthly').default(1000).notNull(),
+  features: text('features', { mode: 'json' }).notNull(), // array of strings
+  paypalPlanId: text('paypal_plan_id'),
+  sortOrder: integer('sort_order').default(0).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+});
+
+// --- Active User Subscriptions ---
+
+export const subscriptions = sqliteTable('subscriptions', {
+  id: text('id').primaryKey().$defaultFn(randomId),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  planId: text('plan_id')
+    .notNull()
+    .references(() => subscriptionPlans.id),
+  paypalSubscriptionId: text('paypal_subscription_id'),
+  paypalPayerId: text('paypal_payer_id'),
+  status: text('status', { enum: ['active', 'canceled', 'past_due', 'paused', 'expired'] })
+    .default('active')
+    .notNull(),
+  billingCycle: text('billing_cycle', { enum: ['once', 'monthly', 'semester', 'yearly'] }).notNull(),
+  currentPeriodStart: integer('current_period_start', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+  currentPeriodEnd: integer('current_period_end', { mode: 'timestamp_ms' }).notNull(),
+  cancelAtPeriodEnd: integer('cancel_at_period_end', { mode: 'boolean' }).default(false).notNull(),
+  canceledAt: integer('canceled_at', { mode: 'timestamp_ms' }),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+});
+
+// --- Billing Invoices & Receipts ---
+
+export const invoices = sqliteTable('invoices', {
+  id: text('id').primaryKey().$defaultFn(randomId),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  subscriptionId: text('subscription_id').references(() => subscriptions.id, { onDelete: 'set null' }),
+  invoiceNumber: text('invoice_number').notNull().unique(),
+  amount: real('amount').notNull(),
+  currency: text('currency').default('USD').notNull(),
+  status: text('status', { enum: ['paid', 'pending', 'failed', 'refunded'] }).default('paid').notNull(),
+  planName: text('plan_name').notNull(),
+  billingPeriod: text('billing_period'),
+  paypalOrderId: text('paypal_order_id'),
+  pdfUrl: text('pdf_url'),
+  paidAt: integer('paid_at', { mode: 'timestamp_ms' }).default(sql`(CURRENT_TIMESTAMP)`),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+});
+
+// --- Payment Methods ---
+
+export const paymentMethods = sqliteTable('payment_methods', {
+  id: text('id').primaryKey().$defaultFn(randomId),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  type: text('type', { enum: ['paypal', 'card'] }).default('paypal').notNull(),
+  brand: text('brand'), // 'visa', 'mastercard', 'paypal', etc.
+  last4: text('last4'),
+  paypalEmail: text('paypal_email'),
+  isDefault: integer('is_default', { mode: 'boolean' }).default(true).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+});
+
+// --- Credit Usage & Telemetry Transactions ---
+
+export const creditTransactions = sqliteTable('credit_transactions', {
+  id: text('id').primaryKey().$defaultFn(randomId),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  amount: integer('amount').notNull(), // negative for spend (-1, -5), positive for grant (+1000)
+  type: text('type', { enum: ['monthly_grant', 'initial_grant', 'generation_spend', 'chat_spend', 'bonus'] }).notNull(),
+  materialType: text('material_type'), // 'notes', 'quiz', 'chat', etc.
+  balanceAfter: integer('balance_after').notNull(),
+  description: text('description').notNull(),
+  metadata: text('metadata', { mode: 'json' }),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+});
+

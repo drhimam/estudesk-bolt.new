@@ -141,3 +141,69 @@ export interface Draft {
   versions: { content: string; timestamp: number }[];
   updatedAt: number;
 }
+
+// --- Billing, Subscription & Credit Types ---
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  billingCycle: 'once' | 'monthly' | 'semester' | 'yearly';
+  durationMonths: number;
+  priceAmount: number;
+  currency: string;
+  discountPercent: number;
+  discountReason?: string | null;
+  isActive: boolean;
+  aiCreditsMonthly: number;
+  features: string[];
+  paypalPlanId?: string | null;
+  sortOrder: number;
+}
+
+export interface UserSubscription {
+  id: string;
+  userId: string;
+  planId: string;
+  paypalSubscriptionId?: string | null;
+  paypalPayerId?: string | null;
+  status: 'active' | 'canceled' | 'past_due' | 'paused' | 'expired';
+  billingCycle: 'once' | 'monthly' | 'semester' | 'yearly';
+  currentPeriodStart: string | number;
+  currentPeriodEnd: string | number;
+  cancelAtPeriodEnd: boolean;
+  canceledAt?: string | number | null;
+  createdAt: string | number;
+}
+
+export interface InvoiceRecord {
+  id: string;
+  invoiceNumber: string;
+  amount: number;
+  currency: string;
+  status: 'paid' | 'pending' | 'failed' | 'refunded';
+  planName: string;
+  billingPeriod?: string | null;
+  paypalOrderId?: string | null;
+  pdfUrl?: string | null;
+  paidAt?: string | number | null;
+  createdAt: string | number;
+}
+
+export interface CreditTransaction {
+  id: string;
+  amount: number;
+  type: 'monthly_grant' | 'initial_grant' | 'generation_spend' | 'chat_spend' | 'bonus';
+  materialType?: string | null;
+  balanceAfter: number;
+  description: string;
+  createdAt: string | number;
+}
+
+export interface SessionItem {
+  id: string;
+  ipAddress: string;
+  userAgent: string;
+  createdAt: string | number;
+  expiresAt: string | number;
+}
+

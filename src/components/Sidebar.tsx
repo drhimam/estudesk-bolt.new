@@ -15,14 +15,25 @@ import {
   User,
   LogIn,
   LogOut,
-  Sparkles,
   Shield,
   FolderTree,
   Bell,
+  CreditCard,
+  Coins,
+  Receipt,
+  KeyRound,
 } from 'lucide-react';
 import { db, uid } from '@/db/database';
 import { useSemesters, useSubjects } from '@/hooks/useQueries';
-import { setView, toggleSidebar, setSidebarOpen, useAppState, openAuthModal, logoutUser, openNotificationModal } from '@/store/appState';
+import {
+  setView,
+  setSidebarOpen,
+  useAppState,
+  openAuthModal,
+  logoutUser,
+  openNotificationModal,
+  openAccountModal,
+} from '@/store/appState';
 import { signOut } from '@/lib/authClient';
 import { COLOR_HEX } from '@/utils/colors';
 import {
@@ -60,7 +71,9 @@ export function Sidebar() {
       setSidebarWidth(clamped);
       try {
         localStorage.setItem('estudesk_sidebar_width', clamped.toString());
-      } catch {}
+      } catch {
+        // Ignored storage error
+      }
     }
 
     function handleMouseUp() {
@@ -109,7 +122,9 @@ export function Sidebar() {
             setSidebarWidth(288);
             try {
               localStorage.setItem('estudesk_sidebar_width', '288');
-            } catch {}
+            } catch {
+              // Ignored storage error
+            }
           }}
           className="hidden lg:flex absolute -right-1.5 top-0 bottom-0 w-3 cursor-col-resize items-center justify-center z-30 group hover:bg-emerald-600/20 active:bg-emerald-600/30 transition-colors select-none"
           title="Drag to resize sidebar (Double-click to reset width)"
@@ -749,7 +764,9 @@ function SidebarFooter() {
   async function handleSignOut() {
     try {
       await signOut();
-    } catch {}
+    } catch {
+      // Ignored signout error
+    }
     logoutUser();
     setShowMenu(false);
   }
@@ -763,16 +780,24 @@ function SidebarFooter() {
             onClick={() => setShowMenu(!showMenu)}
             className="w-full flex items-center gap-2.5 p-2 rounded-xl bg-white border border-[#bed6c7] shadow-soft hover:shadow-card hover:border-accent-400 transition-all text-left"
           >
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-sm">
-              {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'S'}
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-sm overflow-hidden">
+              {currentUser.image ? (
+                <img src={currentUser.image} alt={currentUser.name} className="w-full h-full object-cover" />
+              ) : (
+                <span>{currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}</span>
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-semibold text-ink-800 truncate block">
-                  {currentUser.name || 'Scholar'}
+                  {currentUser.name || 'User'}
                 </span>
-                <span className="text-[9px] uppercase font-mono px-1 py-0.2 rounded bg-accent-100 text-accent-700 font-bold">
-                  {currentUser.tier || 'Scholar'}
+                <span className={`text-[9px] uppercase font-mono px-1 py-0.2 rounded font-bold ${
+                  currentUser.tier?.toLowerCase().includes('pro') || currentUser.tier?.toLowerCase().includes('premium')
+                    ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                    : 'bg-accent-100 text-accent-700'
+                }`}>
+                  {currentUser.tier?.toLowerCase().includes('pro') || currentUser.tier?.toLowerCase().includes('premium') ? 'Pro' : 'Free'}
                 </span>
               </div>
               <span className="text-[10px] text-ink-400 truncate block">{currentUser.email}</span>
@@ -795,16 +820,67 @@ function SidebarFooter() {
                 <button
                   onClick={() => {
                     setShowMenu(false);
+                    openAccountModal('profile');
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-ink-700 hover:bg-paper-100 transition-colors text-left"
+                >
+                  <User className="w-3.5 h-3.5 text-accent-600" />
+                  <span>Profile & Account</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    openAccountModal('subscription');
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-ink-700 hover:bg-paper-100 transition-colors text-left"
+                >
+                  <CreditCard className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Subscription & Plans</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    openAccountModal('usage');
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-ink-700 hover:bg-paper-100 transition-colors text-left"
+                >
+                  <Coins className="w-3.5 h-3.5 text-amber-600" />
+                  <span>AI Credits & Usage</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    openAccountModal('invoices');
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-ink-700 hover:bg-paper-100 transition-colors text-left"
+                >
+                  <Receipt className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Billing & Invoices</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
                     openNotificationModal();
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-ink-700 hover:bg-paper-100 transition-colors text-left"
+                  className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-ink-700 hover:bg-paper-100 transition-colors text-left"
                 >
                   <Bell className="w-3.5 h-3.5 text-accent-600" />
                   <span>Email & Notifications</span>
                 </button>
                 <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    openAccountModal('security');
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-ink-700 hover:bg-paper-100 transition-colors text-left"
+                >
+                  <KeyRound className="w-3.5 h-3.5 text-slate-600" />
+                  <span>Security & Sessions</span>
+                </button>
+                <div className="border-t border-paper-200 my-1"></div>
+                <button
                   onClick={handleSignOut}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-crimson-600 hover:bg-crimson-50 transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-crimson-600 hover:bg-crimson-50 transition-colors"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   <span>Sign Out</span>
