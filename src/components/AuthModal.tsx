@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   GraduationCap,
@@ -24,7 +24,15 @@ import {
   setView,
   AuthMode,
 } from '@/store/appState';
-import { signIn, signUp, forgetPassword, resetPassword, sendVerificationEmail } from '@/lib/authClient';
+import {
+  signIn,
+  signUp,
+  forgetPassword,
+  resetPassword,
+  sendVerificationEmail,
+  verifyTurnstileToken,
+} from '@/lib/authClient';
+import { TurnstileWidget, TurnstileWidgetHandle } from './TurnstileWidget';
 
 export function AuthModal() {
   const { authModalOpen, authMode, authResetToken, authInitialNotice, authInitialError } = useAppState();
@@ -42,6 +50,20 @@ export function AuthModal() {
   const [emailSentNotice, setEmailSentNotice] = useState<string | null>(null);
   const [unverifiedEmailError, setUnverifiedEmailError] = useState(false);
 
+  // Cloudflare Turnstile token and widget ref
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileWidgetHandle>(null);
+
+  const switchTab = (newTab: AuthMode) => {
+    setTab(newTab);
+    setError(null);
+    setSuccess(null);
+    setEmailSentNotice(null);
+    setUnverifiedEmailError(false);
+    setTurnstileToken(null);
+    turnstileRef.current?.reset();
+  };
+
   useEffect(() => {
     if (authMode) {
       setTab(authMode);
@@ -49,6 +71,8 @@ export function AuthModal() {
       setSuccess(authInitialNotice || null);
       setEmailSentNotice(null);
       setUnverifiedEmailError(false);
+      setTurnstileToken(null);
+      turnstileRef.current?.reset();
     }
   }, [authMode, authModalOpen, authInitialNotice, authInitialError]);
 
@@ -60,9 +84,26 @@ export function AuthModal() {
       setError('Please enter your email address.');
       return;
     }
+
+    if (tab === 'verify_email' && !turnstileToken) {
+      setError('Please complete the security verification challenge before resending.');
+      return;
+    }
+
     setResendingVerification(true);
     setError(null);
     try {
+      if (turnstileToken && turnstileToken !== 'bypass_dev_token') {
+        const verifyRes = await verifyTurnstileToken(turnstileToken);
+        if (verifyRes.error) {
+          setError(verifyRes.error.message || 'Security verification failed. Please try again.');
+          turnstileRef.current?.reset();
+          setTurnstileToken(null);
+          setResendingVerification(false);
+          return;
+        }
+      }
+
       const origin = typeof window !== 'undefined' ? window.location.origin : 'https://estudesk.com';
       const res = await sendVerificationEmail({
         email: emailToUse,
@@ -71,6 +112,8 @@ export function AuthModal() {
 
       if (res.error) {
         setError(res.error.message || 'Failed to resend verification email.');
+        turnstileRef.current?.reset();
+        setTurnstileToken(null);
       } else {
         setEmailSentNotice(
           `A fresh verification link has been sent to ${emailToUse}. Please check your inbox and spam folder.`
@@ -80,6 +123,8 @@ export function AuthModal() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Verification service error';
       setError(msg);
+      turnstileRef.current?.reset();
+      setTurnstileToken(null);
     } finally {
       setResendingVerification(false);
     }
@@ -98,8 +143,24 @@ export function AuthModal() {
         setError('Please enter your account email address.');
         return;
       }
+      if (!turnstileToken) {
+        setError('Please complete the security verification challenge.');
+        return;
+      }
+
       setLoading(true);
       try {
+        if (turnstileToken && turnstileToken !== 'bypass_dev_token') {
+          const verifyRes = await verifyTurnstileToken(turnstileToken);
+          if (verifyRes.error) {
+            setError(verifyRes.error.message || 'Security verification failed. Please try again.');
+            turnstileRef.current?.reset();
+            setTurnstileToken(null);
+            setLoading(false);
+            return;
+          }
+        }
+
         const origin = typeof window !== 'undefined' ? window.location.origin : 'https://estudesk.com';
         const res = await forgetPassword({
           email: email.trim(),
@@ -108,6 +169,8 @@ export function AuthModal() {
 
         if (res.error) {
           setError(res.error.message || 'Failed to send password reset email. Please try again.');
+          turnstileRef.current?.reset();
+          setTurnstileToken(null);
         } else {
           setEmailSentNotice(
             `Password reset instructions have been sent to ${email.trim()}. Please check your inbox and spam folder.`
@@ -116,6 +179,8 @@ export function AuthModal() {
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Password reset service error';
         setError(msg);
+        turnstileRef.current?.reset();
+        setTurnstileToken(null);
       } finally {
         setLoading(false);
       }
@@ -153,7 +218,7 @@ export function AuthModal() {
         } else {
           setSuccess('Your password has been successfully updated! You can now sign in.');
           setTimeout(() => {
-            setTab('signin');
+            switchTab('signin');
             setPassword('');
             setConfirmPassword('');
           }, 1500);
@@ -182,11 +247,26 @@ export function AuthModal() {
       setError('Please enter your full name.');
       return;
     }
+    if (tab === 'signup' && !turnstileToken) {
+      setError('Please complete the security verification challenge.');
+      return;
+    }
 
     setLoading(true);
 
     try {
       if (tab === 'signup') {
+        if (turnstileToken && turnstileToken !== 'bypass_dev_token') {
+          const verifyRes = await verifyTurnstileToken(turnstileToken);
+          if (verifyRes.error) {
+            setError(verifyRes.error.message || 'Security verification failed. Please try again.');
+            turnstileRef.current?.reset();
+            setTurnstileToken(null);
+            setLoading(false);
+            return;
+          }
+        }
+
         const res = await signUp.email({
           email: email.trim(),
           password: password,
@@ -195,6 +275,8 @@ export function AuthModal() {
 
         if (res.error) {
           setError(res.error.message || 'Failed to create account. Please try again.');
+          turnstileRef.current?.reset();
+          setTurnstileToken(null);
           setLoading(false);
           return;
         }
@@ -202,7 +284,7 @@ export function AuthModal() {
         // Account created! Require email verification before logging in
         setPassword('');
         setConfirmPassword('');
-        setTab('verify_email');
+        switchTab('verify_email');
         setEmailSentNotice(
           `Account created successfully! We have sent a verification link to ${email.trim()}. Please verify your email to activate your account before signing in.`
         );
@@ -255,6 +337,10 @@ export function AuthModal() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Authentication service error';
       setError(msg);
+      if (tab === 'signup') {
+        turnstileRef.current?.reset();
+        setTurnstileToken(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -310,12 +396,7 @@ export function AuthModal() {
             <div className="flex p-1 bg-black/20 backdrop-blur-md rounded-xl mt-4 border border-white/10">
               <button
                 type="button"
-                onClick={() => {
-                  setTab('signin');
-                  setError(null);
-                  setEmailSentNotice(null);
-                  setUnverifiedEmailError(false);
-                }}
+                onClick={() => switchTab('signin')}
                 className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
                   tab === 'signin'
                     ? 'bg-white text-accent-700 shadow-sm'
@@ -326,12 +407,7 @@ export function AuthModal() {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setTab('signup');
-                  setError(null);
-                  setEmailSentNotice(null);
-                  setUnverifiedEmailError(false);
-                }}
+                onClick={() => switchTab('signup')}
                 className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
                   tab === 'signup'
                     ? 'bg-white text-accent-700 shadow-sm'
@@ -348,12 +424,7 @@ export function AuthModal() {
             <div className="mt-3 flex items-center justify-between">
               <button
                 type="button"
-                onClick={() => {
-                  setTab('signin');
-                  setError(null);
-                  setEmailSentNotice(null);
-                  setUnverifiedEmailError(false);
-                }}
+                onClick={() => switchTab('signin')}
                 className="text-xs text-white/80 hover:text-white flex items-center gap-1 font-medium underline-offset-2 hover:underline"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
@@ -435,6 +506,22 @@ export function AuthModal() {
                 </div>
               </div>
 
+              {/* Turnstile Widget */}
+              <TurnstileWidget
+                ref={turnstileRef}
+                action="verify_email"
+                onSuccess={(token) => {
+                  setTurnstileToken(token);
+                  setError(null);
+                }}
+                onError={() => {
+                  setTurnstileToken(null);
+                }}
+                onExpire={() => {
+                  setTurnstileToken(null);
+                }}
+              />
+
               <div className="flex flex-col gap-2 pt-1">
                 <button
                   type="submit"
@@ -456,12 +543,7 @@ export function AuthModal() {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setTab('signin');
-                    setError(null);
-                    setEmailSentNotice(null);
-                    setUnverifiedEmailError(false);
-                  }}
+                  onClick={() => switchTab('signin')}
                   className="w-full py-2.5 px-4 rounded-xl bg-paper-100 hover:bg-paper-200 text-ink-700 font-medium text-sm transition-all flex items-center justify-center gap-2"
                 >
                   <span>Go to Sign In</span>
@@ -495,9 +577,25 @@ export function AuthModal() {
                 </div>
               </div>
 
+              {/* Turnstile Widget */}
+              <TurnstileWidget
+                ref={turnstileRef}
+                action="forgot_password"
+                onSuccess={(token) => {
+                  setTurnstileToken(token);
+                  setError(null);
+                }}
+                onError={() => {
+                  setTurnstileToken(null);
+                }}
+                onExpire={() => {
+                  setTurnstileToken(null);
+                }}
+              />
+
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !email.trim()}
                 className="w-full py-2.5 px-4 rounded-xl bg-accent-600 hover:bg-accent-700 text-white font-medium text-sm shadow-card hover:shadow-glow transition-all flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 {loading ? (
@@ -620,13 +718,7 @@ export function AuthModal() {
                   {tab === 'signin' && (
                     <button
                       type="button"
-                      onClick={() => {
-                        setTab('forgot_password');
-                        setError(null);
-                        setSuccess(null);
-                        setEmailSentNotice(null);
-                        setUnverifiedEmailError(false);
-                      }}
+                      onClick={() => switchTab('forgot_password')}
                       className="text-xs text-accent-600 hover:text-accent-700 hover:underline font-medium"
                     >
                       Forgot password?
@@ -652,6 +744,24 @@ export function AuthModal() {
                   </button>
                 </div>
               </div>
+
+              {/* Turnstile Widget on Sign Up */}
+              {tab === 'signup' && (
+                <TurnstileWidget
+                  ref={turnstileRef}
+                  action="signup"
+                  onSuccess={(token) => {
+                    setTurnstileToken(token);
+                    setError(null);
+                  }}
+                  onError={() => {
+                    setTurnstileToken(null);
+                  }}
+                  onExpire={() => {
+                    setTurnstileToken(null);
+                  }}
+                />
+              )}
 
               {tab === 'signin' && (
                 <div className="flex items-center">

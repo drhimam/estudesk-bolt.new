@@ -103,3 +103,34 @@ export async function verifyEmail(options: { query: { token: string } }): Promis
     return { error: { message: msg } };
   }
 }
+
+/**
+ * Verify Turnstile token against our backend Cloudflare Worker verification endpoint
+ */
+export async function verifyTurnstileToken(token: string): Promise<AuthResponse<{ success: boolean }>> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/auth/verify-turnstile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+
+    const json = (await res.json().catch(() => ({}))) as {
+      success?: boolean;
+      error?: string;
+    };
+
+    if (!res.ok || !json.success) {
+      return {
+        error: {
+          message: json.error || 'Turnstile security verification failed. Please try again.',
+        },
+      };
+    }
+
+    return { data: { success: true } };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Turnstile verification network error';
+    return { error: { message: msg } };
+  }
+}

@@ -6,6 +6,7 @@ import { createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
 import * as schema from './db/schema';
 import { initBetterAuth } from './auth/auth';
+import { verifyTurnstileToken } from './auth/turnstile';
 import { runAIRouter, GenerationRequest } from './ai/router';
 import {
   getNotificationPreferences,
@@ -24,6 +25,8 @@ export type Bindings = {
   DATABASE_URL?: string;
   BETTER_AUTH_SECRET: string;
   TRUSTED_ORIGINS?: string;
+  CLOUDFLARE_TURNSTILE_SECRET_KEY?: string;
+  TURNSTILE_SECRET_KEY?: string;
   R2_BUCKET?: unknown;
   AI_PROVIDER?: string;
   AI_API_KEY?: string;
@@ -86,6 +89,47 @@ app.get('/metrics', (c) => {
   );
 });
 
+// Cloudflare Turnstile Verification Endpoint
+app.post('/api/auth/verify-turnstile', async (c) => {
+  try {
+    const body = await c.req.json<{ token?: string }>();
+    const token = body?.token;
+
+    if (!token) {
+      return c.json({ success: false, error: 'Turnstile token is required.' }, 400);
+    }
+
+    const secretKey =
+      c.env.CLOUDFLARE_TURNSTILE_SECRET_KEY ||
+      c.env.TURNSTILE_SECRET_KEY;
+    const remoteIp =
+      c.req.header('cf-connecting-ip') ||
+      c.req.header('x-forwarded-for')?.split(',')[0].trim();
+
+    const result = await verifyTurnstileToken(token, secretKey, remoteIp);
+
+    if (!result.success) {
+      return c.json(
+        {
+          success: false,
+          error: result.error || 'Bot verification challenge failed.',
+          errorCodes: result.errorCodes,
+        },
+        400
+      );
+    }
+
+    return c.json({
+      success: true,
+      challengeTs: result.challengeTs,
+      hostname: result.hostname,
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ success: false, error: msg }, 500);
+  }
+});
+
 // Better Auth Route Handler
 app.on(['POST', 'GET'], '/api/auth/*', (c) => {
   const { db } = getDb(c.env);
@@ -96,6 +140,7 @@ app.on(['POST', 'GET'], '/api/auth/*', (c) => {
   const auth = initBetterAuth(db, c.env.BETTER_AUTH_SECRET || 'default-secret', baseURL, extraOrigins, c.env);
   return auth.handler(c.req.raw);
 });
+
 
 // Folders / Semesters endpoints (Turso DB)
 app.get('/api/folders', async (c) => {
