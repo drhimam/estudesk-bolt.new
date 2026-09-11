@@ -919,7 +919,7 @@ app.post('/api/billing/verify-paypal-subscription', async (c) => {
   }
 });
 
-// Direct Plan Switch / Dev Upgrade Endpoint
+// Direct Plan Switch / Upgrade / Downgrade Endpoint
 app.post('/api/billing/change-plan', async (c) => {
   try {
     const body = await c.req.json<{
@@ -940,30 +940,84 @@ app.post('/api/billing/change-plan', async (c) => {
 
     if (!plan) return c.json({ error: 'Invalid plan selected' }, 400);
 
-    const isFree = plan.id === 'free';
-    const tier = isFree ? 'free' : 'premium';
-    const credits = isFree ? 100 : (plan.aiCreditsMonthly || 1000) * (plan.durationMonths || 1);
+    const now = new Date();
 
+    // Check user's current active subscription
+    const currentSub = await db
+      .select()
+      .from(schema.subscriptions)
+      .where(eq(schema.subscriptions.userId, body.userId))
+      .orderBy(desc(schema.subscriptions.createdAt))
+      .get();
+
+    const isCurrentSubActive =
+      currentSub &&
+      currentSub.status === 'active' &&
+      currentSub.planId !== 'free' &&
+      currentSub.currentPeriodEnd &&
+      new Date(currentSub.currentPeriodEnd) > now;
+
+    // CASE 1: DOWNGRADE TO FREE
+    if (plan.id === 'free') {
+      if (isCurrentSubActive && currentSub) {
+        // Schedule downgrade at end of active period — keep Pro benefits until period ends
+        await db
+          .update(schema.subscriptions)
+          .set({
+            cancelAtPeriodEnd: true,
+            canceledAt: now,
+            updatedAt: now,
+          })
+          .where(eq(schema.subscriptions.id, currentSub.id));
+
+        const endDate = new Date(currentSub.currentPeriodEnd);
+        return c.json({
+          success: true,
+          scheduled: true,
+          currentPeriodEnd: endDate.toISOString(),
+          message: `Your Pro plan will downgrade to Free at the end of your billing cycle on ${endDate.toLocaleDateString()}. You will continue enjoying full Pro features and credits until then.`,
+        });
+      }
+
+      // User has no active paid plan; ensure tier is free
+      await db
+        .update(schema.user)
+        .set({ generationTier: 'free', updatedAt: now })
+        .where(eq(schema.user.id, body.userId));
+
+      return c.json({
+        success: true,
+        scheduled: false,
+        message: 'Free tier is your active plan.',
+      });
+    }
+
+    // CASE 2: UPGRADE TO PRO (Immediate Activation)
+    const durationMonths = plan.durationMonths || 1;
+    const creditsToGrant = (plan.aiCreditsMonthly || 1000) * durationMonths;
+    const periodStart = now;
+    const periodEnd = new Date(now.getTime() + durationMonths * 30 * 24 * 60 * 60 * 1000);
+    const subId = crypto.randomUUID();
+
+    // Update user tier to premium immediately
     await db
       .update(schema.user)
       .set({
-        generationTier: tier,
-        updatedAt: new Date(),
+        generationTier: 'premium',
+        updatedAt: now,
       })
       .where(eq(schema.user.id, body.userId));
 
+    // Grant credits
     await billing.grantUserCredits(
       db,
       body.userId,
-      credits,
-      isFree ? 'initial_grant' : 'monthly_grant',
-      `Switched to ${plan.name} (${credits} credits)`
+      creditsToGrant,
+      'monthly_grant',
+      `Subscribed to ${plan.name} (${creditsToGrant} credits)`
     );
 
-    const periodStart = new Date();
-    const periodEnd = new Date(Date.now() + (plan.durationMonths || 1) * 30 * 24 * 60 * 60 * 1000);
-    const subId = crypto.randomUUID();
-
+    // Insert active subscription
     await db.insert(schema.subscriptions).values({
       id: subId,
       userId: body.userId,
@@ -977,27 +1031,28 @@ app.post('/api/billing/change-plan', async (c) => {
       updatedAt: periodStart,
     });
 
-    if (!isFree) {
-      const invoiceNum = `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-      await db.insert(schema.invoices).values({
-        id: crypto.randomUUID(),
-        userId: body.userId,
-        subscriptionId: subId,
-        invoiceNumber: invoiceNum,
-        amount: plan.priceAmount,
-        currency: 'USD',
-        status: 'paid',
-        planName: plan.name,
-        billingPeriod: `${periodStart.toLocaleDateString()} - ${periodEnd.toLocaleDateString()}`,
-        paidAt: periodStart,
-        createdAt: periodStart,
-      });
-    }
+    // Record invoice
+    const invoiceNum = `INV-${now.getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    await db.insert(schema.invoices).values({
+      id: crypto.randomUUID(),
+      userId: body.userId,
+      subscriptionId: subId,
+      invoiceNumber: invoiceNum,
+      amount: plan.priceAmount,
+      currency: 'USD',
+      status: 'paid',
+      planName: plan.name,
+      billingPeriod: `${periodStart.toLocaleDateString()} - ${periodEnd.toLocaleDateString()}`,
+      paidAt: periodStart,
+      createdAt: periodStart,
+    });
 
     return c.json({
       success: true,
-      tier: isFree ? 'Free' : 'Pro',
-      message: `Plan changed to ${plan.name}`,
+      tier: 'Pro',
+      planId: plan.id,
+      currentPeriodEnd: periodEnd.toISOString(),
+      message: `🎉 Successfully upgraded to ${plan.name}! ${creditsToGrant.toLocaleString()} credits activated.`,
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -1005,23 +1060,72 @@ app.post('/api/billing/change-plan', async (c) => {
   }
 });
 
-// Cancel Subscription Renewal
+// Cancel Subscription Renewal (Schedule Downgrade to Free)
 app.post('/api/billing/cancel-subscription', async (c) => {
   try {
     const body = await c.req.json<{ userId: string }>();
     if (!body.userId) return c.json({ error: 'User ID is required' }, 400);
 
     const { db } = getDb(c.env);
-    await db
-      .update(schema.subscriptions)
-      .set({
-        cancelAtPeriodEnd: true,
-        canceledAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(schema.subscriptions.userId, body.userId));
+    const now = new Date();
 
-    return c.json({ success: true, message: 'Your subscription will not renew at the end of the billing period.' });
+    const sub = await db
+      .select()
+      .from(schema.subscriptions)
+      .where(eq(schema.subscriptions.userId, body.userId))
+      .orderBy(desc(schema.subscriptions.createdAt))
+      .get();
+
+    if (sub) {
+      await db
+        .update(schema.subscriptions)
+        .set({
+          cancelAtPeriodEnd: true,
+          canceledAt: now,
+          updatedAt: now,
+        })
+        .where(eq(schema.subscriptions.id, sub.id));
+    }
+
+    return c.json({
+      success: true,
+      message: 'Automatic renewal cancelled. Your Pro features and credits remain active until the end of your billing cycle.',
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
+// Resume Subscription Renewal (Un-cancel)
+app.post('/api/billing/resume-subscription', async (c) => {
+  try {
+    const body = await c.req.json<{ userId: string }>();
+    if (!body.userId) return c.json({ error: 'User ID is required' }, 400);
+
+    const { db } = getDb(c.env);
+    const sub = await db
+      .select()
+      .from(schema.subscriptions)
+      .where(eq(schema.subscriptions.userId, body.userId))
+      .orderBy(desc(schema.subscriptions.createdAt))
+      .get();
+
+    if (sub) {
+      await db
+        .update(schema.subscriptions)
+        .set({
+          cancelAtPeriodEnd: false,
+          canceledAt: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.subscriptions.id, sub.id));
+    }
+
+    return c.json({
+      success: true,
+      message: 'Automatic subscription renewal has been resumed successfully!',
+    });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     return c.json({ error: msg }, 500);

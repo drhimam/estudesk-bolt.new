@@ -396,6 +396,50 @@ export async function getUserSubscriptionDetails(db: any, userId: string) {
     .orderBy(desc(schema.subscriptions.createdAt))
     .get();
 
+  const now = new Date();
+  let isPro = false;
+  let activePlanId = 'free';
+  let cancelAtPeriodEnd = false;
+  let currentPeriodEnd: string | null = null;
+  let currentPeriodStart: string | null = null;
+
+  if (sub && sub.planId !== 'free') {
+    const periodEnd = sub.currentPeriodEnd ? new Date(sub.currentPeriodEnd) : null;
+    if (sub.status === 'active' && periodEnd && periodEnd > now) {
+      isPro = true;
+      activePlanId = sub.planId;
+      cancelAtPeriodEnd = !!sub.cancelAtPeriodEnd;
+      currentPeriodEnd = periodEnd.toISOString();
+      currentPeriodStart = sub.currentPeriodStart ? new Date(sub.currentPeriodStart).toISOString() : null;
+    } else if (sub.status === 'active' && periodEnd && periodEnd <= now) {
+      // Subscription period ended -> transition to expired and downgrade user
+      try {
+        await db
+          .update(schema.subscriptions)
+          .set({ status: 'expired', updatedAt: now })
+          .where(eq(schema.subscriptions.id, sub.id));
+        await db
+          .update(schema.user)
+          .set({ generationTier: 'free', updatedAt: now })
+          .where(eq(schema.user.id, userId));
+      } catch (e) {
+        console.error('Failed to expire subscription:', e);
+      }
+      isPro = false;
+      activePlanId = 'free';
+    }
+  }
+
+  // Check fallback if user tier is premium but no active sub
+  if (!isPro && (u.generationTier === 'premium' || u.generationTier === 'pro')) {
+    isPro = true;
+    activePlanId = sub?.planId && sub.planId !== 'free' ? sub.planId : 'pro_monthly';
+  }
+
+  const tier = isPro ? 'pro' : 'free';
+  const quotaLimit = isPro ? 1000 : 100;
+  const currentCredits = u.creditBalance ?? (isPro ? 1000 : 100);
+
   const transactions = await db
     .select()
     .from(schema.creditTransactions)
@@ -403,19 +447,22 @@ export async function getUserSubscriptionDetails(db: any, userId: string) {
     .orderBy(desc(schema.creditTransactions.createdAt))
     .limit(15);
 
-  const tier = u.generationTier || 'free';
-  const planId = sub ? sub.planId : tier === 'free' ? 'free' : 'pro_monthly';
-
-  // Calculate monthly quota limit based on active plan
-  const quotaLimit = tier === 'free' ? 100 : 1000;
-  const currentCredits = u.creditBalance ?? (tier === 'free' ? 100 : 1000);
-
   return {
     tier,
-    planId,
+    planId: activePlanId,
     creditBalance: currentCredits,
     monthlyQuotaLimit: quotaLimit,
-    subscription: sub || null,
+    accountCreatedAt: u.createdAt,
+    subscription: sub
+      ? {
+          ...sub,
+          planId: activePlanId,
+          isPro,
+          cancelAtPeriodEnd,
+          currentPeriodEnd: currentPeriodEnd || (sub.currentPeriodEnd ? new Date(sub.currentPeriodEnd).toISOString() : null),
+          currentPeriodStart: currentPeriodStart || (sub.currentPeriodStart ? new Date(sub.currentPeriodStart).toISOString() : null),
+        }
+      : null,
     recentTransactions: transactions || [],
   };
 }

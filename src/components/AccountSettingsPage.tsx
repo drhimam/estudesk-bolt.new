@@ -22,6 +22,8 @@ import {
   Laptop,
   Flame,
   LayoutDashboard,
+  Calendar,
+  RefreshCw,
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import {
@@ -121,6 +123,32 @@ const INITIAL_DEFAULT_PLANS: SubscriptionPlan[] = [
   },
 ];
 
+function formatDate(dateValue?: string | number | null): string {
+  if (!dateValue) return 'N/A';
+  try {
+    const d = new Date(dateValue);
+    if (isNaN(d.getTime())) return 'N/A';
+    return d.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch {
+    return 'N/A';
+  }
+}
+
+function formatMemberSince(dateValue?: string | number | null): string {
+  if (!dateValue) return 'Member';
+  try {
+    const d = new Date(dateValue);
+    if (isNaN(d.getTime())) return 'Member';
+    return `Member since ${d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}`;
+  } catch {
+    return 'Member';
+  }
+}
+
 interface AccountSettingsPageProps {
   initialTab?: AccountTab;
 }
@@ -149,7 +177,17 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
     planId: string;
     creditBalance: number;
     monthlyQuotaLimit: number;
-    subscription?: unknown;
+    accountCreatedAt?: string | number | null;
+    subscription?: {
+      id?: string;
+      planId?: string;
+      status?: string;
+      isPro?: boolean;
+      currentPeriodStart?: string | number | null;
+      currentPeriodEnd?: string | number | null;
+      cancelAtPeriodEnd?: boolean;
+      canceledAt?: string | number | null;
+    } | null;
     recentTransactions: CreditTransaction[];
   } | null>(null);
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
@@ -327,6 +365,17 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
     if (!plan.isActive) return;
     if (!currentUser?.id) return;
 
+    const activePlanId = subscriptionDetails?.planId || (isPro ? 'pro_monthly' : 'free');
+    const isCurrent = plan.id === activePlanId;
+    if (isCurrent) return;
+
+    if (plan.id === 'free' && isPro) {
+      const formattedEnd = formatDate(subscriptionDetails?.subscription?.currentPeriodEnd);
+      if (!confirm(`Are you sure you want to downgrade to Free? Your Pro plan and credits will remain active until the end of your billing cycle on ${formattedEnd}, after which your plan will switch to Free. Proceed?`)) {
+        return;
+      }
+    }
+
     setActionLoading(true);
     setBillingNotice(null);
 
@@ -346,12 +395,14 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
       } else {
         setBillingNotice({
           type: 'success',
-          text: `🎉 You are now subscribed to ${plan.name}! ${plan.aiCreditsMonthly * (plan.durationMonths || 1)} AI Credits activated.`,
+          text: json.message || `🎉 Successfully updated plan to ${plan.name}!`,
         });
-        setCurrentUser({
-          ...currentUser,
-          tier: plan.id === 'free' ? 'Free' : 'Pro',
-        });
+        if (json.tier) {
+          setCurrentUser({
+            ...currentUser,
+            tier: json.tier,
+          });
+        }
         fetchPlansAndSubscription();
         fetchInvoices();
         fetchUsage();
@@ -366,7 +417,8 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
 
   async function handleCancelSubscription() {
     if (!currentUser?.id) return;
-    if (!confirm('Are you sure you want to cancel automatic subscription renewal? You will retain Pro access until the end of your billing cycle.')) {
+    const formattedEnd = formatDate(subscriptionDetails?.subscription?.currentPeriodEnd);
+    if (!confirm(`Are you sure you want to cancel automatic subscription renewal? You will retain full Pro benefits and all credits until the end of your current billing period on ${formattedEnd}.`)) {
       return;
     }
 
@@ -384,7 +436,40 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
       if (!res.ok) {
         setBillingNotice({ type: 'error', text: json.error || 'Failed to cancel renewal.' });
       } else {
-        setBillingNotice({ type: 'success', text: 'Auto-renewal has been cancelled. Your benefits remain active until the end of the period.' });
+        setBillingNotice({
+          type: 'success',
+          text: `Auto-renewal cancelled. Your Pro benefits and credits remain active until ${formattedEnd}.`,
+        });
+        fetchPlansAndSubscription();
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Network error';
+      setBillingNotice({ type: 'error', text: msg });
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleResumeSubscription() {
+    if (!currentUser?.id) return;
+    setActionLoading(true);
+    setBillingNotice(null);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/billing/resume-subscription`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser.id }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        setBillingNotice({ type: 'error', text: json.error || 'Failed to resume auto-renewal.' });
+      } else {
+        setBillingNotice({
+          type: 'success',
+          text: '🎉 Automatic subscription renewal resumed successfully! Your Pro plan will renew without interruption.',
+        });
         fetchPlansAndSubscription();
       }
     } catch (err: unknown) {
@@ -520,9 +605,14 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
 
   const currentTier = (currentUser?.tier || subscriptionDetails?.tier || 'free').toLowerCase();
   const isPro = currentTier.includes('pro') || currentTier.includes('premium');
+  const activePlanId = subscriptionDetails?.planId || (isPro ? 'pro_monthly' : 'free');
   const creditBalance = subscriptionDetails?.creditBalance ?? currentUser?.credits ?? (isPro ? 1000 : 100);
   const maxCredits = isPro ? 1000 : 100;
   const creditPercentage = Math.min(100, Math.max(0, (creditBalance / maxCredits) * 100));
+
+  const cancelAtPeriodEnd = !!subscriptionDetails?.subscription?.cancelAtPeriodEnd;
+  const currentPeriodEnd = subscriptionDetails?.subscription?.currentPeriodEnd;
+  const accountCreatedDate = subscriptionDetails?.accountCreatedAt || currentUser?.createdAt;
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-y-auto bg-[#fbf5eb] select-text">
@@ -551,17 +641,22 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
             <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-accent-500 to-indigo-600 flex items-center justify-center text-white text-[11px] font-bold">
               {name ? name.charAt(0).toUpperCase() : 'U'}
             </div>
-            <span className="text-xs font-semibold text-ink-800 max-w-[120px] truncate">
-              {name || 'Student'}
-            </span>
-            <span className={`text-[9px] uppercase font-mono px-1.5 py-0.5 rounded-full font-bold ${
+            <div className="text-left">
+              <span className="text-xs font-semibold text-ink-800 max-w-[120px] truncate block leading-none">
+                {name || 'Student'}
+              </span>
+              <span className="text-[10px] text-ink-400 font-normal">
+                {formatMemberSince(accountCreatedDate)}
+              </span>
+            </div>
+            <span className={`text-[9px] uppercase font-mono px-1.5 py-0.5 rounded-full font-bold ml-1 ${
               isPro ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-accent-100 text-accent-700'
             }`}>
               {isPro ? 'Pro' : 'Free'}
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-semibold">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-semibold shadow-soft">
             <Coins className="w-3.5 h-3.5 text-indigo-600" />
             <span>{creditBalance.toLocaleString()} Credits</span>
           </div>
@@ -573,18 +668,24 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
         {/* Page Hero Banner */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#ded3c2]">
           <div>
-            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-ink-900 tracking-tight">
-              Account, Billing & Subscriptions
-            </h1>
+            <div className="flex items-center gap-2.5">
+              <h1 className="font-serif text-2xl sm:text-3xl font-bold text-ink-900 tracking-tight">
+                Account, Billing & Subscriptions
+              </h1>
+            </div>
             <p className="text-xs sm:text-sm text-ink-600 mt-1">
-              Control your student profile, dynamic pricing plans, AI credits quota, and security settings
+              Control your student identity, dynamic plans, AI credits quota, and security settings
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 text-xs text-emerald-700 font-medium bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1 text-xs text-ink-500 font-medium bg-white px-3 py-1.5 rounded-xl border border-[#bed6c7] shadow-soft">
+              <Calendar className="w-3.5 h-3.5 text-accent-600" />
+              <span>{formatMemberSince(accountCreatedDate)}</span>
+            </span>
+            <span className="inline-flex items-center gap-1 text-xs text-emerald-700 font-medium bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 shadow-soft">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              Direct Cloud Sync Active
+              <span>Cloud Sync Active</span>
             </span>
           </div>
         </div>
@@ -602,7 +703,7 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
             onClick={() => setActiveTab('subscription')}
             icon={<CreditCard className="w-4 h-4" />}
             label="Plans & Upgrades"
-            badge={isPro ? 'Pro Active' : undefined}
+            badge={isPro ? (cancelAtPeriodEnd ? 'Cancels Soon' : 'Pro Active') : 'Free Tier'}
           />
           <TabButton
             active={activeTab === 'usage'}
@@ -645,6 +746,9 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
                     {name || 'Student Scholar'}
                   </h3>
                   <p className="text-xs text-ink-500 mt-0.5">{currentUser?.email}</p>
+                  <p className="text-[11px] text-accent-700 font-medium mt-1">
+                    {formatMemberSince(accountCreatedDate)}
+                  </p>
                 </div>
 
                 <div className="w-full pt-4 border-t border-paper-200 space-y-2.5 text-left text-xs">
@@ -653,17 +757,23 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
                     <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[10px] ${
                       isPro ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-accent-100 text-accent-700'
                     }`}>
-                      {isPro ? 'Pro Member' : 'Free Member'}
+                      {isPro ? (cancelAtPeriodEnd ? 'Pro (Cancels Soon)' : 'Pro Member') : 'Free Member'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-ink-500">Monthly AI Credits</span>
+                    <span className="text-ink-500">Monthly AI Quota</span>
                     <span className="font-mono font-bold text-ink-800">{maxCredits.toLocaleString()} / mo</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-ink-500">Available Now</span>
+                    <span className="text-ink-500">Available Credits</span>
                     <span className="font-mono font-bold text-accent-700">{creditBalance.toLocaleString()} cr</span>
                   </div>
+                  {isPro && currentPeriodEnd && (
+                    <div className="flex items-center justify-between pt-1 border-t border-paper-100">
+                      <span className="text-ink-500">{cancelAtPeriodEnd ? 'Access Until' : 'Renews On'}</span>
+                      <span className="font-mono text-[11px] font-semibold text-ink-800">{formatDate(currentPeriodEnd)}</span>
+                    </div>
+                  )}
                 </div>
 
                 <button
@@ -809,36 +919,65 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
         {activeTab === 'subscription' && (
           <div className="space-y-6 animate-fade-in">
             {/* Active Plan Banner */}
-            <div className="p-6 rounded-3xl bg-gradient-to-r from-[#eef6f1] via-[#f4f9f6] to-[#e8eef8] border border-[#bed6c7] shadow-soft flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className={`p-6 rounded-3xl border shadow-soft flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all ${
+              isPro
+                ? cancelAtPeriodEnd
+                  ? 'bg-gradient-to-r from-amber-50 via-[#fcfbf7] to-amber-100/40 border-amber-300'
+                  : 'bg-gradient-to-r from-[#eef6f1] via-[#f4f9f6] to-[#e8eef8] border-[#bed6c7]'
+                : 'bg-white border-[#d6e0db]'
+            }`}>
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold uppercase tracking-wider text-ink-500">
                     Active Subscription
                   </span>
                   <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                    isPro ? 'bg-amber-400 text-ink-900 shadow-sm' : 'bg-accent-600 text-white'
+                    isPro
+                      ? cancelAtPeriodEnd
+                        ? 'bg-amber-400 text-ink-900 shadow-sm'
+                        : 'bg-emerald-600 text-white shadow-sm'
+                      : 'bg-accent-600 text-white'
                   }`}>
-                    {isPro ? 'Pro Active' : 'Free Tier'}
+                    {isPro ? (cancelAtPeriodEnd ? 'Cancels at Period End' : 'Pro Active') : 'Free Tier'}
                   </span>
                 </div>
                 <h2 className="font-serif text-2xl font-bold text-ink-900 mt-1">
-                  {isPro ? 'Pro Student Unlimited Academic Suite' : 'Free Scholar (100 Initial Credits)'}
+                  {isPro
+                    ? activePlanId === 'pro_semester'
+                      ? 'Pro Semester (4 Months) — Unlimited Academic Suite'
+                      : 'Pro Monthly — Unlimited Academic Suite'
+                    : 'Free Scholar (100 Initial Credits)'}
                 </h2>
                 <p className="text-xs sm:text-sm text-ink-600 mt-1 max-w-2xl">
                   {isPro
-                    ? 'You have full access to all 7 study formats, OCR file extraction, audio processing, 24h deadline email notifications, and 1,000 monthly credits.'
-                    : 'You have 100 initial AI generation credits. Upgrade to Pro for 1,000 monthly credits, priority AI queue, and 24h deadline alerts.'}
+                    ? cancelAtPeriodEnd
+                      ? `⚠️ Your subscription is scheduled to downgrade to Free at the end of your billing cycle on ${formatDate(currentPeriodEnd)}. You will retain full Pro benefits and all credits until then.`
+                      : `Your plan renews automatically on ${formatDate(currentPeriodEnd)}. You have full access to all 7 study formats, OCR extractions, 24h deadline alerts, and 1,000 monthly credits.`
+                    : 'Free tier includes 100 initial AI generation credits and standard study tools. Upgrade to Pro for 1,000 monthly credits, priority queue, and 24h deadline alerts.'}
                 </p>
               </div>
 
               {isPro && (
-                <button
-                  onClick={handleCancelSubscription}
-                  disabled={actionLoading}
-                  className="px-4 py-2.5 rounded-xl text-xs font-medium text-crimson-700 hover:bg-crimson-50 border border-crimson-200 transition-colors cursor-pointer shrink-0"
-                >
-                  Cancel Auto-Renewal
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  {cancelAtPeriodEnd ? (
+                    <button
+                      onClick={handleResumeSubscription}
+                      disabled={actionLoading}
+                      className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-soft transition-colors cursor-pointer"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Resume Auto-Renewal</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleCancelSubscription}
+                      disabled={actionLoading}
+                      className="px-4 py-2.5 rounded-xl text-xs font-medium text-crimson-700 hover:bg-crimson-50 border border-crimson-200 transition-colors cursor-pointer"
+                    >
+                      Cancel Auto-Renewal
+                    </button>
+                  )}
+                </div>
               )}
             </div>
 
@@ -862,7 +1001,7 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
             {/* Dynamic Plans Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
               {plans.map((plan) => {
-                const isCurrent = (isPro && plan.id.startsWith('pro_')) || (!isPro && plan.id === 'free');
+                const isCurrent = plan.id === activePlanId;
                 const hasDiscount = plan.discountPercent > 0;
                 const originalPrice = hasDiscount
                   ? (plan.priceAmount / (1 - plan.discountPercent / 100)).toFixed(2)
@@ -872,7 +1011,7 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
                   <div
                     key={plan.id}
                     className={`relative rounded-3xl p-6 flex flex-col justify-between transition-all border ${
-                      plan.id === 'pro_semester'
+                      isCurrent
                         ? 'bg-gradient-to-b from-white to-[#f7fbf9] border-emerald-500 ring-2 ring-emerald-500/20 shadow-card'
                         : plan.isActive
                           ? 'bg-white border-[#d6e0db] hover:border-accent-400 shadow-soft hover:shadow-card'
@@ -898,11 +1037,16 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
                         <h4 className="font-serif text-lg font-bold text-ink-900">
                           {plan.name}
                         </h4>
-                        {plan.id === 'pro_semester' && (
+                        {isCurrent ? (
+                          <span className="text-[10px] font-mono font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                            <Check className="w-3 h-3" />
+                            ACTIVE
+                          </span>
+                        ) : plan.id === 'pro_semester' ? (
                           <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
                             BEST VALUE
                           </span>
-                        )}
+                        ) : null}
                       </div>
 
                       {/* Price Section */}
@@ -966,24 +1110,29 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
                       {plan.isActive ? (
                         <button
                           onClick={() => handlePlanSelect(plan)}
-                          disabled={actionLoading || (isPro && plan.id.startsWith('pro_'))}
+                          disabled={actionLoading || isCurrent}
                           className={`w-full py-2.5 px-3 rounded-xl text-xs font-semibold transition-all shadow-soft cursor-pointer flex items-center justify-center gap-1.5 ${
-                            plan.id === 'pro_semester'
-                              ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-card hover:shadow-glow'
-                              : plan.id === 'pro_monthly'
-                                ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                                : 'bg-paper-100 hover:bg-paper-200 text-ink-700 border border-paper-300'
-                          } disabled:opacity-60 disabled:cursor-not-allowed`}
+                            isCurrent
+                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 font-bold cursor-default'
+                              : plan.id === 'free' && isPro
+                                ? 'bg-white hover:bg-paper-100 text-ink-700 border border-paper-300'
+                                : plan.id === 'pro_semester'
+                                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-card hover:shadow-glow'
+                                  : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                          } disabled:opacity-75 disabled:cursor-not-allowed`}
                         >
                           {actionLoading ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : isCurrent && isPro ? (
-                            <span>Active Plan</span>
-                          ) : plan.id === 'free' ? (
-                            <span>Current Free Tier</span>
+                          ) : isCurrent ? (
+                            <span className="flex items-center gap-1">
+                              <Check className="w-3.5 h-3.5 text-emerald-600" />
+                              Current Plan
+                            </span>
+                          ) : plan.id === 'free' && isPro ? (
+                            <span>Downgrade to Free</span>
                           ) : (
                             <>
-                              <span>Choose {plan.name}</span>
+                              <span>Upgrade to {plan.name}</span>
                               <ArrowRight className="w-3.5 h-3.5" />
                             </>
                           )}
@@ -1019,13 +1168,13 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
                       {creditBalance.toLocaleString()}
                     </span>
                     <span className="text-sm font-semibold text-ink-500">
-                      / {maxCredits.toLocaleString()} Credits
+                      / {maxCredits.toLocaleString()} Monthly Limit
                     </span>
                   </div>
                   <p className="text-xs text-ink-500 mt-1">
                     {isPro
-                      ? '1,000 monthly credits renewed automatically. Unused credits rollover within active billing cycle.'
-                      : 'Free tier includes 100 initial AI generation credits.'}
+                      ? `1,000 monthly credits renewed automatically. Current cycle ends on ${formatDate(currentPeriodEnd)}.`
+                      : 'Free tier includes 100 initial AI generation credits. Upgrade to Pro for 1,000 credits renewed monthly.'}
                   </p>
                 </div>
 

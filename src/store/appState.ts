@@ -13,6 +13,7 @@ export interface UserProfile {
   fieldOfStudy?: string;
   bio?: string;
   timezone?: string;
+  createdAt?: string | number | null;
 }
 
 export type View =
