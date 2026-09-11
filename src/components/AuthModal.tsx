@@ -745,23 +745,22 @@ export function AuthModal() {
                 </div>
               </div>
 
-              {/* Turnstile Widget on Sign Up */}
-              {tab === 'signup' && (
-                <TurnstileWidget
-                  ref={turnstileRef}
-                  action="signup"
-                  onSuccess={(token) => {
-                    setTurnstileToken(token);
-                    setError(null);
-                  }}
-                  onError={() => {
-                    setTurnstileToken(null);
-                  }}
-                  onExpire={() => {
-                    setTurnstileToken(null);
-                  }}
-                />
-              )}
+              {/* Turnstile Widget on Sign In & Sign Up */}
+              <TurnstileWidget
+                ref={turnstileRef}
+                action={tab}
+                onSuccess={(token) => {
+                  setTurnstileToken(token);
+                  setError(null);
+                }}
+                onError={() => {
+                  setTurnstileToken(null);
+                }}
+                onExpire={() => {
+                  setTurnstileToken(null);
+                }}
+              />
+
 
               {tab === 'signin' && (
                 <div className="flex items-center">
