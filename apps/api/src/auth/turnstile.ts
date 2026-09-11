@@ -38,18 +38,19 @@ export async function verifyTurnstileToken(
   const activeSecret = secretKey || DEFAULT_TEST_SECRET;
 
   try {
-    const formData = new URLSearchParams();
-    formData.append('secret', activeSecret);
-    formData.append('response', token);
+    const payload: Record<string, string> = {
+      secret: activeSecret,
+      response: token,
+    };
     if (remoteIp) {
-      formData.append('remoteip', remoteIp);
+      payload.remoteip = remoteIp;
     }
 
     const response = await fetch(CLOUDFLARE_SITEVERIFY_URL, {
       method: 'POST',
-      body: formData,
+      body: JSON.stringify(payload),
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
       },
     });
 
@@ -70,12 +71,15 @@ export async function verifyTurnstileToken(
     };
 
     if (!data.success) {
-      const errorMsg = data['error-codes'] && data['error-codes'].length > 0
-        ? `Turnstile verification failed: ${data['error-codes'].join(', ')}`
-        : 'Turnstile verification failed. Please try again.';
+      const errorCodes = data['error-codes'] || [];
+      const errorMsg =
+        errorCodes.length > 0
+          ? `Turnstile verification failed: ${errorCodes.join(', ')}`
+          : 'Turnstile verification failed. Please try again.';
+
       return {
         success: false,
-        errorCodes: data['error-codes'],
+        errorCodes,
         error: errorMsg,
       };
     }

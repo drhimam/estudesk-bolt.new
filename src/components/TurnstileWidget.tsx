@@ -32,7 +32,6 @@ function loadTurnstileScript(): Promise<void> {
   }
 
   scriptLoadingPromise = new Promise((resolve, reject) => {
-    // Check if script element already exists in DOM
     const existingScript = document.querySelector(`script[src="${TURNSTILE_SCRIPT_URL}"]`);
     if (existingScript) {
       if (window.turnstile) {
@@ -52,7 +51,6 @@ function loadTurnstileScript(): Promise<void> {
       if (window.turnstile) {
         resolve();
       } else {
-        // Turnstile API might need a tiny tick to attach to window
         const checkInterval = setInterval(() => {
           if (window.turnstile) {
             clearInterval(checkInterval);
@@ -62,7 +60,7 @@ function loadTurnstileScript(): Promise<void> {
         setTimeout(() => {
           clearInterval(checkInterval);
           resolve();
-        }, 3000);
+        }, 4000);
       }
     };
     script.onerror = (err) => {
@@ -94,6 +92,23 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetHandle, TurnstileWidget
     const [isLoaded, setIsLoaded] = useState(false);
     const [loadError, setLoadError] = useState<string | null>(null);
 
+    // Keep callback refs stable across parent re-renders
+    const onSuccessRef = useRef(onSuccess);
+    const onErrorRef = useRef(onError);
+    const onExpireRef = useRef(onExpire);
+
+    useEffect(() => {
+      onSuccessRef.current = onSuccess;
+    }, [onSuccess]);
+
+    useEffect(() => {
+      onErrorRef.current = onError;
+    }, [onError]);
+
+    useEffect(() => {
+      onExpireRef.current = onExpire;
+    }, [onExpire]);
+
     const activeSiteKey =
       siteKey ||
       import.meta.env.VITE_TURNSTILE_SITE_KEY ||
@@ -102,12 +117,20 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetHandle, TurnstileWidget
     useImperativeHandle(ref, () => ({
       reset: () => {
         if (widgetIdRef.current && window.turnstile) {
-          window.turnstile.reset(widgetIdRef.current);
+          try {
+            window.turnstile.reset(widgetIdRef.current);
+          } catch (e) {
+            console.warn('[Turnstile Reset Warning]', e);
+          }
         }
       },
       getResponse: () => {
         if (widgetIdRef.current && window.turnstile) {
-          return window.turnstile.getResponse(widgetIdRef.current);
+          try {
+            return window.turnstile.getResponse(widgetIdRef.current);
+          } catch {
+            return undefined;
+          }
         }
         return undefined;
       },
@@ -120,7 +143,7 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetHandle, TurnstileWidget
         .then(() => {
           if (!isMounted || !containerRef.current || !window.turnstile) return;
 
-          // If widget was already rendered in this container, remove old one first
+          // Cleanup previous widget instance if siteKey or action changed
           if (widgetIdRef.current) {
             try {
               window.turnstile.remove(widgetIdRef.current);
@@ -138,36 +161,38 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetHandle, TurnstileWidget
               action,
               callback: (token: string) => {
                 if (isMounted) {
-                  onSuccess(token);
+                  onSuccessRef.current?.(token);
                 }
               },
               'error-callback': (err: unknown) => {
+                console.warn('[Turnstile Widget Error Callback]', err);
                 if (isMounted) {
-                  onError?.(err);
+                  onErrorRef.current?.(err);
                 }
               },
               'expired-callback': () => {
                 if (isMounted) {
-                  onExpire?.();
+                  onExpireRef.current?.();
                 }
               },
             });
 
             widgetIdRef.current = widgetId;
             setIsLoaded(true);
+            setLoadError(null);
           } catch (renderErr) {
             console.error('[Turnstile Render Error]', renderErr);
             if (isMounted) {
-              setLoadError('Failed to initialize security verification.');
+              setLoadError('Failed to initialize verification widget.');
             }
           }
         })
         .catch((err) => {
           console.warn('[Turnstile Script Load Error]', err);
           if (isMounted) {
-            setLoadError('Security challenge unavailable.');
+            setLoadError('Verification challenge unavailable.');
             // Allow graceful fallback in offline or blocked environments
-            onSuccess('bypass_dev_token');
+            onSuccessRef.current?.('bypass_dev_token');
           }
         });
 
@@ -182,7 +207,7 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetHandle, TurnstileWidget
           widgetIdRef.current = null;
         }
       };
-    }, [activeSiteKey, theme, size, action, onSuccess, onError, onExpire]);
+    }, [activeSiteKey, theme, size, action]);
 
     return (
       <div className={`turnstile-wrapper flex flex-col items-center justify-center my-2 ${className}`}>
