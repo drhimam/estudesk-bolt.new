@@ -33,8 +33,96 @@ import {
 import { API_BASE_URL } from '@/lib/authClient';
 import type { SubscriptionPlan, InvoiceRecord, CreditTransaction, SessionItem } from '@/types';
 
+const INITIAL_DEFAULT_PLANS: SubscriptionPlan[] = [
+  {
+    id: 'free',
+    name: 'Free',
+    billingCycle: 'once',
+    durationMonths: 1,
+    priceAmount: 0.0,
+    currency: 'USD',
+    discountPercent: 0,
+    discountReason: null,
+    isActive: true,
+    aiCreditsMonthly: 100,
+    features: [
+      '100 Initial AI Generation Credits',
+      'Basic Study Notes & Flashcards Generator',
+      'Local Dexie.js Offline Storage + Cloud Sync',
+      'Standard AI Generation Queue',
+      'Export Study Materials to TXT',
+    ],
+    sortOrder: 1,
+  },
+  {
+    id: 'pro_monthly',
+    name: 'Pro Monthly',
+    billingCycle: 'monthly',
+    durationMonths: 1,
+    priceAmount: 9.99,
+    currency: 'USD',
+    discountPercent: 0,
+    discountReason: null,
+    isActive: true,
+    aiCreditsMonthly: 1000,
+    features: [
+      '1,000 AI Generation Credits / month',
+      'All 7 Study Formats (Notes, Cheatsheets, Flashcards, Quizzes, Infographics, Assignments, Slides)',
+      'Multi-Modal Source Extraction (PDF, DOCX, TXT, CSV, Audio, OCR)',
+      '24h Deadline Email Alerts & Monday Weekly Digests',
+      'Priority High-Speed AI Router (DeepSeek V3 / MiMo / Gemini)',
+      'Rich PDF, TXT, & JSON Study Material Downloads',
+    ],
+    sortOrder: 2,
+  },
+  {
+    id: 'pro_semester',
+    name: 'Pro Semester (4 Months)',
+    billingCycle: 'semester',
+    durationMonths: 4,
+    priceAmount: 29.99,
+    currency: 'USD',
+    discountPercent: 25,
+    discountReason: 'Semester Saver • 25% Off',
+    isActive: true,
+    aiCreditsMonthly: 1000,
+    features: [
+      '1,000 AI Generation Credits / month (4,000 total credits)',
+      'Full University 4-Month Semester Coverage',
+      'All 7 Study Material Formats with Instant AI Refinements',
+      'Multi-Modal Source Extraction (PDF, OCR Image, Audio Transcripts)',
+      '24h Deadline Alerts & Timezone-Aware Weekly Digests',
+      'Full Semester Archive One-Click Student Backup',
+      'Dedicated High-Throughput AI Priority Queue',
+    ],
+    sortOrder: 3,
+  },
+  {
+    id: 'pro_yearly',
+    name: 'Pro Yearly',
+    billingCycle: 'yearly',
+    durationMonths: 12,
+    priceAmount: 79.99,
+    currency: 'USD',
+    discountPercent: 35,
+    discountReason: 'Annual Best Value • 35% Off',
+    isActive: false,
+    aiCreditsMonthly: 1000,
+    features: [
+      '1,000 AI Generation Credits / month (12,000 total credits)',
+      'Full 12-Month Academic Access to All Features',
+      'All 7 Study Material Types & Infinite Version History',
+      'Advanced Multi-Modal File Parser & Instant Tesseract OCR',
+      'Priority Email Notifications & Weekly Digest Reports',
+      'VIP Priority AI Routing & Early Feature Access',
+    ],
+    sortOrder: 4,
+  },
+];
+
 export function AccountSettingsModal() {
   const { accountModalOpen, accountModalTab, currentUser } = useAppState();
+  const userId = currentUser?.id;
   const [activeTab, setActiveTab] = useState<AccountTab>(accountModalTab || 'profile');
 
   // Profile State
@@ -50,7 +138,7 @@ export function AccountSettingsModal() {
   const [profileError, setProfileError] = useState<string | null>(null);
 
   // Plans & Billing State
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>(INITIAL_DEFAULT_PLANS);
   const [subscriptionDetails, setSubscriptionDetails] = useState<{
     tier: string;
     planId: string;
@@ -78,10 +166,21 @@ export function AccountSettingsModal() {
     }
   }, [accountModalTab, accountModalOpen]);
 
+  // Synchronize local form fields if currentUser changes from outside
+  useEffect(() => {
+    if (currentUser) {
+      setName((prev) => (prev ? prev : (currentUser.name || '')));
+      setInstitution((prev) => (prev ? prev : (currentUser.institution || '')));
+      setFieldOfStudy((prev) => (prev ? prev : (currentUser.fieldOfStudy || '')));
+      setBio((prev) => (prev ? prev : (currentUser.bio || '')));
+      setTimezone((prev) => (prev ? prev : (currentUser.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')));
+    }
+  }, [currentUser?.id]);
+
   const fetchUserProfile = useCallback(async () => {
-    if (!currentUser?.id) return;
+    if (!userId) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/user/profile?userId=${encodeURIComponent(currentUser.id)}`);
+      const res = await fetch(`${API_BASE_URL}/api/user/profile?userId=${encodeURIComponent(userId)}`);
       if (res.ok) {
         const json = await res.json();
         if (json.data) {
@@ -99,20 +198,21 @@ export function AccountSettingsModal() {
     } catch {
       // Ignored network retry
     }
-  }, [currentUser?.id]);
+  }, [userId]);
 
   const fetchPlansAndSubscription = useCallback(async () => {
-    if (!currentUser?.id) return;
-    setLoadingBilling(true);
+    if (!userId) return;
     try {
       const [plansRes, subRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/billing/plans`),
-        fetch(`${API_BASE_URL}/api/billing/subscription?userId=${encodeURIComponent(currentUser.id)}`),
+        fetch(`${API_BASE_URL}/api/billing/subscription?userId=${encodeURIComponent(userId)}`),
       ]);
 
       if (plansRes.ok) {
         const plansJson = await plansRes.json();
-        setPlans(plansJson.data || []);
+        if (Array.isArray(plansJson.data) && plansJson.data.length > 0) {
+          setPlans(plansJson.data);
+        }
       }
 
       if (subRes.ok) {
@@ -124,15 +224,13 @@ export function AccountSettingsModal() {
       }
     } catch (err) {
       console.error('Failed to load billing data:', err);
-    } finally {
-      setLoadingBilling(false);
     }
-  }, [currentUser?.id]);
+  }, [userId]);
 
   const fetchInvoices = useCallback(async () => {
-    if (!currentUser?.id) return;
+    if (!userId) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/billing/invoices?userId=${encodeURIComponent(currentUser.id)}`);
+      const res = await fetch(`${API_BASE_URL}/api/billing/invoices?userId=${encodeURIComponent(userId)}`);
       if (res.ok) {
         const json = await res.json();
         setInvoices(json.data || []);
@@ -140,12 +238,12 @@ export function AccountSettingsModal() {
     } catch {
       // Ignored network retry
     }
-  }, [currentUser?.id]);
+  }, [userId]);
 
   const fetchUsage = useCallback(async () => {
-    if (!currentUser?.id) return;
+    if (!userId) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/billing/usage?userId=${encodeURIComponent(currentUser.id)}`);
+      const res = await fetch(`${API_BASE_URL}/api/billing/usage?userId=${encodeURIComponent(userId)}`);
       if (res.ok) {
         const json = await res.json();
         setUsageLogs(json.data || []);
@@ -153,12 +251,12 @@ export function AccountSettingsModal() {
     } catch {
       // Ignored network retry
     }
-  }, [currentUser?.id]);
+  }, [userId]);
 
   const fetchSessions = useCallback(async () => {
-    if (!currentUser?.id) return;
+    if (!userId) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/user/sessions?userId=${encodeURIComponent(currentUser.id)}`);
+      const res = await fetch(`${API_BASE_URL}/api/user/sessions?userId=${encodeURIComponent(userId)}`);
       if (res.ok) {
         const json = await res.json();
         setSessions(json.data || []);
@@ -166,18 +264,18 @@ export function AccountSettingsModal() {
     } catch {
       // Ignored network retry
     }
-  }, [currentUser?.id]);
+  }, [userId]);
 
   // Load user data & plans whenever modal opens
   useEffect(() => {
-    if (!accountModalOpen || !currentUser) return;
+    if (!accountModalOpen || !userId) return;
 
     fetchPlansAndSubscription();
     fetchUserProfile();
     fetchInvoices();
     fetchUsage();
     fetchSessions();
-  }, [accountModalOpen, currentUser, fetchInvoices, fetchPlansAndSubscription, fetchSessions, fetchUsage, fetchUserProfile]);
+  }, [accountModalOpen, userId, fetchInvoices, fetchPlansAndSubscription, fetchSessions, fetchUsage, fetchUserProfile]);
 
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();

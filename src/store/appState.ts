@@ -187,7 +187,7 @@ export function closeAccountModal() {
 }
 
 export function updateUserCredits(newCredits: number) {
-  if (state.currentUser) {
+  if (state.currentUser && state.currentUser.credits !== newCredits) {
     const updated = { ...state.currentUser, credits: newCredits };
     state = { ...state, currentUser: updated };
     try {
