@@ -19,7 +19,8 @@ export type View =
   | { kind: 'landing' }
   | { kind: 'home' }
   | { kind: 'semester'; semesterId: string }
-  | { kind: 'subject'; subjectId: string };
+  | { kind: 'subject'; subjectId: string }
+  | { kind: 'account'; tab?: AccountTab };
 
 export type AuthMode = 'signin' | 'signup' | 'forgot_password' | 'reset_password' | 'verify_email';
 export type AccountTab = 'profile' | 'subscription' | 'usage' | 'invoices' | 'security' | 'privacy';
@@ -177,12 +178,17 @@ export function closeNotificationModal() {
 }
 
 export function openAccountModal(tab: AccountTab = 'profile') {
-  state = { ...state, accountModalOpen: true, accountModalTab: tab };
+  state = { ...state, view: { kind: 'account', tab }, accountModalOpen: true, accountModalTab: tab };
+  emit();
+}
+
+export function navigateToAccount(tab: AccountTab = 'profile') {
+  state = { ...state, view: { kind: 'account', tab }, accountModalOpen: false, accountModalTab: tab };
   emit();
 }
 
 export function closeAccountModal() {
-  state = { ...state, accountModalOpen: false };
+  state = { ...state, view: state.view.kind === 'account' ? { kind: 'home' } : state.view, accountModalOpen: false };
   emit();
 }
 

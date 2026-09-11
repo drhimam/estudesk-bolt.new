@@ -11,7 +11,7 @@ import { GlobalSearch } from '@/components/GlobalSearch';
 import { LandingPage } from '@/components/LandingPage';
 import { AuthModal } from '@/components/AuthModal';
 import { NotificationSettingsModal } from '@/components/NotificationSettingsModal';
-import { AccountSettingsModal } from '@/components/AccountSettingsModal';
+import { AccountSettingsPage } from '@/components/AccountSettingsPage';
 import { DashboardTourModal } from '@/components/DashboardTourModal';
 import { syncFromTursoToLocal } from '@/lib/apiSync';
 import { verifyEmail } from '@/lib/authClient';
@@ -158,7 +158,6 @@ function App() {
       <Sidebar />
       <AuthModal />
       <NotificationSettingsModal />
-      <AccountSettingsModal />
       <DashboardTourModal
         isOpen={tourModalOpen}
         onClose={closeTourModal}
@@ -167,57 +166,59 @@ function App() {
       />
       {/* Center Main Panel (Warm Academic Linen / Parchment) */}
       <div className="flex-1 min-h-0 flex flex-col min-w-0 relative bg-[#fbf5eb]">
-        {/* Mobile top bar */}
-        <div className="lg:hidden flex items-center justify-between px-3.5 py-2.5 border-b border-[#dfd2be] bg-[#f3ead8] shrink-0 z-10">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-2 rounded-xl hover:bg-[#e6dcce] text-ink-700 transition-colors"
-              aria-label="Open sidebar"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
+        {/* Mobile top bar (hidden on account full page) */}
+        {view.kind !== 'account' && (
+          <div className="lg:hidden flex items-center justify-between px-3.5 py-2.5 border-b border-[#dfd2be] bg-[#f3ead8] shrink-0 z-10">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-accent-500 to-accent-700 flex items-center justify-center shadow-soft">
-                <GraduationCap className="w-4 h-4 text-white" />
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="p-2 rounded-xl hover:bg-[#e6dcce] text-ink-700 transition-colors"
+                aria-label="Open sidebar"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-accent-500 to-accent-700 flex items-center justify-center shadow-soft">
+                  <GraduationCap className="w-4 h-4 text-white" />
+                </div>
+                <span className="font-serif text-sm font-semibold text-ink-800">eStudesk</span>
               </div>
-              <span className="font-serif text-sm font-semibold text-ink-800">eStudesk</span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => openTourModal(0, 'walkthrough')}
+                className="p-2 rounded-xl bg-accent-50 text-accent-800 border border-accent-200 hover:bg-accent-100 transition-colors"
+                title="Interactive Feature Guide & Tour"
+                aria-label="Feature Guide & Tour"
+              >
+                <HelpCircle className="w-4 h-4 text-accent-600" />
+              </button>
+
+              <button
+                onClick={() => setShowGlobalSearch(true)}
+                className="p-2 rounded-xl bg-white/95 text-ink-600 border border-[#dfd2be] hover:text-accent-600 transition-colors"
+                title="Global Search"
+                aria-label="Global Search"
+              >
+                <Search className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={toggleAIPanel}
+                className={`p-2 rounded-xl transition-all ${
+                  aiPanelOpen
+                    ? 'bg-indigo-600 text-white shadow-glow'
+                    : 'bg-white/95 text-ink-600 border border-[#dfd2be] hover:border-indigo-300 hover:text-indigo-600'
+                }`}
+                title="Ask AI"
+                aria-label="Ask AI"
+              >
+                <Sparkles className="w-4 h-4" />
+              </button>
             </div>
           </div>
-
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => openTourModal(0, 'walkthrough')}
-              className="p-2 rounded-xl bg-accent-50 text-accent-800 border border-accent-200 hover:bg-accent-100 transition-colors"
-              title="Interactive Feature Guide & Tour"
-              aria-label="Feature Guide & Tour"
-            >
-              <HelpCircle className="w-4 h-4 text-accent-600" />
-            </button>
-
-            <button
-              onClick={() => setShowGlobalSearch(true)}
-              className="p-2 rounded-xl bg-white/95 text-ink-600 border border-[#dfd2be] hover:text-accent-600 transition-colors"
-              title="Global Search"
-              aria-label="Global Search"
-            >
-              <Search className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={toggleAIPanel}
-              className={`p-2 rounded-xl transition-all ${
-                aiPanelOpen
-                  ? 'bg-indigo-600 text-white shadow-glow'
-                  : 'bg-white/95 text-ink-600 border border-[#dfd2be] hover:border-indigo-300 hover:text-indigo-600'
-              }`}
-              title="Ask AI"
-              aria-label="Ask AI"
-            >
-              <Sparkles className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+        )}
 
         {/* Desktop expand button when sidebar is collapsed */}
         {!sidebarOpen && (
@@ -231,37 +232,39 @@ function App() {
           </button>
         )}
 
-        {/* Desktop floating top utility buttons: Feature Guide, Search, Ask AI */}
-        <div className="hidden lg:flex absolute top-4 right-4 z-30 items-center gap-2">
-          <button
-            onClick={() => openTourModal(0, 'walkthrough')}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-soft bg-accent-50 text-accent-800 border border-accent-200 hover:bg-accent-100 hover:border-accent-300 hover:shadow-card cursor-pointer"
-            title="Interactive Feature Guide & Tour"
-          >
-            <HelpCircle className="w-4 h-4 text-accent-600" />
-            <span>Guide & Tour</span>
-          </button>
+        {/* Desktop floating top utility buttons: Feature Guide, Search, Ask AI (hidden on account full page) */}
+        {view.kind !== 'account' && (
+          <div className="hidden lg:flex absolute top-4 right-4 z-30 items-center gap-2">
+            <button
+              onClick={() => openTourModal(0, 'walkthrough')}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-soft bg-accent-50 text-accent-800 border border-accent-200 hover:bg-accent-100 hover:border-accent-300 hover:shadow-card cursor-pointer"
+              title="Interactive Feature Guide & Tour"
+            >
+              <HelpCircle className="w-4 h-4 text-accent-600" />
+              <span>Guide & Tour</span>
+            </button>
 
-          <button
-            onClick={() => setShowGlobalSearch(true)}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all shadow-soft bg-white/95 text-ink-600 border border-[#dfd2be] hover:border-accent-300 hover:text-accent-600 hover:shadow-card cursor-pointer"
-          >
-            <Search className="w-4 h-4" />
-            <span>Search</span>
-          </button>
+            <button
+              onClick={() => setShowGlobalSearch(true)}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all shadow-soft bg-white/95 text-ink-600 border border-[#dfd2be] hover:border-accent-300 hover:text-accent-600 hover:shadow-card cursor-pointer"
+            >
+              <Search className="w-4 h-4" />
+              <span>Search</span>
+            </button>
 
-          <button
-            onClick={toggleAIPanel}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all shadow-soft cursor-pointer ${
-              aiPanelOpen
-                ? 'bg-indigo-600 text-white shadow-glow'
-                : 'bg-white/95 text-ink-600 border border-[#dfd2be] hover:border-indigo-300 hover:text-indigo-600 hover:shadow-card'
-            }`}
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>Ask AI</span>
-          </button>
-        </div>
+            <button
+              onClick={toggleAIPanel}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all shadow-soft cursor-pointer ${
+                aiPanelOpen
+                  ? 'bg-indigo-600 text-white shadow-glow'
+                  : 'bg-white/95 text-ink-600 border border-[#dfd2be] hover:border-indigo-300 hover:text-indigo-600 hover:shadow-card'
+              }`}
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Ask AI</span>
+            </button>
+          </div>
+        )}
 
         {view.kind === 'home' && <HomeView />}
         {view.kind === 'semester' && (
@@ -271,6 +274,7 @@ function App() {
           />
         )}
         {view.kind === 'subject' && <SubjectView subjectId={view.subjectId} />}
+        {view.kind === 'account' && <AccountSettingsPage initialTab={view.tab} />}
       </div>
 
       {/* AI Panel - right side (Serene Soft Periwinkle-Lavender) */}
