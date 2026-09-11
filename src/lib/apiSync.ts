@@ -405,3 +405,32 @@ export async function syncDeleteDeadline(id: string) {
     console.warn('[Sync] Failed to sync deadline deletion to Turso:', err);
   }
 }
+
+/**
+ * Record and sync AI generation credit usage directly to Turso DB
+ */
+export async function syncCreditUsage(cost: number, materialType: string, description: string) {
+  const user = getAuthenticatedUser();
+  if (!user) return;
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/billing/usage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: user.id,
+        cost,
+        materialType,
+        description,
+      }),
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      return json;
+    }
+  } catch (err) {
+    console.warn('[Sync] Failed to record credit usage in Turso:', err);
+  }
+}
+

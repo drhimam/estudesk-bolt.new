@@ -7,8 +7,9 @@
 
 import { extractUrls, fetchUrlContent } from './webReader';
 import { updateUserCredits } from '@/store/appState';
+import { syncCreditUsage } from '@/lib/apiSync';
 
-function deductClientCredit(cost: number) {
+function deductClientCredit(cost: number, materialType: string = 'notes', description: string = 'AI Generation') {
   try {
     const saved = localStorage.getItem('estudesk_user');
     if (!saved) return;
@@ -17,6 +18,7 @@ function deductClientCredit(cost: number) {
     const currentCredits = user.credits ?? (user.tier?.toLowerCase().includes('pro') ? 1000 : 100);
     const newBal = Math.max(0, currentCredits - cost);
     updateUserCredits(newBal);
+    syncCreditUsage(cost, materialType, description);
   } catch {
     // Ignored local credit deduction error
   }
@@ -353,7 +355,7 @@ Source Content: ${sourceText || 'Generate comprehensive material on the topic sp
   );
 
   const cost = ['presentation', 'infographic', 'assignment'].includes(type) ? 5 : 2;
-  deductClientCredit(cost);
+  deductClientCredit(cost, type, `Generated ${type}`);
 
   return extractJsonFromText(rawContent);
 }
@@ -413,7 +415,7 @@ export async function askAI(
   ];
 
   const result = await chatCompletion(messages, { temperature: 0.4 });
-  deductClientCredit(1);
+  deductClientCredit(1, 'chat', 'Ask AI Query');
   return result;
 }
 

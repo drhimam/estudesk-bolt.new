@@ -1068,6 +1068,36 @@ app.get('/api/billing/usage', async (c) => {
   }
 });
 
+// Record Credit Deduction & Telemetry in Turso DB
+app.post('/api/billing/usage', async (c) => {
+  try {
+    const body = await c.req.json<{
+      userId: string;
+      cost: number;
+      materialType?: string;
+      description?: string;
+    }>();
+
+    if (!body.userId || !body.cost) {
+      return c.json({ error: 'User ID and cost are required' }, 400);
+    }
+
+    const { db } = getDb(c.env);
+    const result = await billing.deductUserCredit(
+      db,
+      body.userId,
+      body.cost,
+      body.materialType || 'notes',
+      body.description || `Generated ${body.materialType || 'study material'}`
+    );
+
+    return c.json(result);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
 // PayPal Webhook Receiver
 app.post('/api/billing/paypal-webhook', async (c) => {
   try {
