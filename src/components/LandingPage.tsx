@@ -39,9 +39,131 @@ import {
 } from 'lucide-react';
 import { openAuthModal, setView, useAppState } from '@/store/appState';
 import { ambientAudio, type AmbientSoundType } from '@/utils/ambientAudio';
+import { API_BASE_URL } from '@/lib/authClient';
+import type { SubscriptionPlan } from '@/types';
+
+const INITIAL_DEFAULT_PLANS: SubscriptionPlan[] = [
+  {
+    id: 'free',
+    name: 'Free Scholar',
+    billingCycle: 'once',
+    durationMonths: 1,
+    priceAmount: 0.0,
+    currency: 'USD',
+    discountPercent: 0,
+    discountReason: null,
+    isActive: true,
+    aiCreditsMonthly: 100,
+    features: [
+      '100 AI generation credits for study notes & summaries',
+      'Interactive 3D Flashcards & 1-by-1 Quiz Tester',
+      '432Hz ambient alpha wave binaural focus sound generator',
+      'Encrypted offline-first local storage & cloud sync',
+      'Semester & subject hierarchical academic organizer',
+    ],
+    sortOrder: 1,
+  },
+  {
+    id: 'pro_monthly',
+    name: 'Pro Monthly',
+    billingCycle: 'monthly',
+    durationMonths: 1,
+    priceAmount: 9.99,
+    currency: 'USD',
+    discountPercent: 0,
+    discountReason: null,
+    isActive: true,
+    aiCreditsMonthly: 1000,
+    features: [
+      '1,000 monthly AI credits for all study formats',
+      'All 7 study modes (LaTeX Slides, Infographics, Cheatsheets)',
+      'Multi-modal OCR lecture & document text extraction',
+      '24-Hour & 7-Day automated deadline email alerts',
+      'Priority AI model queue with zero throttling',
+    ],
+    sortOrder: 2,
+  },
+  {
+    id: 'pro_semester',
+    name: 'Pro Semester',
+    billingCycle: 'semester',
+    durationMonths: 4,
+    priceAmount: 29.99,
+    currency: 'USD',
+    discountPercent: 25,
+    discountReason: 'Semester Saver • 25% Off',
+    isActive: true,
+    aiCreditsMonthly: 1000,
+    features: [
+      'Full 4-month coverage through midterms & finals',
+      '1,000 monthly credits renewed each billing month (4,000 total)',
+      'Unlimited OCR extractions & high-fidelity question sets',
+      'Automated weekly date-wise email agenda digests',
+      'Priority 24/7 student support & LaTeX rendering assistance',
+    ],
+    sortOrder: 3,
+  },
+  {
+    id: 'pro_yearly',
+    name: 'Pro Yearly',
+    billingCycle: 'yearly',
+    durationMonths: 12,
+    priceAmount: 79.99,
+    currency: 'USD',
+    discountPercent: 35,
+    discountReason: 'Annual Best Value • 35% Off',
+    isActive: false, // COMING SOON
+    aiCreditsMonthly: 1000,
+    features: [
+      '1,000 monthly credits (12,000 total annual credits)',
+      'Full 12-month access for year-round thesis & coursework',
+      'Dedicated priority support & infinite version history',
+      'Advanced multi-modal parsing & lecture transcript summaries',
+      'VIP high-throughput AI routing & early feature releases',
+    ],
+    sortOrder: 4,
+  },
+];
 
 export function LandingPage() {
   const { currentUser } = useAppState();
+
+  // Database-driven Subscription Plans State
+  const [plans, setPlans] = useState<SubscriptionPlan[]>(INITIAL_DEFAULT_PLANS);
+  const [loadingPlans, setLoadingPlans] = useState<boolean>(false);
+
+  // Fetch dynamic plans from Turso DB via API
+  useEffect(() => {
+    let isMounted = true;
+    async function loadPlans() {
+      try {
+        setLoadingPlans(true);
+        const res = await fetch(`${API_BASE_URL}/api/billing/plans`);
+        if (res.ok) {
+          const json = await res.json();
+          if (isMounted && Array.isArray(json.data) && json.data.length > 0) {
+            setPlans(json.data);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load dynamic subscription plans from database, using defaults:', err);
+      } finally {
+        if (isMounted) {
+          setLoadingPlans(false);
+        }
+      }
+    }
+    loadPlans();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Lookup helper references for clean layout binding
+  const freePlan = plans.find((p) => p.id === 'free') || INITIAL_DEFAULT_PLANS[0];
+  const proMonthlyPlan = plans.find((p) => p.id === 'pro_monthly') || INITIAL_DEFAULT_PLANS[1];
+  const proSemesterPlan = plans.find((p) => p.id === 'pro_semester') || INITIAL_DEFAULT_PLANS[2];
+  const proYearlyPlan = plans.find((p) => p.id === 'pro_yearly') || INITIAL_DEFAULT_PLANS[3];
 
   // Interactive mini-demo state on the landing page
   const [activeTab, setActiveTab] = useState<'flashcard' | 'quiz' | 'ai' | 'audio'>('flashcard');
@@ -738,7 +860,7 @@ export function LandingPage() {
             <div className="rounded-3xl p-6 sm:p-7 bg-white border border-paper-300 shadow-soft hover:shadow-card hover:border-accent-400 transition-all flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-serif text-xl font-bold text-ink-900">Free Scholar</h3>
+                  <h3 className="font-serif text-xl font-bold text-ink-900">{freePlan.name}</h3>
                   <span className="text-[10px] font-mono font-bold text-ink-600 bg-paper-100 px-2 py-0.5 rounded-md uppercase">
                     Starter
                   </span>
@@ -749,7 +871,9 @@ export function LandingPage() {
 
                 <div className="my-5">
                   <div className="flex items-baseline gap-1">
-                    <span className="font-serif text-4xl font-bold text-ink-950">$0</span>
+                    <span className="font-serif text-4xl font-bold text-ink-950">
+                      ${freePlan.priceAmount === 0 ? '0' : freePlan.priceAmount.toFixed(2)}
+                    </span>
                     <span className="text-xs text-ink-500">/ forever</span>
                   </div>
                   <p className="text-[11px] text-ink-400 mt-0.5">No credit card required</p>
@@ -758,31 +882,17 @@ export function LandingPage() {
                 <div className="p-3 rounded-2xl bg-accent-50 border border-accent-100 mb-6 flex items-center gap-2">
                   <Coins className="w-4 h-4 text-accent-700 shrink-0" />
                   <span className="text-xs font-semibold text-accent-900">
-                    100 Initial AI Credits
+                    {freePlan.aiCreditsMonthly} Initial AI Credits
                   </span>
                 </div>
 
                 <ul className="space-y-3 text-xs text-ink-700 mb-8">
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>100 AI generation credits for study notes & summaries</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>Interactive 3D Flashcards & 1-by-1 Quiz Tester</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>432Hz ambient alpha wave binaural focus sound generator</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>Encrypted offline-first local storage & cloud sync</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>Semester & subject hierarchical academic organizer</span>
-                  </li>
+                  {freePlan.features.map((feature, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
                 </ul>
               </div>
 
@@ -802,7 +912,7 @@ export function LandingPage() {
             }`}>
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-serif text-xl font-bold text-ink-900">Pro Monthly</h3>
+                  <h3 className="font-serif text-xl font-bold text-ink-900">{proMonthlyPlan.name}</h3>
                   <span className="text-[10px] font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md uppercase border border-indigo-200">
                     Flexible
                   </span>
@@ -813,7 +923,9 @@ export function LandingPage() {
 
                 <div className="my-5">
                   <div className="flex items-baseline gap-1">
-                    <span className="font-serif text-4xl font-bold text-ink-950">$9.99</span>
+                    <span className="font-serif text-4xl font-bold text-ink-950">
+                      ${proMonthlyPlan.priceAmount.toFixed(2)}
+                    </span>
                     <span className="text-xs text-ink-500">/ month</span>
                   </div>
                   <p className="text-[11px] text-ink-400 mt-0.5">Auto-renewing • Cancel anytime</p>
@@ -822,31 +934,17 @@ export function LandingPage() {
                 <div className="p-3 rounded-2xl bg-indigo-50 border border-indigo-100 mb-6 flex items-center gap-2">
                   <Coins className="w-4 h-4 text-indigo-700 shrink-0" />
                   <span className="text-xs font-semibold text-indigo-900">
-                    1,000 Credits / month
+                    {proMonthlyPlan.aiCreditsMonthly.toLocaleString()} Credits / month
                   </span>
                 </div>
 
                 <ul className="space-y-3 text-xs text-ink-700 mb-8">
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>1,000 monthly AI credits</strong> for all study formats</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>All 7 study modes (LaTeX Slides, Infographics, Cheatsheets)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>Multi-modal OCR lecture &amp; document text extraction</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>24-Hour &amp; 7-Day automated deadline email alerts</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>Priority AI model queue with zero throttling</span>
-                  </li>
+                  {proMonthlyPlan.features.map((feature, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
                 </ul>
               </div>
 
@@ -874,12 +972,12 @@ export function LandingPage() {
               {/* Top Discount Stamp */}
               <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-emerald-600 text-white text-[10px] font-bold px-3.5 py-1 rounded-full shadow-md flex items-center gap-1 uppercase tracking-wider whitespace-nowrap">
                 <Flame className="w-3.5 h-3.5 fill-white" />
-                <span>SEMESTER SAVER • 25% OFF</span>
+                <span>{proSemesterPlan.discountReason || 'SEMESTER SAVER • 25% OFF'}</span>
               </div>
 
               <div>
                 <div className="flex items-center justify-between mt-2 mb-2">
-                  <h3 className="font-serif text-xl font-bold text-ink-900">Pro Semester</h3>
+                  <h3 className="font-serif text-xl font-bold text-ink-900">{proSemesterPlan.name}</h3>
                   <span className="text-[10px] font-mono font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md uppercase">
                     BEST VALUE
                   </span>
@@ -890,43 +988,38 @@ export function LandingPage() {
 
                 <div className="my-5">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-sm font-semibold text-ink-400 line-through">$39.99</span>
-                    <span className="font-serif text-4xl font-bold text-ink-950">$29.99</span>
-                    <span className="text-xs text-ink-500">/ 4 months</span>
+                    {proSemesterPlan.discountPercent > 0 && (
+                      <span className="text-sm font-semibold text-ink-400 line-through">
+                        ${(proSemesterPlan.priceAmount / (1 - proSemesterPlan.discountPercent / 100)).toFixed(2)}
+                      </span>
+                    )}
+                    <span className="font-serif text-4xl font-bold text-ink-950">
+                      ${proSemesterPlan.priceAmount.toFixed(2)}
+                    </span>
+                    <span className="text-xs text-ink-500">
+                      / {proSemesterPlan.durationMonths} months
+                    </span>
                   </div>
                   <p className="text-[11px] text-emerald-700 font-semibold mt-0.5">
-                    Only $7.49 / month (Save $10.00 every semester)
+                    Only ${(proSemesterPlan.priceAmount / (proSemesterPlan.durationMonths || 4)).toFixed(2)} / month
+                    {proSemesterPlan.discountPercent > 0 && ` (Save $${((proSemesterPlan.priceAmount / (1 - proSemesterPlan.discountPercent / 100)) - proSemesterPlan.priceAmount).toFixed(2)} every semester)`}
                   </p>
                 </div>
 
                 <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 mb-6 flex items-center gap-2">
                   <Coins className="w-4 h-4 text-emerald-700 shrink-0" />
                   <span className="text-xs font-semibold text-emerald-900">
-                    1,000 Credits / month (4 Months Total)
+                    {proSemesterPlan.aiCreditsMonthly.toLocaleString()} Credits / month ({proSemesterPlan.durationMonths} Months Total)
                   </span>
                 </div>
 
                 <ul className="space-y-3 text-xs text-ink-700 mb-8">
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Full 4-month coverage</strong> through midterms &amp; finals</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>1,000 monthly credits renewed each billing month</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>Unlimited OCR extractions &amp; high-fidelity question sets</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>Automated weekly date-wise email agenda digests</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>Priority 24/7 student support &amp; LaTeX rendering assistance</span>
-                  </li>
+                  {proSemesterPlan.features.map((feature, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
                 </ul>
               </div>
 
@@ -940,22 +1033,28 @@ export function LandingPage() {
                 }}
                 className="w-full py-3.5 px-4 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all cursor-pointer shadow-soft hover:shadow-card text-center flex items-center justify-center gap-1.5"
               >
-                <span>{currentUser ? 'Switch in Settings' : 'Claim 25% Off Semester'}</span>
+                <span>{currentUser ? 'Switch in Settings' : `Claim ${proSemesterPlan.discountPercent || 25}% Off Semester`}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            {/* PLAN 4: PRO YEARLY (COMING SOON) */}
-            <div className="relative rounded-3xl p-6 sm:p-7 bg-[#f6f8f7] border border-paper-300 opacity-85 flex flex-col justify-between">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-700 text-white text-[10px] font-bold px-3 py-0.5 rounded-full shadow-sm uppercase tracking-wider whitespace-nowrap">
-                Coming Soon
-              </div>
+            {/* PLAN 4: PRO YEARLY (COMING SOON OR ACTIVE) */}
+            <div className={`relative rounded-3xl p-6 sm:p-7 border flex flex-col justify-between ${
+              proYearlyPlan.isActive
+                ? 'bg-white border-paper-300 shadow-soft hover:shadow-card'
+                : 'bg-[#f6f8f7] border-paper-300 opacity-90'
+            }`}>
+              {!proYearlyPlan.isActive && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-700 text-white text-[10px] font-bold px-3 py-0.5 rounded-full shadow-sm uppercase tracking-wider whitespace-nowrap">
+                  Coming Soon
+                </div>
+              )}
 
               <div>
                 <div className="flex items-center justify-between mt-1 mb-2">
-                  <h3 className="font-serif text-xl font-bold text-ink-900">Pro Yearly</h3>
+                  <h3 className="font-serif text-xl font-bold text-ink-900">{proYearlyPlan.name}</h3>
                   <span className="text-[10px] font-mono font-bold text-ink-500 bg-paper-200 px-2 py-0.5 rounded-md uppercase">
-                    12 Months
+                    {proYearlyPlan.durationMonths} Months
                   </span>
                 </div>
                 <p className="text-xs text-ink-500 min-h-[32px]">
@@ -964,33 +1063,54 @@ export function LandingPage() {
 
                 <div className="my-5">
                   <div className="flex items-baseline gap-1">
-                    <span className="font-serif text-4xl font-bold text-ink-900">$79.99</span>
+                    <span className="font-serif text-4xl font-bold text-ink-900">
+                      ${proYearlyPlan.priceAmount.toFixed(2)}
+                    </span>
                     <span className="text-xs text-ink-500">/ year</span>
                   </div>
-                  <p className="text-[11px] text-ink-400 mt-0.5">Only $6.66 / month (Annual savings)</p>
+                  <p className="text-[11px] text-ink-400 mt-0.5">
+                    Only ${(proYearlyPlan.priceAmount / (proYearlyPlan.durationMonths || 12)).toFixed(2)} / month (Annual savings)
+                  </p>
                 </div>
 
                 <div className="p-3 rounded-2xl bg-paper-200/80 border border-paper-300 mb-6 flex items-center gap-2">
                   <Coins className="w-4 h-4 text-ink-600 shrink-0" />
                   <span className="text-xs font-semibold text-ink-800">
-                    1,000 Credits / mo (12 Months)
+                    {proYearlyPlan.aiCreditsMonthly.toLocaleString()} Credits / mo ({proYearlyPlan.durationMonths} Months)
                   </span>
                 </div>
 
-                <div className="p-4 my-2 rounded-2xl bg-white border border-dashed border-paper-300 text-center">
-                  <p className="text-xs font-semibold text-ink-700">Annual Plan in Progress</p>
-                  <p className="text-[11px] text-ink-500 mt-1">
-                    Includes all 12-month features with dedicated VIP priority support and early access to new AI research models.
-                  </p>
-                </div>
+                <ul className="space-y-3 text-xs text-ink-700 mb-8">
+                  {proYearlyPlan.features.map((feature, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <Check className="w-4 h-4 text-ink-500 shrink-0 mt-0.5" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
 
-              <button
-                disabled
-                className="w-full py-3 px-4 rounded-xl text-xs font-semibold bg-paper-200 text-ink-400 cursor-not-allowed text-center"
-              >
-                Coming Soon
-              </button>
+              {proYearlyPlan.isActive ? (
+                <button
+                  onClick={() => {
+                    if (currentUser) {
+                      setView({ kind: 'account', tab: 'subscription' });
+                    } else {
+                      openAuthModal('signup');
+                    }
+                  }}
+                  className="w-full py-3 px-4 rounded-xl text-xs font-bold text-white bg-accent-600 hover:bg-accent-700 transition-all cursor-pointer shadow-soft hover:shadow-card text-center"
+                >
+                  {currentUser ? 'Upgrade in Settings' : 'Start Pro Yearly'}
+                </button>
+              ) : (
+                <button
+                  disabled
+                  className="w-full py-3 px-4 rounded-xl text-xs font-semibold bg-paper-200 text-ink-400 cursor-not-allowed text-center"
+                >
+                  Coming Soon
+                </button>
+              )}
             </div>
           </div>
 
@@ -1115,7 +1235,7 @@ export function LandingPage() {
               },
               {
                 q: 'What is the Semester Saver plan?',
-                a: 'The Pro Semester plan provides 4 full months of continuous Pro coverage through your semester midterms and finals for a one-time charge of $29.99 (25% discount, equivalent to $7.49/month).',
+                a: `The ${proSemesterPlan.name} plan provides ${proSemesterPlan.durationMonths} full months of continuous Pro coverage through your semester midterms and finals for a one-time charge of $${proSemesterPlan.priceAmount.toFixed(2)} (${proSemesterPlan.discountPercent}% discount, equivalent to $${(proSemesterPlan.priceAmount / (proSemesterPlan.durationMonths || 4)).toFixed(2)}/month).`,
               },
               {
                 q: 'Can I cancel or switch my plan anytime?',

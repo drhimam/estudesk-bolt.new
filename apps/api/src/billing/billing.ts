@@ -21,7 +21,7 @@ export interface PlanData {
 export const DEFAULT_PLANS: PlanData[] = [
   {
     id: 'free',
-    name: 'Free',
+    name: 'Free Scholar',
     billingCycle: 'once',
     durationMonths: 1,
     priceAmount: 0.0,
@@ -33,7 +33,7 @@ export const DEFAULT_PLANS: PlanData[] = [
     features: [
       '100 Initial AI Generation Credits',
       'Basic Study Notes & Flashcards Generator',
-      'Local Dexie.js Offline Storage + Cloud Sync',
+      'Encrypted Offline-First Local Storage + Cloud Sync',
       'Standard AI Generation Queue',
       'Export Study Materials to TXT',
     ],
@@ -55,7 +55,7 @@ export const DEFAULT_PLANS: PlanData[] = [
       'All 7 Study Formats (Notes, Cheatsheets, Flashcards, Quizzes, Infographics, Assignments, Slides)',
       'Multi-Modal Source Extraction (PDF, DOCX, TXT, CSV, Audio, OCR)',
       '24h Deadline Email Alerts & Monday Weekly Digests',
-      'Priority High-Speed AI Router (DeepSeek V3 / MiMo / Gemini)',
+      'Priority High-Speed Multi-Model AI Router',
       'Rich PDF, TXT, & JSON Study Material Downloads',
     ],
     sortOrder: 2,
@@ -97,7 +97,7 @@ export const DEFAULT_PLANS: PlanData[] = [
       '1,000 AI Generation Credits / month (12,000 total credits)',
       'Full 12-Month Academic Access to All Features',
       'All 7 Study Material Types & Infinite Version History',
-      'Advanced Multi-Modal File Parser & Instant Tesseract OCR',
+      'Advanced Multi-Modal File Parser & Instant Document OCR',
       'Priority Email Notifications & Weekly Digest Reports',
       'VIP Priority AI Routing & Early Feature Access',
     ],
