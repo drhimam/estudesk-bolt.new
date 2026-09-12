@@ -251,6 +251,11 @@ JOIN user u ON s.user_id = u.id;
   - Trust & Privacy indicators (GDPR Data Portability, Scrypt Encryption, Cloudflare Turnstile).
   - Official contact email (`info@estudesk.com`) and GitHub repository links.
 
+### 7.6 Dynamic Database-Driven Pricing Integration
+- The `#pricing` section on the landing page is connected directly to the database via `GET /api/billing/plans`.
+- When plan prices, features, discounts, or quotas change in the database, the landing page cards (Free Scholar, Pro Monthly, Pro Semester, and Pro Yearly) dynamically update without requiring frontend code changes.
+- Uses resilient default fallback structures so cold-starts and offline conditions render immediately with zero layout shift.
+
 ## 8. Build, Verification & Deployment
 
 ```bash
