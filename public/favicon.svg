@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <linearGradient id="estudesk-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3a8068" />
+      <stop offset="50%" stop-color="#2c664f" />
+      <stop offset="100%" stop-color="#132b22" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- Base Rounded Container -->
+  <rect width="128" height="128" rx="28" fill="url(#estudesk-grad)" />
+  <rect width="126" height="126" x="1" y="1" rx="27" fill="none" stroke="#569d80" stroke-width="2" stroke-opacity="0.4" />
+
+  <!-- Graduation Cap Icon (White + Subtle Drop Shadow) -->
+  <g filter="url(#shadow)" transform="translate(20, 24) scale(0.6875)">
+    <!-- Cap Diamond Top -->
+    <path
+      d="M64 12 L120 40 L64 68 L8 40 Z"
+      fill="#ffffff"
+    />
+    <!-- Cap Rim Underneath -->
+    <path
+      d="M32 53.5 V84 C32 99.5 46.3 112 64 112 C81.7 112 96 99.5 96 84 V53.5 L64 69.5 Z"
+      fill="#ffffff"
+      fill-opacity="0.92"
+    />
+    <!-- Tassel String and Drop -->
+    <path
+      d="M106 47 V88"
+      stroke="#ffffff"
+      stroke-width="5"
+      stroke-linecap="round"
+    />
+    <circle cx="106" cy="94" r="5" fill="#facc15" />
+  </g>
+</svg>

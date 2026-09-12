@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   GraduationCap,
   Sparkles,
@@ -28,8 +28,17 @@ import {
   Flame,
   Mail,
   Github,
+  Play,
+  Square,
+  Music,
+  HelpCircle,
+  ChevronDown,
+  BarChart3,
+  Activity,
+  Clock,
 } from 'lucide-react';
 import { openAuthModal, setView, useAppState } from '@/store/appState';
+import { ambientAudio, type AmbientSoundType } from '@/utils/ambientAudio';
 
 export function LandingPage() {
   const { currentUser } = useAppState();
@@ -39,7 +48,35 @@ export function LandingPage() {
   const [flipped, setFlipped] = useState(false);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [quizSubmitted, setQuizSubmitted] = useState(false);
+
+  // Dynamic Ambient Audio Test State
+  const [ambientSound, setAmbientSound] = useState<AmbientSoundType>('alpha');
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+
+  // Dynamic Pricing Billing Toggle
+  const [pricingCycle, setPricingCycle] = useState<'monthly' | 'semester'>('semester');
+
+  // Dynamic FAQ Accordion State
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+
+  // Handle live audio player preview toggle
+  function handleToggleAudio(soundType: AmbientSoundType = ambientSound) {
+    if (isPlayingAudio && ambientAudio.getCurrentType() === soundType) {
+      ambientAudio.stop();
+      setIsPlayingAudio(false);
+    } else {
+      ambientAudio.play(soundType, 0.4);
+      setAmbientSound(soundType);
+      setIsPlayingAudio(true);
+    }
+  }
+
+  // Cleanup audio if component unmounts or user navigates
+  useEffect(() => {
+    return () => {
+      ambientAudio.stop();
+    };
+  }, []);
 
   function handleProtectedAction(preferredMode: 'signin' | 'signup' = 'signin') {
     if (currentUser) {
@@ -74,7 +111,7 @@ export function LandingPage() {
             <a href="#ai-studio" className="hover:text-accent-600 transition-colors">AI Studio</a>
             <a href="#demo" className="hover:text-accent-600 transition-colors">Live Preview</a>
             <a href="#pricing" className="hover:text-accent-600 transition-colors">Pricing</a>
-            <a href="#architecture" className="hover:text-accent-600 transition-colors">Edge Sync</a>
+            <a href="#faq" className="hover:text-accent-600 transition-colors">FAQ</a>
             <a href="#reviews" className="hover:text-accent-600 transition-colors">Students</a>
           </nav>
 
@@ -212,6 +249,15 @@ export function LandingPage() {
                 >
                   AI Studio (10-Turn)
                 </button>
+                <button
+                  onClick={() => setActiveTab('audio')}
+                  className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 ${
+                    activeTab === 'audio' ? 'bg-white text-accent-700 shadow-sm font-semibold' : 'text-ink-500 hover:text-ink-800'
+                  }`}
+                >
+                  <Headphones className="w-3.5 h-3.5 text-accent-600" />
+                  <span>432Hz Soundscape</span>
+                </button>
               </div>
             </div>
 
@@ -305,7 +351,7 @@ export function LandingPage() {
                       <button
                         onClick={() => setQuizSubmitted(true)}
                         disabled={selectedOption === null}
-                        className="px-4 py-2 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-xs font-semibold shadow-sm disabled:opacity-50 transition-all"
+                        className="px-4 py-2 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-xs font-semibold shadow-sm disabled:opacity-50 transition-all cursor-pointer"
                       >
                         Submit Answer
                       </button>
@@ -356,6 +402,130 @@ export function LandingPage() {
                   </div>
                 </div>
               )}
+
+              {activeTab === 'audio' && (
+                <div className="w-full max-w-lg">
+                  <div className="bg-white rounded-2xl border border-paper-300 p-6 shadow-card space-y-5">
+                    <div className="flex items-center justify-between pb-3 border-b border-paper-200">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                          <Headphones className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-ink-800">Live 432Hz Ambient Synthesizer</h4>
+                          <p className="text-[11px] text-ink-400">Pure Web Audio procedural alpha wave generator</p>
+                        </div>
+                      </div>
+
+                      {isPlayingAudio && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-mono font-bold border border-emerald-200 animate-pulse">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                          PLAYING
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Soundscape Mode Selector */}
+                    <div className="grid grid-cols-2 gap-2.5 text-xs">
+                      {[
+                        { id: 'alpha', label: '🧠 Alpha 432Hz Drone', sub: 'Deep focus binaural' },
+                        { id: 'flute', label: '🪈 Melodious Flute', sub: 'Zen meditation notes' },
+                        { id: 'birds', label: '🐦 Forest Birds', sub: 'Morning relaxation' },
+                        { id: 'rain', label: '🌧️ Gentle Rain', sub: 'Calm alpha breeze' },
+                      ].map((snd) => (
+                        <button
+                          key={snd.id}
+                          onClick={() => {
+                            setAmbientSound(snd.id as AmbientSoundType);
+                            if (isPlayingAudio) {
+                              ambientAudio.play(snd.id as AmbientSoundType, 0.4);
+                            }
+                          }}
+                          className={`p-3 rounded-xl border text-left transition-all ${
+                            ambientSound === snd.id
+                              ? 'border-emerald-500 bg-emerald-50/70 text-emerald-950 font-semibold ring-2 ring-emerald-500/20 shadow-soft'
+                              : 'border-paper-300 hover:border-paper-400 bg-white text-ink-700'
+                          }`}
+                        >
+                          <div className="text-xs font-semibold">{snd.label}</div>
+                          <div className="text-[10px] text-ink-400 mt-0.5">{snd.sub}</div>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Interactive Equalizer & Play Button */}
+                    <div className="pt-2 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 h-6">
+                        {[40, 75, 50, 90, 60, 80, 45, 95].map((h, i) => (
+                          <div
+                            key={i}
+                            className={`w-1 rounded-full bg-emerald-500 transition-all duration-300 ${
+                              isPlayingAudio ? 'animate-pulse' : 'opacity-30'
+                            }`}
+                            style={{
+                              height: isPlayingAudio ? `${h}%` : '25%',
+                              animationDelay: `${i * 120}ms`,
+                            }}
+                          />
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={() => handleToggleAudio()}
+                        className={`px-5 py-2.5 rounded-xl font-bold text-xs shadow-soft transition-all flex items-center gap-2 cursor-pointer ${
+                          isPlayingAudio
+                            ? 'bg-crimson-600 hover:bg-crimson-700 text-white shadow-lifted'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white hover:scale-105'
+                        }`}
+                      >
+                        {isPlayingAudio ? (
+                          <>
+                            <Square className="w-3.5 h-3.5 fill-white" />
+                            <span>Stop Audio Demo</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-3.5 h-3.5 fill-white" />
+                            <span>Play Live 432Hz Sound</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Dynamic Interactive Stats Counter Strip */}
+          <div className="mt-14 max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+            <div className="p-5 rounded-2xl bg-white border border-paper-300 shadow-soft text-center group hover:border-accent-300 hover:shadow-card transition-all">
+              <div className="text-2xl sm:text-3xl font-serif font-bold text-accent-700">500,000+</div>
+              <div className="text-xs text-ink-600 font-medium mt-1 flex items-center justify-center gap-1">
+                <Brain className="w-3.5 h-3.5 text-accent-600" />
+                <span>AI Study Notes</span>
+              </div>
+            </div>
+            <div className="p-5 rounded-2xl bg-white border border-paper-300 shadow-soft text-center group hover:border-emerald-300 hover:shadow-card transition-all">
+              <div className="text-2xl sm:text-3xl font-serif font-bold text-emerald-700">99.98%</div>
+              <div className="text-xs text-ink-600 font-medium mt-1 flex items-center justify-center gap-1">
+                <Activity className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Cloud Sync Uptime</span>
+              </div>
+            </div>
+            <div className="p-5 rounded-2xl bg-white border border-paper-300 shadow-soft text-center group hover:border-indigo-300 hover:shadow-card transition-all">
+              <div className="text-2xl sm:text-3xl font-serif font-bold text-indigo-700">100%</div>
+              <div className="text-xs text-ink-600 font-medium mt-1 flex items-center justify-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Offline-First Leitner</span>
+              </div>
+            </div>
+            <div className="p-5 rounded-2xl bg-white border border-paper-300 shadow-soft text-center group hover:border-amber-300 hover:shadow-card transition-all">
+              <div className="text-2xl sm:text-3xl font-serif font-bold text-amber-700">150+</div>
+              <div className="text-xs text-ink-600 font-medium mt-1 flex items-center justify-center gap-1">
+                <Globe2 className="w-3.5 h-3.5 text-amber-600" />
+                <span>Global Universities</span>
+              </div>
             </div>
           </div>
         </div>
@@ -523,6 +693,37 @@ export function LandingPage() {
             <p className="mt-3.5 text-sm sm:text-base text-ink-600 leading-relaxed">
               Start free with starter AI credits, or unlock unlimited multi-modal generation, OCR extraction, and 24-hour deadline alerts for the full semester.
             </p>
+
+            {/* Dynamic Billing Cycle Selector */}
+            <div className="mt-8 flex items-center justify-center">
+              <div className="bg-paper-200/90 p-1.5 rounded-2xl flex items-center shadow-inner-soft border border-paper-300">
+                <button
+                  onClick={() => setPricingCycle('monthly')}
+                  className={`px-5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    pricingCycle === 'monthly'
+                      ? 'bg-white text-ink-900 shadow-soft'
+                      : 'text-ink-600 hover:text-ink-900'
+                  }`}
+                >
+                  Billed Monthly
+                </button>
+                <button
+                  onClick={() => setPricingCycle('semester')}
+                  className={`px-5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    pricingCycle === 'semester'
+                      ? 'bg-emerald-600 text-white shadow-soft'
+                      : 'text-ink-600 hover:text-ink-900'
+                  }`}
+                >
+                  <span>Semester (4 Months)</span>
+                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                    pricingCycle === 'semester' ? 'bg-amber-400 text-ink-950' : 'bg-emerald-100 text-emerald-800'
+                  }`}>
+                    25% OFF
+                  </span>
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Pricing Grid */}
@@ -588,12 +789,16 @@ export function LandingPage() {
             </div>
 
             {/* PLAN 2: PRO MONTHLY */}
-            <div className="rounded-3xl p-6 sm:p-7 bg-white border border-[#bed6c7] shadow-soft hover:shadow-card hover:border-accent-500 transition-all flex flex-col justify-between">
+            <div className={`rounded-3xl p-6 sm:p-7 bg-white border transition-all flex flex-col justify-between ${
+              pricingCycle === 'monthly'
+                ? 'border-indigo-500 ring-4 ring-indigo-500/15 shadow-card scale-[1.02]'
+                : 'border-paper-300 shadow-soft hover:shadow-card hover:border-indigo-400'
+            }`}>
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-serif text-xl font-bold text-ink-900">Pro Monthly</h3>
                   <span className="text-[10px] font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md uppercase border border-indigo-200">
-                    Popular
+                    Flexible
                   </span>
                 </div>
                 <p className="text-xs text-ink-500 min-h-[32px]">
@@ -626,11 +831,11 @@ export function LandingPage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>Multi-modal OCR lecture & document text extraction</span>
+                    <span>Multi-modal OCR lecture &amp; document text extraction</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>24-Hour & 7-Day automated deadline email alerts</span>
+                    <span>24-Hour &amp; 7-Day automated deadline email alerts</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
@@ -655,7 +860,11 @@ export function LandingPage() {
             </div>
 
             {/* PLAN 3: PRO SEMESTER (BEST VALUE) */}
-            <div className="relative rounded-3xl p-6 sm:p-7 bg-gradient-to-b from-white to-[#f4f9f6] border-2 border-emerald-500 shadow-card hover:shadow-glow transition-all flex flex-col justify-between ring-4 ring-emerald-500/10">
+            <div className={`relative rounded-3xl p-6 sm:p-7 bg-gradient-to-b from-white to-[#f4f9f6] border-2 transition-all flex flex-col justify-between ${
+              pricingCycle === 'semester'
+                ? 'border-emerald-500 shadow-glow ring-4 ring-emerald-500/20 scale-[1.03]'
+                : 'border-emerald-400/80 shadow-card hover:shadow-glow'
+            }`}>
               {/* Top Discount Stamp */}
               <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-emerald-600 text-white text-[10px] font-bold px-3.5 py-1 rounded-full shadow-md flex items-center gap-1 uppercase tracking-wider whitespace-nowrap">
                 <Flame className="w-3.5 h-3.5 fill-white" />
@@ -694,7 +903,7 @@ export function LandingPage() {
                 <ul className="space-y-3 text-xs text-ink-700 mb-8">
                   <li className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Full 4-month coverage</strong> through midterms & finals</span>
+                    <span><strong>Full 4-month coverage</strong> through midterms &amp; finals</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
@@ -702,7 +911,7 @@ export function LandingPage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>Unlimited OCR extractions & high-fidelity question sets</span>
+                    <span>Unlimited OCR extractions &amp; high-fidelity question sets</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
@@ -710,7 +919,7 @@ export function LandingPage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>Priority 24/7 student support & LaTeX rendering assistance</span>
+                    <span>Priority 24/7 student support &amp; LaTeX rendering assistance</span>
                   </li>
                 </ul>
               </div>
@@ -817,7 +1026,7 @@ export function LandingPage() {
                 ))}
               </div>
               <p className="text-sm text-ink-700 italic mb-4 leading-relaxed">
-                "The 10-turn AI studio creates flawless LaTeX summary sheets for Quantum Mechanics that I can immediately export to PDF. Saved me hundreds of hours."
+                &ldquo;The 10-turn AI studio creates flawless LaTeX summary sheets for Quantum Mechanics that I can immediately export to PDF. Saved me hundreds of hours.&rdquo;
               </p>
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-accent-600 text-white flex items-center justify-center font-bold text-xs">
@@ -825,7 +1034,7 @@ export function LandingPage() {
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-ink-800">Sarah Lin</h4>
-                  <p className="text-[11px] text-ink-400">Physics & Math @ MIT</p>
+                  <p className="text-[11px] text-ink-400">Physics &amp; Math @ MIT</p>
                 </div>
               </div>
             </div>
@@ -837,7 +1046,7 @@ export function LandingPage() {
                 ))}
               </div>
               <p className="text-sm text-ink-700 italic mb-4 leading-relaxed">
-                "The 432Hz ambient alpha wave sound generator combined with full-screen focus mode got me through organic chemistry midterms without getting distracted."
+                &ldquo;The 432Hz ambient alpha wave sound generator combined with full-screen focus mode got me through organic chemistry midterms without getting distracted.&rdquo;
               </p>
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
@@ -857,7 +1066,7 @@ export function LandingPage() {
                 ))}
               </div>
               <p className="text-sm text-ink-700 italic mb-4 leading-relaxed">
-                "The 1-by-1 quiz tester and 3D flashcards made memorizing complex case law and statutes effortless. It's like having a personal tutor."
+                &ldquo;The 1-by-1 quiz tester and 3D flashcards made memorizing complex case law and statutes effortless. It&apos;s like having a personal tutor.&rdquo;
               </p>
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
@@ -869,6 +1078,73 @@ export function LandingPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Interactive FAQ Section */}
+      <section id="faq" className="py-20 bg-paper-100 border-t border-paper-200">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            <span className="px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-accent-100 text-accent-800 border border-accent-200 shadow-soft">
+              Got Questions?
+            </span>
+            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-ink-950 mt-4">
+              Frequently Asked Questions
+            </h2>
+            <p className="mt-3 text-sm text-ink-600">
+              Everything you need to know about eStudesk subscriptions, offline study, and AI generation credits.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {[
+              {
+                q: 'How do AI Generation Credits work?',
+                a: 'Each AI generation turn (such as generating a comprehensive study summary, 10 interactive flashcards, or a full worked derivation) uses 1-2 credits. Free Scholar accounts get 100 starter credits. Pro plans get 1,000 credits renewed every single month.',
+              },
+              {
+                q: 'Can I study and review my notes offline?',
+                a: 'Yes! eStudesk is built offline-first. All your flashcards, notes, quizzes, and focus timers are cached locally in your browser so you can study on trains, flights, or in lecture halls without internet.',
+              },
+              {
+                q: 'What is the Semester Saver plan?',
+                a: 'The Pro Semester plan provides 4 full months of continuous Pro coverage through your semester midterms and finals for a one-time charge of $29.99 (25% discount, equivalent to $7.49/month).',
+              },
+              {
+                q: 'Can I cancel or switch my plan anytime?',
+                a: 'Absolutely. You can manage or cancel your subscription at any time directly with 1 click from your Account Settings. No lock-ins or cancellation fees.',
+              },
+              {
+                q: 'How does LaTeX mathematical formula export work?',
+                a: 'All math equations generated by our pedagogical studio are formatted in standard KaTeX/LaTeX syntax. You can copy the raw LaTeX code with 1-click or export complete formatted PDFs for homework and submissions.',
+              },
+            ].map((faq, idx) => {
+              const isOpen = openFaq === idx;
+              return (
+                <div
+                  key={idx}
+                  className="bg-white rounded-2xl border border-paper-300 overflow-hidden shadow-soft transition-all"
+                >
+                  <button
+                    onClick={() => setOpenFaq(isOpen ? null : idx)}
+                    className="w-full px-6 py-5 text-left flex items-center justify-between gap-4 cursor-pointer hover:bg-paper-50 transition-colors"
+                  >
+                    <span className="font-semibold text-sm text-ink-900">{faq.q}</span>
+                    <ChevronDown
+                      className={`w-4 h-4 text-ink-500 transition-transform duration-200 shrink-0 ${
+                        isOpen ? 'rotate-180 text-accent-600' : ''
+                      }`}
+                    />
+                  </button>
+                  {isOpen && (
+                    <div className="px-6 pb-5 text-xs sm:text-sm text-ink-600 leading-relaxed border-t border-paper-100 pt-3 animate-fade-in">
+                      {faq.a}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -960,6 +1236,9 @@ export function LandingPage() {
                 </li>
                 <li>
                   <a href="#features" className="hover:text-emerald-300 transition-colors">24h Deadline Alerts</a>
+                </li>
+                <li>
+                  <a href="#faq" className="hover:text-emerald-300 transition-colors">Frequently Asked Questions</a>
                 </li>
               </ul>
             </div>
