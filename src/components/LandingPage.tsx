@@ -328,7 +328,7 @@ export function LandingPage() {
                       </div>
                       <div>
                         <h4 className="text-sm font-bold text-ink-800">10-Turn Pedagogical AI Pipeline</h4>
-                        <p className="text-[11px] text-ink-400">DeepSeek / OpenAI / Gemini streaming with LaTeX engine</p>
+                        <p className="text-[11px] text-ink-400">Advanced pedagogical AI engine with LaTeX math rendering</p>
                       </div>
                     </div>
 
@@ -570,7 +570,7 @@ export function LandingPage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>Dexie.js offline-first local storage & cloud sync</span>
+                    <span>Encrypted offline-first local storage & cloud sync</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
@@ -783,7 +783,7 @@ export function LandingPage() {
           <div className="mt-14 pt-8 border-t border-paper-200 flex flex-wrap items-center justify-center gap-6 sm:gap-12 text-xs text-ink-500 font-medium">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>Safe PayPal 256-Bit SSL Checkout</span>
+              <span>Safe 256-Bit SSL Encrypted Checkout</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-accent-600" />
@@ -932,7 +932,7 @@ export function LandingPage() {
               <div className="flex items-center gap-2 pt-2">
                 <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-[#132b20] text-emerald-300 border border-emerald-600/50">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Cloudflare Edge &amp; Turso DB Active
+                  Global Cloud Sync Active
                 </span>
               </div>
             </div>
@@ -986,7 +986,7 @@ export function LandingPage() {
                   <a href="#pricing" className="hover:text-emerald-300 transition-colors">Official Expense Receipts</a>
                 </li>
                 <li>
-                  <a href="#pricing" className="hover:text-emerald-300 transition-colors">Safe PayPal Checkout</a>
+                  <a href="#pricing" className="hover:text-emerald-300 transition-colors">Encrypted Secure Checkout</a>
                 </li>
               </ul>
             </div>
@@ -1010,7 +1010,7 @@ export function LandingPage() {
                   <span className="text-slate-300">Zero Third-Party Trackers</span>
                 </li>
                 <li>
-                  <span className="text-slate-300">Cloudflare Turnstile Protected</span>
+                  <span className="text-slate-300">Smart Bot &amp; Threat Protection</span>
                 </li>
                 <li>
                   <a href="mailto:info@estudesk.com" className="hover:text-emerald-300 transition-colors">Contact Support</a>

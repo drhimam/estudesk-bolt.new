@@ -52,7 +52,7 @@ const INITIAL_DEFAULT_PLANS: SubscriptionPlan[] = [
     features: [
       '100 Initial AI Generation Credits',
       'Basic Study Notes & Flashcards Generator',
-      'Local Dexie.js Offline Storage + Cloud Sync',
+      'Offline-First Local Storage + Cloud Sync',
       'Standard AI Generation Queue',
       'Export Study Materials to TXT',
     ],
@@ -74,7 +74,7 @@ const INITIAL_DEFAULT_PLANS: SubscriptionPlan[] = [
       'All 7 Study Formats (Notes, Cheatsheets, Flashcards, Quizzes, Infographics, Assignments, Slides)',
       'Multi-Modal Source Extraction (PDF, DOCX, TXT, CSV, Audio, OCR)',
       '24h Deadline Email Alerts & Monday Weekly Digests',
-      'Priority High-Speed AI Router (DeepSeek V3 / MiMo / Gemini)',
+      'Priority High-Speed Multi-Model AI Router',
       'Rich PDF, TXT, & JSON Study Material Downloads',
     ],
     sortOrder: 2,
@@ -1373,7 +1373,7 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
                     </span>
                   </div>
                   <p className="text-xs text-ink-500 mt-1 max-w-xl">
-                    Easily reset your account to Free tier (100 credits) or override credits directly in Turso DB for testing without writing SQL.
+                    Easily reset your account to Free tier (100 credits) or override credits directly in cloud database for testing without writing SQL.
                   </p>
                 </div>
 

@@ -220,7 +220,7 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetHandle, TurnstileWidget
         {!isLoaded && !loadError && (
           <div className="flex items-center justify-center gap-2 py-2 px-3 text-xs text-ink-500 bg-paper-100/70 rounded-xl border border-paper-200">
             <Loader2 className="w-3.5 h-3.5 animate-spin text-accent-600" />
-            <span>Connecting Cloudflare Turnstile...</span>
+            <span>Verifying secure connection...</span>
           </div>
         )}
 

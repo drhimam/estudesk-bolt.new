@@ -49,7 +49,7 @@ const INITIAL_DEFAULT_PLANS: SubscriptionPlan[] = [
     features: [
       '100 Initial AI Generation Credits',
       'Basic Study Notes & Flashcards Generator',
-      'Local Dexie.js Offline Storage + Cloud Sync',
+      'Offline-First Local Storage + Cloud Sync',
       'Standard AI Generation Queue',
       'Export Study Materials to TXT',
     ],
@@ -71,7 +71,7 @@ const INITIAL_DEFAULT_PLANS: SubscriptionPlan[] = [
       'All 7 Study Formats (Notes, Cheatsheets, Flashcards, Quizzes, Infographics, Assignments, Slides)',
       'Multi-Modal Source Extraction (PDF, DOCX, TXT, CSV, Audio, OCR)',
       '24h Deadline Email Alerts & Monday Weekly Digests',
-      'Priority High-Speed AI Router (DeepSeek V3 / MiMo / Gemini)',
+      'Priority High-Speed Multi-Model AI Router',
       'Rich PDF, TXT, & JSON Study Material Downloads',
     ],
     sortOrder: 2,
@@ -813,7 +813,7 @@ export function AccountSettingsModal() {
                     Transparent Student Plans
                   </h3>
                   <p className="text-xs sm:text-sm text-ink-500 mt-1 max-w-lg mx-auto">
-                    Database-driven pricing with instant credit allocation. Safe PayPal checkout.
+                    Database-driven pricing with instant credit allocation. Safe encrypted checkout.
                   </p>
                 </div>
 
