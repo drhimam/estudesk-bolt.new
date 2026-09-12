@@ -912,136 +912,136 @@ export function LandingPage() {
       </section>
 
       {/* Modern Rich Footer */}
-      <footer className="bg-ink-950 text-paper-300 border-t border-[#1e2d26] pt-16 pb-12 text-xs selection:bg-accent-600 selection:text-white">
+      <footer className="bg-[#0f1713] text-slate-100 border-t border-[#1f3529] pt-16 pb-12 text-sm selection:bg-accent-600 selection:text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-[#23352d]">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-[#1f3529]">
             {/* Col 1: Brand & Identity */}
             <div className="lg:col-span-2 space-y-4">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-accent-500 to-emerald-600 flex items-center justify-center text-white shadow-soft">
-                  <GraduationCap className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-accent-500 to-emerald-500 flex items-center justify-center text-white shadow-md">
+                  <GraduationCap className="w-6 h-6" />
                 </div>
-                <span className="font-serif text-xl font-bold text-white tracking-tight">eStudesk</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-accent-950 text-accent-300 border border-accent-700/50">
+                <span className="font-serif text-2xl font-bold text-white tracking-tight">eStudesk</span>
+                <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-600/60 font-semibold">
                   v2.0
                 </span>
               </div>
-              <p className="text-xs text-paper-400 max-w-sm leading-relaxed">
+              <p className="text-sm text-slate-300 max-w-sm leading-relaxed">
                 The intelligent academic workspace for university scholars, researchers, pre-meds, and engineers. Built for deep focus and AI-assisted mastery.
               </p>
               <div className="flex items-center gap-2 pt-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium bg-emerald-950/80 text-emerald-300 border border-emerald-800/60">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  Cloudflare Edge & Turso DB Active
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-[#132b20] text-emerald-300 border border-emerald-600/50">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Cloudflare Edge &amp; Turso DB Active
                 </span>
               </div>
             </div>
 
             {/* Col 2: Academic Suite */}
-            <div className="space-y-3">
-              <h4 className="font-serif text-sm font-bold text-white uppercase tracking-wider">
+            <div className="space-y-3.5">
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
                 Academic Suite
               </h4>
-              <ul className="space-y-2 text-paper-400">
+              <ul className="space-y-2.5 text-sm text-slate-300">
                 <li>
-                  <a href="#ai-studio" className="hover:text-accent-400 transition-colors">AI Note Studio (LaTeX)</a>
+                  <a href="#ai-studio" className="hover:text-emerald-300 transition-colors">AI Note Studio (LaTeX)</a>
                 </li>
                 <li>
-                  <a href="#demo" className="hover:text-accent-400 transition-colors">3D Interactive Flashcards</a>
+                  <a href="#demo" className="hover:text-emerald-300 transition-colors">3D Interactive Flashcards</a>
                 </li>
                 <li>
-                  <a href="#demo" className="hover:text-accent-400 transition-colors">1-by-1 Quiz Tester</a>
+                  <a href="#demo" className="hover:text-emerald-300 transition-colors">1-by-1 Quiz Tester</a>
                 </li>
                 <li>
-                  <a href="#features" className="hover:text-accent-400 transition-colors">Multi-Modal OCR Capture</a>
+                  <a href="#features" className="hover:text-emerald-300 transition-colors">Multi-Modal OCR Capture</a>
                 </li>
                 <li>
-                  <a href="#features" className="hover:text-accent-400 transition-colors">432Hz Binaural Focus Timer</a>
+                  <a href="#features" className="hover:text-emerald-300 transition-colors">432Hz Binaural Focus Timer</a>
                 </li>
                 <li>
-                  <a href="#features" className="hover:text-accent-400 transition-colors">24h Deadline Alerts</a>
+                  <a href="#features" className="hover:text-emerald-300 transition-colors">24h Deadline Alerts</a>
                 </li>
               </ul>
             </div>
 
             {/* Col 3: Plans & Pricing */}
-            <div className="space-y-3">
-              <h4 className="font-serif text-sm font-bold text-white uppercase tracking-wider">
-                Plans & Billing
+            <div className="space-y-3.5">
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                Plans &amp; Billing
               </h4>
-              <ul className="space-y-2 text-paper-400">
+              <ul className="space-y-2.5 text-sm text-slate-300">
                 <li>
-                  <a href="#pricing" className="hover:text-accent-400 transition-colors">Free Scholar ($0)</a>
+                  <a href="#pricing" className="hover:text-emerald-300 transition-colors">Free Scholar ($0)</a>
                 </li>
                 <li>
-                  <a href="#pricing" className="hover:text-accent-400 transition-colors">Pro Monthly ($9.99/mo)</a>
+                  <a href="#pricing" className="hover:text-emerald-300 transition-colors">Pro Monthly ($9.99/mo)</a>
                 </li>
                 <li>
-                  <a href="#pricing" className="hover:text-accent-400 transition-colors flex items-center gap-1">
+                  <a href="#pricing" className="hover:text-emerald-300 transition-colors flex items-center gap-1.5">
                     <span>Pro Semester</span>
-                    <span className="text-[9px] font-bold text-amber-400 bg-amber-950/80 px-1.5 py-0.2 rounded border border-amber-800/60">25% OFF</span>
+                    <span className="text-[10px] font-bold text-amber-300 bg-amber-950 px-1.5 py-0.5 rounded border border-amber-600/60">25% OFF</span>
                   </a>
                 </li>
                 <li>
-                  <a href="#pricing" className="hover:text-accent-400 transition-colors">Official Expense Receipts</a>
+                  <a href="#pricing" className="hover:text-emerald-300 transition-colors">Official Expense Receipts</a>
                 </li>
                 <li>
-                  <a href="#pricing" className="hover:text-accent-400 transition-colors">Safe PayPal Checkout</a>
+                  <a href="#pricing" className="hover:text-emerald-300 transition-colors">Safe PayPal Checkout</a>
                 </li>
               </ul>
             </div>
 
             {/* Col 4: Privacy & Legal */}
-            <div className="space-y-3">
-              <h4 className="font-serif text-sm font-bold text-white uppercase tracking-wider">
-                Privacy & Trust
+            <div className="space-y-3.5">
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                Privacy &amp; Trust
               </h4>
-              <ul className="space-y-2 text-paper-400">
+              <ul className="space-y-2.5 text-sm text-slate-300">
                 <li>
-                  <span className="flex items-center gap-1 text-paper-400">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="flex items-center gap-1.5 text-slate-300">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
                     <span>GDPR Data Portability</span>
                   </span>
                 </li>
                 <li>
-                  <span className="text-paper-400">Scrypt Cryptographic Security</span>
+                  <span className="text-slate-300">Scrypt Cryptographic Security</span>
                 </li>
                 <li>
-                  <span className="text-paper-400">Zero Third-Party Trackers</span>
+                  <span className="text-slate-300">Zero Third-Party Trackers</span>
                 </li>
                 <li>
-                  <span className="text-paper-400">Cloudflare Turnstile Protected</span>
+                  <span className="text-slate-300">Cloudflare Turnstile Protected</span>
                 </li>
                 <li>
-                  <a href="mailto:info@estudesk.com" className="hover:text-accent-400 transition-colors">Contact Support</a>
+                  <a href="mailto:info@estudesk.com" className="hover:text-emerald-300 transition-colors">Contact Support</a>
                 </li>
               </ul>
             </div>
           </div>
 
           {/* Bottom Bar */}
-          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-paper-500">
+          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
             <div className="flex items-center gap-2">
-              <span>© 2026 eStudesk Open Academic Platform.</span>
-              <span className="hidden sm:inline">•</span>
-              <span className="text-[11px] text-paper-500">Made for university scholars worldwide</span>
+              <span className="text-slate-300 font-medium">© 2026 eStudesk Open Academic Platform.</span>
+              <span className="hidden sm:inline text-slate-600">•</span>
+              <span className="text-slate-400">Made for university scholars worldwide</span>
             </div>
 
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-6 text-slate-300 font-medium">
               <a
                 href="mailto:info@estudesk.com"
-                className="hover:text-accent-400 transition-colors flex items-center gap-1.5"
+                className="hover:text-emerald-300 transition-colors flex items-center gap-1.5"
               >
-                <Mail className="w-3.5 h-3.5" />
+                <Mail className="w-4 h-4 text-emerald-400" />
                 <span>info@estudesk.com</span>
               </a>
               <a
                 href="https://github.com/drhimam/estudesk-bolt.new"
                 target="_blank"
                 rel="noreferrer"
-                className="hover:text-accent-400 transition-colors flex items-center gap-1.5"
+                className="hover:text-emerald-300 transition-colors flex items-center gap-1.5"
               >
-                <Github className="w-3.5 h-3.5" />
+                <Github className="w-4 h-4 text-emerald-400" />
                 <span>GitHub</span>
               </a>
             </div>
