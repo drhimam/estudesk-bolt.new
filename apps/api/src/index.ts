@@ -884,7 +884,9 @@ app.post('/api/billing/verify-paypal-subscription', async (c) => {
       });
     }
 
-    // 4. Update User tier and grant credits
+    const targetQuota = plan?.aiCreditsMonthly || 1000;
+
+    // 4. Update User tier and set monthly quota (1,000 credits fixed, no runaway stacking)
     await db
       .update(schema.user)
       .set({
@@ -893,12 +895,11 @@ app.post('/api/billing/verify-paypal-subscription', async (c) => {
       })
       .where(eq(schema.user.id, body.userId));
 
-    await billing.grantUserCredits(
+    await billing.setUserMonthlyQuota(
       db,
       body.userId,
-      creditsToGrant,
-      'monthly_grant',
-      `Subscribed to ${planName} via PayPal (${creditsToGrant} credits)`
+      targetQuota,
+      `Activated ${planName} via PayPal (${targetQuota} monthly AI credits quota)`
     );
 
     // 5. Generate and store invoice record

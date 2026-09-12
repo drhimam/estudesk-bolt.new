@@ -377,7 +377,55 @@ export async function deductUserCredit(
 }
 
 /**
- * Add / Grant credits to a user (e.g. on subscription renewal or signup)
+ * Set / Refresh user monthly credit quota on subscription activation / renewal
+ * Sets user creditBalance to the plan quota (e.g. 1,000 credits) to prevent runaway stacking.
+ */
+export async function setUserMonthlyQuota(
+  db: any,
+  userId: string,
+  targetQuota: number,
+  description: string
+): Promise<{ success: boolean; newBalance: number }> {
+  try {
+    const u = await db
+      .select()
+      .from(schema.user)
+      .where(eq(schema.user.id, userId))
+      .get();
+
+    if (!u) return { success: false, newBalance: 0 };
+
+    const current = u.creditBalance ?? 0;
+    const newBalance = targetQuota;
+    const diff = newBalance - current;
+
+    await db
+      .update(schema.user)
+      .set({
+        creditBalance: newBalance,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.user.id, userId));
+
+    await db.insert(schema.creditTransactions).values({
+      id: crypto.randomUUID(),
+      userId,
+      amount: diff,
+      type: 'monthly_grant',
+      balanceAfter: newBalance,
+      description,
+      createdAt: new Date(),
+    });
+
+    return { success: true, newBalance };
+  } catch (err) {
+    console.error('Failed to set monthly quota:', err);
+    return { success: false, newBalance: 0 };
+  }
+}
+
+/**
+ * Add / Grant credits to a user (e.g. on manual grant or bonus)
  */
 export async function grantUserCredits(
   db: any,
