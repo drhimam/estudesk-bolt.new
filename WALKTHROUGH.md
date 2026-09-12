@@ -237,7 +237,21 @@ JOIN user u ON s.user_id = u.id;
 
 ---
 
-## 7. Build, Verification & Deployment
+## 7. Landing Page Enhancements (Pricing & Modern Academic Footer)
+
+- **Interactive `#pricing` Section**:
+  - **Free Scholar**: $0/forever with 100 Initial AI credits, Dexie.js offline-first local + cloud sync, 3D Flashcards, 1-by-1 Quiz Tester, 432Hz focus timer.
+  - **Pro Monthly**: $9.99/mo with 1,000 monthly credits, all 7 study modes (LaTeX Slides, Infographics, Cheatsheets), OCR lecture capture, and 24h deadline alerts.
+  - **Pro Semester (4 Months)**: $29.99/4mo (`🔥 SEMESTER SAVER • 25% OFF`), $7.49/month breakdown for uninterrupted midterm and finals coverage.
+  - **Pro Yearly**: $79.99/yr preview ("Coming Soon").
+  - Intelligent CTAs routing guest users to `openAuthModal('signup')` and logged-in users directly to `setView({ kind: 'account', tab: 'subscription' })`.
+- **Modern Multi-Column Footer**:
+  - Academic Suite navigation (AI Note Studio, 3D Flashcards, Quiz Tester, OCR, 432Hz Audio).
+  - Plans & Billing links.
+  - Trust & Privacy indicators (GDPR Data Portability, Scrypt Encryption, Cloudflare Turnstile).
+  - Official contact email (`info@estudesk.com`) and GitHub repository links.
+
+## 8. Build, Verification & Deployment
 
 ```bash
 # 1. Run TypeScript typecheck
