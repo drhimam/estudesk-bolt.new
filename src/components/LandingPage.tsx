@@ -1040,7 +1040,7 @@ export function LandingPage() {
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-ink-800">Sarah Lin</h4>
-                  <p className="text-[11px] text-ink-400">Physics &amp; Math @ MIT</p>
+                  <p className="text-[11px] text-ink-400">Physics &amp; Math @ University of Toronto</p>
                 </div>
               </div>
             </div>
@@ -1060,7 +1060,7 @@ export function LandingPage() {
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-ink-800">David Miller</h4>
-                  <p className="text-[11px] text-ink-400">Pre-Med @ Johns Hopkins</p>
+                  <p className="text-[11px] text-ink-400">Health Sciences @ McGill University</p>
                 </div>
               </div>
             </div>
@@ -1080,7 +1080,7 @@ export function LandingPage() {
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-ink-800">Elena Patel</h4>
-                  <p className="text-[11px] text-ink-400">Law Candidate @ Oxford</p>
+                  <p className="text-[11px] text-ink-400">Law Candidate @ University of British Columbia (UBC)</p>
                 </div>
               </div>
             </div>
