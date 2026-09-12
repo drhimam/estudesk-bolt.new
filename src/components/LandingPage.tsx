@@ -23,6 +23,11 @@ import {
   Award,
   LogIn,
   UserPlus,
+  Coins,
+  Check,
+  Flame,
+  Mail,
+  Github,
 } from 'lucide-react';
 import { openAuthModal, setView, useAppState } from '@/store/appState';
 
@@ -68,6 +73,7 @@ export function LandingPage() {
             <a href="#features" className="hover:text-accent-600 transition-colors">Features</a>
             <a href="#ai-studio" className="hover:text-accent-600 transition-colors">AI Studio</a>
             <a href="#demo" className="hover:text-accent-600 transition-colors">Live Preview</a>
+            <a href="#pricing" className="hover:text-accent-600 transition-colors">Pricing</a>
             <a href="#architecture" className="hover:text-accent-600 transition-colors">Edge Sync</a>
             <a href="#reviews" className="hover:text-accent-600 transition-colors">Students</a>
           </nav>
@@ -501,6 +507,296 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* Pricing Section */}
+      <section id="pricing" className="py-24 bg-gradient-to-b from-paper-50 via-white to-paper-50 relative">
+        {/* Background ambient lighting */}
+        <div className="absolute top-12 left-1/2 -translate-x-1/2 w-[700px] h-[300px] bg-gradient-to-r from-emerald-100/40 via-accent-100/30 to-indigo-100/40 blur-3xl rounded-full pointer-events-none -z-10" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <span className="px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-accent-100 text-accent-800 border border-accent-200 shadow-soft">
+              Transparent Student Pricing
+            </span>
+            <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-ink-950 mt-4 tracking-tight">
+              Fair, Flexible Academic Plans
+            </h2>
+            <p className="mt-3.5 text-sm sm:text-base text-ink-600 leading-relaxed">
+              Start free with starter AI credits, or unlock unlimited multi-modal generation, OCR extraction, and 24-hour deadline alerts for the full semester.
+            </p>
+          </div>
+
+          {/* Pricing Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+            {/* PLAN 1: FREE SCHOLAR */}
+            <div className="rounded-3xl p-6 sm:p-7 bg-white border border-paper-300 shadow-soft hover:shadow-card hover:border-accent-400 transition-all flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-serif text-xl font-bold text-ink-900">Free Scholar</h3>
+                  <span className="text-[10px] font-mono font-bold text-ink-600 bg-paper-100 px-2 py-0.5 rounded-md uppercase">
+                    Starter
+                  </span>
+                </div>
+                <p className="text-xs text-ink-500 min-h-[32px]">
+                  Essential study desk with offline local sync and starter AI credits.
+                </p>
+
+                <div className="my-5">
+                  <div className="flex items-baseline gap-1">
+                    <span className="font-serif text-4xl font-bold text-ink-950">$0</span>
+                    <span className="text-xs text-ink-500">/ forever</span>
+                  </div>
+                  <p className="text-[11px] text-ink-400 mt-0.5">No credit card required</p>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-accent-50 border border-accent-100 mb-6 flex items-center gap-2">
+                  <Coins className="w-4 h-4 text-accent-700 shrink-0" />
+                  <span className="text-xs font-semibold text-accent-900">
+                    100 Initial AI Credits
+                  </span>
+                </div>
+
+                <ul className="space-y-3 text-xs text-ink-700 mb-8">
+                  <li className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span>100 AI generation credits for study notes & summaries</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span>Interactive 3D Flashcards & 1-by-1 Quiz Tester</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span>432Hz ambient alpha wave binaural focus sound generator</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span>Dexie.js offline-first local storage & cloud sync</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span>Semester & subject hierarchical academic organizer</span>
+                  </li>
+                </ul>
+              </div>
+
+              <button
+                onClick={() => handleProtectedAction('signup')}
+                className="w-full py-3 px-4 rounded-xl text-xs font-bold text-ink-800 bg-paper-100 hover:bg-paper-200 border border-paper-300 transition-all cursor-pointer shadow-soft hover:shadow-card text-center"
+              >
+                {currentUser ? 'Current Active Base' : 'Get Started Free'}
+              </button>
+            </div>
+
+            {/* PLAN 2: PRO MONTHLY */}
+            <div className="rounded-3xl p-6 sm:p-7 bg-white border border-[#bed6c7] shadow-soft hover:shadow-card hover:border-accent-500 transition-all flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-serif text-xl font-bold text-ink-900">Pro Monthly</h3>
+                  <span className="text-[10px] font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md uppercase border border-indigo-200">
+                    Popular
+                  </span>
+                </div>
+                <p className="text-xs text-ink-500 min-h-[32px]">
+                  Full monthly AI academic power with priority router and deadline alerts.
+                </p>
+
+                <div className="my-5">
+                  <div className="flex items-baseline gap-1">
+                    <span className="font-serif text-4xl font-bold text-ink-950">$9.99</span>
+                    <span className="text-xs text-ink-500">/ month</span>
+                  </div>
+                  <p className="text-[11px] text-ink-400 mt-0.5">Auto-renewing • Cancel anytime</p>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-indigo-50 border border-indigo-100 mb-6 flex items-center gap-2">
+                  <Coins className="w-4 h-4 text-indigo-700 shrink-0" />
+                  <span className="text-xs font-semibold text-indigo-900">
+                    1,000 Credits / month
+                  </span>
+                </div>
+
+                <ul className="space-y-3 text-xs text-ink-700 mb-8">
+                  <li className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span><strong>1,000 monthly AI credits</strong> for all study formats</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span>All 7 study modes (LaTeX Slides, Infographics, Cheatsheets)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span>Multi-modal OCR lecture & document text extraction</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span>24-Hour & 7-Day automated deadline email alerts</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span>Priority AI model queue with zero throttling</span>
+                  </li>
+                </ul>
+              </div>
+
+              <button
+                onClick={() => {
+                  if (currentUser) {
+                    setView({ kind: 'account', tab: 'subscription' });
+                  } else {
+                    openAuthModal('signup');
+                  }
+                }}
+                className="w-full py-3 px-4 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all cursor-pointer shadow-soft hover:shadow-card text-center flex items-center justify-center gap-1.5"
+              >
+                <span>{currentUser ? 'Upgrade in Settings' : 'Start Pro Monthly'}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* PLAN 3: PRO SEMESTER (BEST VALUE) */}
+            <div className="relative rounded-3xl p-6 sm:p-7 bg-gradient-to-b from-white to-[#f4f9f6] border-2 border-emerald-500 shadow-card hover:shadow-glow transition-all flex flex-col justify-between ring-4 ring-emerald-500/10">
+              {/* Top Discount Stamp */}
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-emerald-600 text-white text-[10px] font-bold px-3.5 py-1 rounded-full shadow-md flex items-center gap-1 uppercase tracking-wider whitespace-nowrap">
+                <Flame className="w-3.5 h-3.5 fill-white" />
+                <span>SEMESTER SAVER • 25% OFF</span>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mt-2 mb-2">
+                  <h3 className="font-serif text-xl font-bold text-ink-900">Pro Semester</h3>
+                  <span className="text-[10px] font-mono font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md uppercase">
+                    BEST VALUE
+                  </span>
+                </div>
+                <p className="text-xs text-ink-500 min-h-[32px]">
+                  Complete 4-month semester uninterrupted suite for serious scholars.
+                </p>
+
+                <div className="my-5">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-sm font-semibold text-ink-400 line-through">$39.99</span>
+                    <span className="font-serif text-4xl font-bold text-ink-950">$29.99</span>
+                    <span className="text-xs text-ink-500">/ 4 months</span>
+                  </div>
+                  <p className="text-[11px] text-emerald-700 font-semibold mt-0.5">
+                    Only $7.49 / month (Save $10.00 every semester)
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 mb-6 flex items-center gap-2">
+                  <Coins className="w-4 h-4 text-emerald-700 shrink-0" />
+                  <span className="text-xs font-semibold text-emerald-900">
+                    1,000 Credits / month (4 Months Total)
+                  </span>
+                </div>
+
+                <ul className="space-y-3 text-xs text-ink-700 mb-8">
+                  <li className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span><strong>Full 4-month coverage</strong> through midterms & finals</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span>1,000 monthly credits renewed each billing month</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span>Unlimited OCR extractions & high-fidelity question sets</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span>Automated weekly date-wise email agenda digests</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span>Priority 24/7 student support & LaTeX rendering assistance</span>
+                  </li>
+                </ul>
+              </div>
+
+              <button
+                onClick={() => {
+                  if (currentUser) {
+                    setView({ kind: 'account', tab: 'subscription' });
+                  } else {
+                    openAuthModal('signup');
+                  }
+                }}
+                className="w-full py-3.5 px-4 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all cursor-pointer shadow-soft hover:shadow-card text-center flex items-center justify-center gap-1.5"
+              >
+                <span>{currentUser ? 'Switch in Settings' : 'Claim 25% Off Semester'}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* PLAN 4: PRO YEARLY (COMING SOON) */}
+            <div className="relative rounded-3xl p-6 sm:p-7 bg-[#f6f8f7] border border-paper-300 opacity-85 flex flex-col justify-between">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-700 text-white text-[10px] font-bold px-3 py-0.5 rounded-full shadow-sm uppercase tracking-wider whitespace-nowrap">
+                Coming Soon
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mt-1 mb-2">
+                  <h3 className="font-serif text-xl font-bold text-ink-900">Pro Yearly</h3>
+                  <span className="text-[10px] font-mono font-bold text-ink-500 bg-paper-200 px-2 py-0.5 rounded-md uppercase">
+                    12 Months
+                  </span>
+                </div>
+                <p className="text-xs text-ink-500 min-h-[32px]">
+                  Annual package for full-year thesis, pre-med, and graduate research.
+                </p>
+
+                <div className="my-5">
+                  <div className="flex items-baseline gap-1">
+                    <span className="font-serif text-4xl font-bold text-ink-900">$79.99</span>
+                    <span className="text-xs text-ink-500">/ year</span>
+                  </div>
+                  <p className="text-[11px] text-ink-400 mt-0.5">Only $6.66 / month (Annual savings)</p>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-paper-200/80 border border-paper-300 mb-6 flex items-center gap-2">
+                  <Coins className="w-4 h-4 text-ink-600 shrink-0" />
+                  <span className="text-xs font-semibold text-ink-800">
+                    1,000 Credits / mo (12 Months)
+                  </span>
+                </div>
+
+                <div className="p-4 my-2 rounded-2xl bg-white border border-dashed border-paper-300 text-center">
+                  <p className="text-xs font-semibold text-ink-700">Annual Plan in Progress</p>
+                  <p className="text-[11px] text-ink-500 mt-1">
+                    Includes all 12-month features with dedicated VIP priority support and early access to new AI research models.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                disabled
+                className="w-full py-3 px-4 rounded-xl text-xs font-semibold bg-paper-200 text-ink-400 cursor-not-allowed text-center"
+              >
+                Coming Soon
+              </button>
+            </div>
+          </div>
+
+          {/* Trust Guarantees */}
+          <div className="mt-14 pt-8 border-t border-paper-200 flex flex-wrap items-center justify-center gap-6 sm:gap-12 text-xs text-ink-500 font-medium">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <span>Safe PayPal 256-Bit SSL Checkout</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-accent-600" />
+              <span>Cancel Anytime in 1-Click from Settings</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Coins className="w-4 h-4 text-amber-600" />
+              <span>Instant AI Credit Allocation</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Social Proof / Student Testimonials */}
       <section id="reviews" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -578,13 +874,14 @@ export function LandingPage() {
       </section>
 
       {/* Call to Action Banner */}
-      <section className="py-16 bg-gradient-to-br from-accent-700 via-accent-800 to-indigo-900 text-white text-center relative overflow-hidden">
+      <section className="py-20 bg-gradient-to-br from-accent-700 via-accent-800 to-indigo-950 text-white text-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.1),transparent)] pointer-events-none" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <h2 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4 text-white">
             Ready to Accelerate Your Academic Journey?
           </h2>
-          <p className="text-base sm:text-lg text-paper-200 max-w-xl mx-auto mb-8">
-            Join thousands of scholars using eStudesk for smart notes, AI-powered generation, and distraction-free mastery.
+          <p className="text-base sm:text-lg text-paper-200 max-w-xl mx-auto mb-8 leading-relaxed">
+            Join thousands of scholars using eStudesk for smart notes, AI-powered generation, multi-channel deadlines, and distraction-free mastery.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             {currentUser ? (
@@ -614,26 +911,140 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-paper-100 border-t border-paper-300 py-12 text-ink-500 text-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-accent-600 to-accent-800 flex items-center justify-center text-white">
-              <GraduationCap className="w-4 h-4" />
+      {/* Modern Rich Footer */}
+      <footer className="bg-ink-950 text-paper-300 border-t border-[#1e2d26] pt-16 pb-12 text-xs selection:bg-accent-600 selection:text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-[#23352d]">
+            {/* Col 1: Brand & Identity */}
+            <div className="lg:col-span-2 space-y-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-accent-500 to-emerald-600 flex items-center justify-center text-white shadow-soft">
+                  <GraduationCap className="w-5 h-5" />
+                </div>
+                <span className="font-serif text-xl font-bold text-white tracking-tight">eStudesk</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-accent-950 text-accent-300 border border-accent-700/50">
+                  v2.0
+                </span>
+              </div>
+              <p className="text-xs text-paper-400 max-w-sm leading-relaxed">
+                The intelligent academic workspace for university scholars, researchers, pre-meds, and engineers. Built for deep focus and AI-assisted mastery.
+              </p>
+              <div className="flex items-center gap-2 pt-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium bg-emerald-950/80 text-emerald-300 border border-emerald-800/60">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  Cloudflare Edge & Turso DB Active
+                </span>
+              </div>
             </div>
-            <span className="font-serif text-base font-bold text-ink-800">eStudesk</span>
-            <span className="text-ink-400">© 2026 eStudesk Open Academic Platform</span>
+
+            {/* Col 2: Academic Suite */}
+            <div className="space-y-3">
+              <h4 className="font-serif text-sm font-bold text-white uppercase tracking-wider">
+                Academic Suite
+              </h4>
+              <ul className="space-y-2 text-paper-400">
+                <li>
+                  <a href="#ai-studio" className="hover:text-accent-400 transition-colors">AI Note Studio (LaTeX)</a>
+                </li>
+                <li>
+                  <a href="#demo" className="hover:text-accent-400 transition-colors">3D Interactive Flashcards</a>
+                </li>
+                <li>
+                  <a href="#demo" className="hover:text-accent-400 transition-colors">1-by-1 Quiz Tester</a>
+                </li>
+                <li>
+                  <a href="#features" className="hover:text-accent-400 transition-colors">Multi-Modal OCR Capture</a>
+                </li>
+                <li>
+                  <a href="#features" className="hover:text-accent-400 transition-colors">432Hz Binaural Focus Timer</a>
+                </li>
+                <li>
+                  <a href="#features" className="hover:text-accent-400 transition-colors">24h Deadline Alerts</a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Col 3: Plans & Pricing */}
+            <div className="space-y-3">
+              <h4 className="font-serif text-sm font-bold text-white uppercase tracking-wider">
+                Plans & Billing
+              </h4>
+              <ul className="space-y-2 text-paper-400">
+                <li>
+                  <a href="#pricing" className="hover:text-accent-400 transition-colors">Free Scholar ($0)</a>
+                </li>
+                <li>
+                  <a href="#pricing" className="hover:text-accent-400 transition-colors">Pro Monthly ($9.99/mo)</a>
+                </li>
+                <li>
+                  <a href="#pricing" className="hover:text-accent-400 transition-colors flex items-center gap-1">
+                    <span>Pro Semester</span>
+                    <span className="text-[9px] font-bold text-amber-400 bg-amber-950/80 px-1.5 py-0.2 rounded border border-amber-800/60">25% OFF</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#pricing" className="hover:text-accent-400 transition-colors">Official Expense Receipts</a>
+                </li>
+                <li>
+                  <a href="#pricing" className="hover:text-accent-400 transition-colors">Safe PayPal Checkout</a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Col 4: Privacy & Legal */}
+            <div className="space-y-3">
+              <h4 className="font-serif text-sm font-bold text-white uppercase tracking-wider">
+                Privacy & Trust
+              </h4>
+              <ul className="space-y-2 text-paper-400">
+                <li>
+                  <span className="flex items-center gap-1 text-paper-400">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>GDPR Data Portability</span>
+                  </span>
+                </li>
+                <li>
+                  <span className="text-paper-400">Scrypt Cryptographic Security</span>
+                </li>
+                <li>
+                  <span className="text-paper-400">Zero Third-Party Trackers</span>
+                </li>
+                <li>
+                  <span className="text-paper-400">Cloudflare Turnstile Protected</span>
+                </li>
+                <li>
+                  <a href="mailto:info@estudesk.com" className="hover:text-accent-400 transition-colors">Contact Support</a>
+                </li>
+              </ul>
+            </div>
           </div>
 
-          <div className="flex items-center gap-6">
-            {currentUser ? (
-              <button onClick={() => setView({ kind: 'home' })} className="hover:text-accent-600 transition-colors">Go to Dashboard</button>
-            ) : (
-              <>
-                <button onClick={() => openAuthModal('signin')} className="hover:text-accent-600 transition-colors">Sign In</button>
-                <button onClick={() => openAuthModal('signup')} className="hover:text-accent-600 transition-colors font-semibold text-accent-700">Create Account</button>
-              </>
-            )}
+          {/* Bottom Bar */}
+          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-paper-500">
+            <div className="flex items-center gap-2">
+              <span>© 2026 eStudesk Open Academic Platform.</span>
+              <span className="hidden sm:inline">•</span>
+              <span className="text-[11px] text-paper-500">Made for university scholars worldwide</span>
+            </div>
+
+            <div className="flex items-center gap-6">
+              <a
+                href="mailto:info@estudesk.com"
+                className="hover:text-accent-400 transition-colors flex items-center gap-1.5"
+              >
+                <Mail className="w-3.5 h-3.5" />
+                <span>info@estudesk.com</span>
+              </a>
+              <a
+                href="https://github.com/drhimam/estudesk-bolt.new"
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-accent-400 transition-colors flex items-center gap-1.5"
+              >
+                <Github className="w-3.5 h-3.5" />
+                <span>GitHub</span>
+              </a>
+            </div>
           </div>
         </div>
       </footer>
