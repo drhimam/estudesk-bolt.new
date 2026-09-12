@@ -21,7 +21,8 @@ export type View =
   | { kind: 'home' }
   | { kind: 'semester'; semesterId: string }
   | { kind: 'subject'; subjectId: string }
-  | { kind: 'account'; tab?: AccountTab };
+  | { kind: 'account'; tab?: AccountTab }
+  | { kind: 'docs'; section?: string };
 
 export type AuthMode = 'signin' | 'signup' | 'forgot_password' | 'reset_password' | 'verify_email';
 export type AccountTab = 'profile' | 'subscription' | 'usage' | 'invoices' | 'privacy';
@@ -213,6 +214,11 @@ export function openTourModal(stepIndex: number = 0, tab: 'walkthrough' | 'all-f
 
 export function closeTourModal() {
   state = { ...state, tourModalOpen: false };
+  emit();
+}
+
+export function openDocs(section: string = 'getting-started') {
+  state = { ...state, view: { kind: 'docs', section } };
   emit();
 }
 

@@ -112,6 +112,12 @@ export function LandingPage() {
             <a href="#demo" className="hover:text-accent-600 transition-colors">Live Preview</a>
             <a href="#pricing" className="hover:text-accent-600 transition-colors">Pricing</a>
             <a href="#faq" className="hover:text-accent-600 transition-colors">FAQ</a>
+            <button
+              onClick={() => setView({ kind: 'docs' })}
+              className="hover:text-accent-600 transition-colors cursor-pointer font-medium"
+            >
+              Docs
+            </button>
             <a href="#reviews" className="hover:text-accent-600 transition-colors">Students</a>
           </nav>
 
@@ -1220,16 +1226,30 @@ export function LandingPage() {
               </h4>
               <ul className="space-y-2.5 text-sm text-slate-300">
                 <li>
-                  <a href="#ai-studio" className="hover:text-emerald-300 transition-colors">AI Note Studio (LaTeX)</a>
+                  <button
+                    onClick={() => setView({ kind: 'docs', section: 'quickstart' })}
+                    className="hover:text-emerald-300 transition-colors flex items-center gap-1.5 text-left cursor-pointer"
+                  >
+                    <BookOpen className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Documentation &amp; User Guides</span>
+                    <span className="text-[9px] font-mono font-bold bg-emerald-950 text-emerald-300 px-1.5 py-0.2 rounded border border-emerald-700/60">
+                      DOCS
+                    </span>
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => setView({ kind: 'docs', section: 'ai-studio' })}
+                    className="hover:text-emerald-300 transition-colors text-left cursor-pointer"
+                  >
+                    10-Turn AI Engine Guide
+                  </button>
                 </li>
                 <li>
                   <a href="#demo" className="hover:text-emerald-300 transition-colors">3D Interactive Flashcards</a>
                 </li>
                 <li>
                   <a href="#demo" className="hover:text-emerald-300 transition-colors">1-by-1 Quiz Tester</a>
-                </li>
-                <li>
-                  <a href="#features" className="hover:text-emerald-300 transition-colors">Multi-Modal OCR Capture</a>
                 </li>
                 <li>
                   <a href="#features" className="hover:text-emerald-300 transition-colors">432Hz Binaural Focus Timer</a>
@@ -1262,7 +1282,12 @@ export function LandingPage() {
                   </a>
                 </li>
                 <li>
-                  <a href="#pricing" className="hover:text-emerald-300 transition-colors">Official Expense Receipts</a>
+                  <button
+                    onClick={() => setView({ kind: 'docs', section: 'billing-credits' })}
+                    className="hover:text-emerald-300 transition-colors text-left cursor-pointer"
+                  >
+                    Credit &amp; Invoice Guide
+                  </button>
                 </li>
                 <li>
                   <a href="#pricing" className="hover:text-emerald-300 transition-colors">Encrypted Secure Checkout</a>
@@ -1289,7 +1314,12 @@ export function LandingPage() {
                   <span className="text-slate-300">Zero Third-Party Trackers</span>
                 </li>
                 <li>
-                  <span className="text-slate-300">Smart Bot &amp; Threat Protection</span>
+                  <button
+                    onClick={() => setView({ kind: 'docs', section: 'keyboard-shortcuts' })}
+                    className="hover:text-emerald-300 transition-colors text-left cursor-pointer flex items-center gap-1"
+                  >
+                    <span>Keyboard Shortcuts</span>
+                  </button>
                 </li>
                 <li>
                   <a href="mailto:info@estudesk.com" className="hover:text-emerald-300 transition-colors">Contact Support</a>
@@ -1307,6 +1337,13 @@ export function LandingPage() {
             </div>
 
             <div className="flex items-center gap-6 text-slate-300 font-medium">
+              <button
+                onClick={() => setView({ kind: 'docs' })}
+                className="hover:text-emerald-300 transition-colors flex items-center gap-1 cursor-pointer font-semibold text-emerald-400"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>Documentation</span>
+              </button>
               <a
                 href="mailto:info@estudesk.com"
                 className="hover:text-emerald-300 transition-colors flex items-center gap-1.5"

@@ -33,6 +33,7 @@ import {
   logoutUser,
   openNotificationModal,
   openAccountModal,
+  openDocs,
 } from '@/store/appState';
 import { signOut } from '@/lib/authClient';
 import { COLOR_HEX } from '@/utils/colors';
@@ -876,6 +877,16 @@ function SidebarFooter() {
                 >
                   <Shield className="w-3.5 h-3.5 text-slate-600" />
                   <span>Privacy & Data Archive</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    openDocs('quickstart');
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-ink-700 hover:bg-paper-100 transition-colors text-left"
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-accent-600" />
+                  <span>Documentation &amp; Guides</span>
                 </button>
                 <div className="border-t border-paper-200 my-1"></div>
                 <button

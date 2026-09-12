@@ -13,6 +13,7 @@ import { AuthModal } from '@/components/AuthModal';
 import { NotificationSettingsModal } from '@/components/NotificationSettingsModal';
 import { AccountSettingsPage } from '@/components/AccountSettingsPage';
 import { DashboardTourModal } from '@/components/DashboardTourModal';
+import { DocumentationPage } from '@/components/DocumentationPage';
 import { syncFromTursoToLocal } from '@/lib/apiSync';
 import { verifyEmail } from '@/lib/authClient';
 
@@ -44,38 +45,25 @@ function App() {
       openAuthModal('reset_password', token);
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (action === 'verify-email' && token) {
-      verifyEmail({ query: { token } })
-        .then((res) => {
-          if (res.error) {
-            openAuthModal(
-              'signin',
-              null,
-              null,
-              res.error.message || 'Verification token is invalid or has expired. Please sign in or request a new link.'
-            );
-          } else {
-            openAuthModal(
-              'signin',
-              null,
-              '✓ Your email address has been successfully verified! You can now sign in.'
-            );
-          }
-        })
-        .catch((err) => {
-          console.error('Email verification error:', err);
-          openAuthModal(
-            'signin',
-            null,
-            null,
-            'Failed to verify email token. Please try again or request a new verification email.'
-          );
-        });
+      // Trigger automatic verification of email address via API
+      verifyEmail({ query: { token } }).then((res) => {
+        if (res.error) {
+          openAuthModal('signin', null, null, res.error.message || 'Verification link expired or invalid.');
+        } else {
+          openAuthModal('signin', null, 'Your email has been verified successfully! You can now log in.');
+        }
+      });
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 
   useEffect(() => {
-    setReady(true);
+    const timer = setTimeout(() => setReady(true), 150);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Sync Turso cloud DB to local IndexedDB on session start if user is logged in
+  useEffect(() => {
     if (currentUser) {
       syncFromTursoToLocal();
     }
@@ -131,6 +119,16 @@ function App() {
         </div>
         <span className="font-serif text-lg text-ink-500">Loading eStudesk...</span>
       </div>
+    );
+  }
+
+  // Documentation page is publicly accessible to both visitors and signed in users
+  if (view.kind === 'docs') {
+    return (
+      <>
+        <DocumentationPage />
+        <AuthModal />
+      </>
     );
   }
 
