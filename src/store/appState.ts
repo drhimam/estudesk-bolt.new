@@ -24,7 +24,7 @@ export type View =
   | { kind: 'account'; tab?: AccountTab };
 
 export type AuthMode = 'signin' | 'signup' | 'forgot_password' | 'reset_password' | 'verify_email';
-export type AccountTab = 'profile' | 'subscription' | 'usage' | 'invoices' | 'security' | 'privacy';
+export type AccountTab = 'profile' | 'subscription' | 'usage' | 'invoices' | 'privacy';
 
 interface AppState {
   view: View;

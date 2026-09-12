@@ -3,7 +3,9 @@
   "name": "estudesk-api",
   "main": "src/index.ts",
   "compatibility_date": "2026-09-01",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "vars": {
     "ENVIRONMENT": "production",
     "TURSO_DATABASE_URL": "libsql://estudesk-db-drhimam.aws-us-east-2.turso.io",
@@ -11,13 +13,16 @@
     "AI_BASE_URL": "https://api.deepseek.com/v1",
     "AI_MODEL": "deepseek-chat",
     "ZEPTOMAIL_API_URL": "https://api.zeptomail.ca/v1.1/email",
-    "EMAIL_FROM_ADDRESS": "noreply@estudesk.com",
+    "EMAIL_FROM_ADDRESS": "info@estudesk.com",
     "EMAIL_FROM_NAME": "eStudesk",
     "FRONTEND_URL": "https://estudesk.com",
     "PAYPAL_ENVIRONMENT": "sandbox"
   },
   "triggers": {
-    "crons": ["*/15 * * * *", "0 * * * *"]
+    "crons": [
+      "*/15 * * * *",
+      "0 * * * *"
+    ]
   },
   "r2_buckets": [
     {

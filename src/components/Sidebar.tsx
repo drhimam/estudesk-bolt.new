@@ -870,12 +870,12 @@ function SidebarFooter() {
                 <button
                   onClick={() => {
                     setShowMenu(false);
-                    openAccountModal('security');
+                    openAccountModal('privacy');
                   }}
                   className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-ink-700 hover:bg-paper-100 transition-colors text-left"
                 >
-                  <KeyRound className="w-3.5 h-3.5 text-slate-600" />
-                  <span>Security & Sessions</span>
+                  <Shield className="w-3.5 h-3.5 text-slate-600" />
+                  <span>Privacy & Data Archive</span>
                 </button>
                 <div className="border-t border-paper-200 my-1"></div>
                 <button

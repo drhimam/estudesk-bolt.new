@@ -805,12 +805,6 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
             label="Invoices & Receipts"
           />
           <TabButton
-            active={activeTab === 'security'}
-            onClick={() => setActiveTab('security')}
-            icon={<KeyRound className="w-4 h-4" />}
-            label="Security & Sessions"
-          />
-          <TabButton
             active={activeTab === 'privacy'}
             onClick={() => setActiveTab('privacy')}
             icon={<Shield className="w-4 h-4" />}
@@ -1479,72 +1473,7 @@ export function AccountSettingsPage({ initialTab = 'profile' }: AccountSettingsP
           </div>
         )}
 
-        {/* TAB 5: SECURITY & SESSIONS */}
-        {activeTab === 'security' && (
-          <div className="max-w-3xl space-y-6 animate-fade-in">
-            {/* Active Sessions */}
-            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#d6e0db] shadow-soft">
-              <h3 className="font-serif text-base font-bold text-ink-900 pb-3 border-b border-paper-200 flex items-center justify-between">
-                <span>Active Device Sessions</span>
-                <span className="text-xs font-normal text-ink-400">
-                  {sessions.length} active login{sessions.length !== 1 ? 's' : ''}
-                </span>
-              </h3>
-
-              <div className="divide-y divide-paper-100 mt-4">
-                {sessions.map((s, idx) => (
-                  <div key={s.id} className="py-3.5 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 rounded-2xl bg-paper-100 text-ink-600">
-                        <Laptop className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-ink-800">
-                          {s.userAgent || 'Web Browser'}
-                          {idx === 0 && (
-                            <span className="ml-2 text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                              Current Device
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-[10px] text-ink-400 mt-0.5">
-                          IP: {s.ipAddress} • Logged in: {new Date(s.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Password update helper */}
-            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#d6e0db] shadow-soft">
-              <h3 className="font-serif text-base font-bold text-ink-900 pb-3 border-b border-paper-200">
-                Password & Authentication Security
-              </h3>
-              <p className="text-xs text-ink-500 mt-2">
-                Your eStudesk account is secured with scrypt cryptographic hashing. If you need to reset your password, you can request a secure reset link to your verified email address.
-              </p>
-
-              <div className="mt-5 flex items-center justify-between p-4 rounded-2xl bg-paper-50 border border-paper-200">
-                <div className="flex items-center gap-2.5">
-                  <ShieldCheck className="w-5 h-5 text-emerald-600" />
-                  <span className="text-xs font-semibold text-ink-800">Direct Email Reset Active</span>
-                </div>
-                <button
-                  onClick={() => {
-                    alert('A password reset link has been dispatched to your email address.');
-                  }}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-white text-ink-700 border border-[#d6e0db] hover:bg-paper-50 cursor-pointer shadow-soft"
-                >
-                  Send Reset Link
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 6: PRIVACY & GDPR */}
+        {/* TAB 5: PRIVACY & GDPR */}
         {activeTab === 'privacy' && (
           <div className="max-w-3xl space-y-6 animate-fade-in">
             {/* GDPR Data Archive */}
