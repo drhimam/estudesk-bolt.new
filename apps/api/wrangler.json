@@ -13,7 +13,8 @@
     "ZEPTOMAIL_API_URL": "https://api.zeptomail.ca/v1.1/email",
     "EMAIL_FROM_ADDRESS": "noreply@estudesk.com",
     "EMAIL_FROM_NAME": "eStudesk",
-    "FRONTEND_URL": "https://estudesk.com"
+    "FRONTEND_URL": "https://estudesk.com",
+    "PAYPAL_ENVIRONMENT": "sandbox"
   },
   "triggers": {
     "crons": ["*/15 * * * *", "0 * * * *"]
