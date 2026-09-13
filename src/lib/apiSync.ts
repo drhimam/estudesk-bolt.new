@@ -5,7 +5,7 @@ import type { Semester, Subject, SubjectColor, StudyMaterial, Deadline, Material
 const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
   (import.meta.env.PROD
-    ? 'https://estudesk-api.rifa-numis.workers.dev'
+    ? 'https://api.estudesk.com'
     : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'));
 
 function getAuthenticatedUser(): { id: string; email: string } | null {

@@ -17,6 +17,7 @@ export function initBetterAuth(
   const defaultOrigins = [
     'https://estudesk.com',
     'https://www.estudesk.com',
+    'https://api.estudesk.com',
     'https://*.estudesk.com',
     'https://estudesk-bolt-new.pages.dev',
     'https://estudesk.pages.dev',
@@ -40,7 +41,7 @@ export function initBetterAuth(
       },
     }),
     secret: secret,
-    baseURL: baseURL || 'https://estudesk-api.rifa-numis.workers.dev',
+    baseURL: baseURL || 'https://api.estudesk.com',
     trustedOrigins,
     emailAndPassword: {
       enabled: true,
