@@ -27,12 +27,10 @@ eStudesk is a modern, privacy-first academic workspace featuring intelligent AI 
    - Dynamic PayPal JS SDK loader supporting both Subscription mode (`intent=subscription`) and Order mode (`intent=capture`).
    - Zero-trust server verification (`POST /api/billing/verify-paypal-subscription`) validating subscription/order status directly with PayPal REST API OAuth2 servers before upgrading user tiers.
    - Webhook listener (`POST /api/billing/paypal-webhook`) for renewals, suspensions, and cancellations.
-   - **Instant Sandbox Test Mode** for seamless developer testing without popup blockers.
 5. **Period-Preserved Downgrades & Fixed Monthly Quota**
    - **Downgrading to Free**: Keeps full Pro benefits and all credits active until `currentPeriodEnd` (`cancelAtPeriodEnd = true`) with a `"Resume Auto-Renewal"` action.
    - **Immediate Upgrades**: Grants Pro tier instantly with fixed 1,000 monthly credits (`setUserMonthlyQuota`) to prevent runaway credit stacking.
-6. **Developer Tools & Turso CLI Scripts**
-   - **In-App Testing Controls**: 1-click `"Reset to Free (100 Cr)"` and `"Set Pro (1,000 Cr)"` buttons under AI Credits tab.
+6. **Administrative Turso CLI Scripts**
    - **CLI Tool** ([scripts/reset-user.mjs](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/scripts/reset-user.mjs)): `node scripts/reset-user.mjs <email_or_id> [tier] [credits]`.
    - **Deduplication Tool** ([scripts/cleanup-subscriptions.mjs](file:///d:/antigravity/estudesk-bolt.new/estudesk-bolt.new/scripts/cleanup-subscriptions.mjs)): Cleans legacy duplicate subscription rows and applies unique database index.
 
