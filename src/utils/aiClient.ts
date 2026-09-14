@@ -8,6 +8,7 @@
 import { extractUrls, fetchUrlContent } from './webReader';
 import { updateUserCredits } from '@/store/appState';
 import { syncCreditUsage } from '@/lib/apiSync';
+import { API_BASE_URL } from '@/lib/authClient';
 
 function deductClientCredit(cost: number, materialType: string = 'notes', description: string = 'AI Generation') {
   try {
@@ -77,7 +78,9 @@ function extractJsonFromText(text: string): Record<string, unknown> {
 }
 
 /**
- * Send a chat completion request to the configured AI provider.
+ * Send a chat completion request.
+ * Automatically routes through the backend API proxy (api.estudesk.com) to bypass
+ * corporate / office firewalls that block direct connections to AI providers.
  */
 export async function chatCompletion(
   messages: ChatCompletionMessage[],
@@ -91,10 +94,6 @@ export async function chatCompletion(
     throw new Error('Please sign in or create an account to access AI study generation.');
   }
 
-  if (!AI_API_KEY) {
-    throw new Error('AI_API_KEY is not configured. Add VITE_AI_API_KEY to your .env file.');
-  }
-
   const body: Record<string, unknown> = {
     model: AI_MODEL,
     messages,
@@ -105,26 +104,61 @@ export async function chatCompletion(
     body.response_format = { type: 'json_object' };
   }
 
-  const response = await fetch(`${AI_BASE_URL}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${AI_API_KEY}`,
-    },
-    body: JSON.stringify(body),
-  });
+  // 1. Primary: Route through our secure backend API endpoint (bypasses office firewalls & keeps API key secure)
+  try {
+    const proxyRes = await fetch(`${API_BASE_URL}/api/ai/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
 
-  if (!response.ok) {
-    const errText = await response.text().catch(() => '');
-    throw new Error(`AI provider error (HTTP ${response.status}): ${errText.slice(0, 200)}`);
+    if (proxyRes.ok) {
+      const resJson = (await proxyRes.json()) as ChatCompletionResponse;
+      const content = resJson.choices?.[0]?.message?.content;
+      if (content) {
+        return content;
+      }
+    } else {
+      const errJson = (await proxyRes.json().catch(() => ({}))) as { error?: string };
+      console.warn(`[aiClient] Backend proxy error (${proxyRes.status}):`, errJson.error);
+      if (!AI_API_KEY) {
+        throw new Error(errJson.error || `AI generation service error (HTTP ${proxyRes.status})`);
+      }
+    }
+  } catch (proxyErr: unknown) {
+    console.warn('[aiClient] Backend proxy connection error, attempting direct fallback:', proxyErr);
+    if (!AI_API_KEY) {
+      throw new Error('Unable to connect to AI study generation service. Please check your network connection.');
+    }
   }
 
-  const resJson = (await response.json()) as ChatCompletionResponse;
-  const content = resJson.choices?.[0]?.message?.content;
-  if (!content) {
-    throw new Error('AI provider returned empty content.');
+  // 2. Direct client fallback (only if local VITE_AI_API_KEY is explicitly configured in local dev)
+  if (AI_API_KEY) {
+    const response = await fetch(`${AI_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${AI_API_KEY}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => '');
+      throw new Error(`AI provider error (HTTP ${response.status}): ${errText.slice(0, 200)}`);
+    }
+
+    const resJson = (await response.json()) as ChatCompletionResponse;
+    const content = resJson.choices?.[0]?.message?.content;
+    if (!content) {
+      throw new Error('AI provider returned empty content.');
+    }
+    return content;
   }
-  return content;
+
+  throw new Error('AI study service is currently unavailable.');
 }
 
 function buildTypeDirectives(type: string, options?: Record<string, unknown>): string {

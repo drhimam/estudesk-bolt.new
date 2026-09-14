@@ -496,6 +496,79 @@ app.delete('/api/deadlines/:id', async (c) => {
   }
 });
 
+// AI Completions Proxy Endpoint (routes AI requests through custom domain to bypass office firewalls)
+app.post('/api/ai/completions', async (c) => {
+  try {
+    const body = await c.req.json<{
+      messages: Array<{ role: string; content: string }>;
+      model?: string;
+      temperature?: number;
+      response_format?: { type: string };
+    }>();
+
+    if (!body.messages || !Array.isArray(body.messages) || body.messages.length === 0) {
+      return c.json({ error: 'Messages array is required' }, 400);
+    }
+
+    const apiKey =
+      c.env.AI_API_KEY ||
+      c.env.DEEPSEEK_API_KEY ||
+      c.env.OPENAI_API_KEY ||
+      c.env.GEMINI_API_KEY;
+
+    const baseUrl = (
+      c.env.AI_BASE_URL ||
+      (c.env.AI_PROVIDER === 'openai'
+        ? 'https://api.openai.com/v1'
+        : c.env.AI_PROVIDER === 'gemini'
+          ? 'https://generativelanguage.googleapis.com/v1beta/openai'
+          : 'https://api.deepseek.com/v1')
+    ).replace(/\/+$/, '');
+
+    const model =
+      body.model ||
+      c.env.AI_MODEL ||
+      (c.env.AI_PROVIDER === 'openai' ? 'gpt-4o-mini' : 'deepseek-chat');
+
+    if (!apiKey) {
+      return c.json({ error: 'AI_API_KEY is not configured on the backend server.' }, 500);
+    }
+
+    const payload: Record<string, unknown> = {
+      model,
+      messages: body.messages,
+      temperature: body.temperature ?? 0.3,
+    };
+
+    if (body.response_format) {
+      payload.response_format = body.response_format;
+    }
+
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      return c.json(
+        { error: `AI Provider Error (HTTP ${response.status}): ${errText.slice(0, 300)}` },
+        response.status as any
+      );
+    }
+
+    const data = await response.json();
+    return c.json(data);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: msg }, 500);
+  }
+});
+
 // AI Generation Endpoint
 app.post('/api/generate', async (c) => {
   const idempotencyKey = c.req.header('Idempotency-Key') || crypto.randomUUID();
