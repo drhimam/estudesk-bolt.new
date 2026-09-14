@@ -9,7 +9,6 @@ import {
   Loader2,
   Lock,
   Sparkles,
-  CreditCard,
 } from 'lucide-react';
 import type { SubscriptionPlan } from '../types';
 import { API_BASE_URL } from '../lib/authClient';
@@ -144,7 +143,7 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
         },
         onError: function (err: any) {
           console.warn('PayPal checkout notification:', err);
-          setErrorMessage('PayPal checkout encountered an issue. You can use the Instant Sandbox Test button below.');
+          setErrorMessage('PayPal checkout encountered an issue. Please try again or select another payment option.');
         },
         onCancel: function () {
           setErrorMessage('PayPal checkout was cancelled.');
@@ -214,12 +213,6 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
     } finally {
       setIsProcessing(false);
     }
-  }
-
-  // Quick Sandbox Test Approval (for seamless sandbox testing)
-  async function handleSandboxTestCheckout() {
-    const sandboxSubId = `SANDBOX_SUB_${plan?.id.toUpperCase()}_${Date.now()}`;
-    await handleVerifySubscription(sandboxSubId);
   }
 
   if (!isOpen || !plan) return null;
@@ -355,28 +348,6 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
                 ) : (
                   <div ref={paypalContainerRef} className="w-full" />
                 )}
-              </div>
-
-              {/* Sandbox Test Action (Always available in sandbox mode for developers) */}
-              <div className="pt-2 border-t border-paper-200">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                    PayPal Sandbox Mode Active
-                  </span>
-                  <span className="text-[11px] text-ink-400">Developer Testing</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleSandboxTestCheckout}
-                  disabled={isProcessing}
-                  className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold bg-gradient-to-r from-amber-600 to-accent-700 hover:from-amber-700 hover:to-accent-800 text-white shadow-soft transition-all cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <CreditCard className="w-4 h-4" />
-                  <span>⚡ Instant Sandbox Test Subscription ({plan.name})</span>
-                </button>
-                <p className="text-[10px] text-ink-400 text-center mt-1.5">
-                  Simulates a verified PayPal subscription & tests the full backend pipeline instantly.
-                </p>
               </div>
             </div>
           )}
