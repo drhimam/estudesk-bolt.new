@@ -830,15 +830,24 @@ app.post('/api/notifications/send-scheduled-digests', async (c) => {
 // ==========================================
 
 // Get Public PayPal Configuration
-app.get('/api/billing/config', (c) => {
+const handleBillingConfig = (c: any) => {
   const clientId = c.env.PAYPAL_CLIENT_ID || c.env.VITE_PAYPAL_CLIENT_ID || '';
   const environment = c.env.PAYPAL_ENVIRONMENT || 'sandbox';
+  const isConfigured = Boolean(clientId);
   return c.json({
     clientId,
     environment,
-    isConfigured: Boolean(clientId),
+    isConfigured,
+    data: {
+      clientId,
+      environment,
+      isConfigured,
+    },
   });
-});
+};
+
+app.get('/api/billing/config', handleBillingConfig);
+app.get('/api/billing/paypal-config', handleBillingConfig);
 
 // Get All Database-Driven Subscription Plans
 app.get('/api/billing/plans', async (c) => {

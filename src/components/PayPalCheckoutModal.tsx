@@ -61,20 +61,24 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
         const res = await fetch(`${API_BASE_URL}/api/billing/paypal-config`);
         if (res.ok) {
           const json = await res.json();
-          if (json.data?.clientId) {
-            setPaypalClientId(json.data.clientId);
-            setPaypalEnv(json.data.environment || 'sandbox');
+          const cid = json.data?.clientId || json.clientId;
+          const env = json.data?.environment || json.environment || 'sandbox';
+          if (cid) {
+            setPaypalClientId(cid);
+            setPaypalEnv(env);
+            setLoadingConfig(false);
+            return;
           }
         }
       } catch (err) {
         console.warn('Could not fetch backend PayPal config, checking local env:', err);
-      } finally {
-        const envClientId = (import.meta as any).env?.VITE_PAYPAL_CLIENT_ID || '';
-        if (envClientId) {
-          setPaypalClientId(envClientId);
-        }
-        setLoadingConfig(false);
       }
+      
+      const envClientId = (import.meta as any).env?.VITE_PAYPAL_CLIENT_ID || '';
+      if (envClientId) {
+        setPaypalClientId(envClientId);
+      }
+      setLoadingConfig(false);
     }
 
     loadConfig();
