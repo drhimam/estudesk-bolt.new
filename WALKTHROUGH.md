@@ -256,7 +256,20 @@ JOIN user u ON s.user_id = u.id;
 - When plan prices, features, discounts, or quotas change in the database, the landing page cards (Free Scholar, Pro Monthly, Pro Semester, and Pro Yearly) dynamically update without requiring frontend code changes.
 - Uses resilient default fallback structures so cold-starts and offline conditions render immediately with zero layout shift.
 
-## 8. Build, Verification & Deployment
+## 8. Focus Mode & Study Material Table of Contents (TOC) Navigation
+
+- **Automatic Heading Slug Generation**:
+  - Implemented `getNodeText()` to extract plain text from ReactMarkdown heading elements (supporting nested inline markdown elements like `**bold**`, `*italic*`, and `<code>code</code>`).
+  - Implemented `createHeadingSlug()` to generate standardized, URL-safe heading IDs (`#heading-slug`) for `h1` through `h6`.
+- **TOC Item to Heading Synchronization**:
+  - Both the Table of Contents drawer in Focus Mode and the rendered Markdown document now share identical slug generation logic.
+  - Rendered headings in notes, cheatsheets, assignments, and summary materials are attached with matching HTML `id` attributes and `scroll-mt-6` offset styling.
+- **Smooth Navigation**:
+  - Clicking any TOC heading item in the drawer executes `el.scrollIntoView({ behavior: 'smooth', block: 'start' })`, seamlessly scrolling directly to the target section within the focus viewport.
+
+---
+
+## 9. Build, Verification & Deployment
 
 ```bash
 # 1. Run TypeScript typecheck

@@ -43,6 +43,53 @@ import { syncUpdateMaterial, syncDeleteMaterial } from '@/lib/apiSync';
 import { getFileTimestamp, sanitizeFilename } from '@/utils/filename';
 import type { StudyMaterial, SubjectColor, Flashcard, QuizQuestion, PresentationSlide } from '@/types';
 
+function getNodeText(node: React.ReactNode): string {
+  if (node == null || typeof node === 'boolean') return '';
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(getNodeText).join('');
+  if (typeof node === 'object' && 'props' in (node as any) && (node as any).props?.children) {
+    return getNodeText((node as any).props.children);
+  }
+  return '';
+}
+
+function createHeadingSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[*_`#]/g, '')
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+const markdownHeadingComponents = {
+  h1: ({ children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => {
+    const id = createHeadingSlug(getNodeText(children));
+    return <h1 id={id} className="scroll-mt-6" {...props}>{children}</h1>;
+  },
+  h2: ({ children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => {
+    const id = createHeadingSlug(getNodeText(children));
+    return <h2 id={id} className="scroll-mt-6" {...props}>{children}</h2>;
+  },
+  h3: ({ children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => {
+    const id = createHeadingSlug(getNodeText(children));
+    return <h3 id={id} className="scroll-mt-6" {...props}>{children}</h3>;
+  },
+  h4: ({ children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => {
+    const id = createHeadingSlug(getNodeText(children));
+    return <h4 id={id} className="scroll-mt-6" {...props}>{children}</h4>;
+  },
+  h5: ({ children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => {
+    const id = createHeadingSlug(getNodeText(children));
+    return <h5 id={id} className="scroll-mt-6" {...props}>{children}</h5>;
+  },
+  h6: ({ children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => {
+    const id = createHeadingSlug(getNodeText(children));
+    return <h6 id={id} className="scroll-mt-6" {...props}>{children}</h6>;
+  },
+};
+
 export function MathFormula({ formula, display = true }: { formula: string; display?: boolean }) {
   try {
     const html = katex.renderToString(formula, { displayMode: display, throwOnError: false });
@@ -99,8 +146,10 @@ export function MaterialViewer({ material, subjectColor, onBack, onRenamed }: Pr
       if (match) {
         const level = match[1].length;
         const headingText = match[2].trim().replace(/[*_`]/g, '');
-        const id = headingText.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        items.push({ level, text: headingText, id });
+        const id = createHeadingSlug(headingText);
+        if (id) {
+          items.push({ level, text: headingText, id });
+        }
       }
     });
 
@@ -494,21 +543,21 @@ export function MaterialViewer({ material, subjectColor, onBack, onRenamed }: Pr
             >
               {material.type === 'notes' && (
                 <div className="prose-studesk max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownHeadingComponents}>
                     {material.contentMarkdown || ''}
                   </ReactMarkdown>
                 </div>
               )}
               {material.type === 'cheatsheet' && (
                 <div className="prose-studesk max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownHeadingComponents}>
                     {material.contentMarkdown || ''}
                   </ReactMarkdown>
                 </div>
               )}
               {material.type === 'assignment' && (
                 <div className="prose-studesk max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownHeadingComponents}>
                     {material.contentMarkdown || ''}
                   </ReactMarkdown>
                 </div>
@@ -527,7 +576,7 @@ export function MaterialViewer({ material, subjectColor, onBack, onRenamed }: Pr
               )}
               {material.type === 'other' && (
                 <div className="prose-studesk max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownHeadingComponents}>
                     {material.contentMarkdown || material.sourceSnippet || ''}
                   </ReactMarkdown>
                 </div>
@@ -556,7 +605,7 @@ export function MaterialViewer({ material, subjectColor, onBack, onRenamed }: Pr
                     key={i}
                     onClick={() => {
                       const el = document.getElementById(item.id);
-                      if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }}
                     className={`w-full text-left py-1.5 px-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-ink-700 dark:text-ink-300 font-medium truncate ${
                       item.level === 1 ? 'font-bold text-ink-900 dark:text-white' : item.level === 2 ? 'pl-4' : 'pl-7 text-ink-500'
@@ -721,21 +770,21 @@ export function MaterialViewer({ material, subjectColor, onBack, onRenamed }: Pr
         >
           {material.type === 'notes' && (
             <div className="prose-studesk">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownHeadingComponents}>
                 {material.contentMarkdown || ''}
               </ReactMarkdown>
             </div>
           )}
           {material.type === 'cheatsheet' && (
             <div className="prose-studesk">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownHeadingComponents}>
                 {material.contentMarkdown || ''}
               </ReactMarkdown>
             </div>
           )}
           {material.type === 'assignment' && (
             <div className="prose-studesk">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownHeadingComponents}>
                 {material.contentMarkdown || ''}
               </ReactMarkdown>
             </div>
@@ -754,7 +803,7 @@ export function MaterialViewer({ material, subjectColor, onBack, onRenamed }: Pr
           )}
           {material.type === 'other' && (
             <div className="prose-studesk">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownHeadingComponents}>
                 {material.contentMarkdown || material.sourceSnippet || ''}
               </ReactMarkdown>
             </div>
