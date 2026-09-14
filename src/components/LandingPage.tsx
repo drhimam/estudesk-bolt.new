@@ -1349,7 +1349,7 @@ export function LandingPage() {
       {/* Modern Rich Footer */}
       <footer className="bg-[#0f1713] text-slate-100 border-t border-[#1f3529] pt-16 pb-12 text-sm selection:bg-accent-600 selection:text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-[#1f3529]">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-[#1f3529]">
             {/* Col 1: Brand & Identity */}
             <div className="lg:col-span-2 space-y-4">
               <div className="flex items-center gap-2.5">
@@ -1416,39 +1416,7 @@ export function LandingPage() {
               </ul>
             </div>
 
-            {/* Col 3: Plans & Pricing */}
-            <div className="space-y-3.5">
-              <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                Plans &amp; Billing
-              </h4>
-              <ul className="space-y-2.5 text-sm text-slate-300">
-                <li>
-                  <a href="#pricing" className="hover:text-emerald-300 transition-colors">Free Scholar ($0)</a>
-                </li>
-                <li>
-                  <a href="#pricing" className="hover:text-emerald-300 transition-colors">Pro Monthly ($9.99/mo)</a>
-                </li>
-                <li>
-                  <a href="#pricing" className="hover:text-emerald-300 transition-colors flex items-center gap-1.5">
-                    <span>Pro Semester</span>
-                    <span className="text-[10px] font-bold text-amber-300 bg-amber-950 px-1.5 py-0.5 rounded border border-amber-600/60">25% OFF</span>
-                  </a>
-                </li>
-                <li>
-                  <button
-                    onClick={() => setView({ kind: 'docs', section: 'billing-credits' })}
-                    className="hover:text-emerald-300 transition-colors text-left cursor-pointer"
-                  >
-                    Credit &amp; Invoice Guide
-                  </button>
-                </li>
-                <li>
-                  <a href="#pricing" className="hover:text-emerald-300 transition-colors">Encrypted Secure Checkout</a>
-                </li>
-              </ul>
-            </div>
-
-            {/* Col 4: Privacy & Legal */}
+            {/* Col 3: Privacy & Legal */}
             <div className="space-y-3.5">
               <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
                 Privacy &amp; Trust
