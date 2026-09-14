@@ -911,13 +911,21 @@ export function LandingPage() {
                 </div>
 
                 {/* PLAN 2: PRO MONTHLY */}
-                <div className={`rounded-3xl p-6 sm:p-7 bg-white border transition-all flex flex-col justify-between ${
+                <div className={`relative rounded-3xl p-6 sm:p-7 bg-white border transition-all flex flex-col justify-between ${
                   pricingCycle === 'monthly'
                     ? 'border-indigo-500 ring-4 ring-indigo-500/15 shadow-card scale-[1.02]'
                     : 'border-paper-300 shadow-soft hover:shadow-card hover:border-indigo-400'
                 }`}>
+                  {/* Top Discount Stamp */}
+                  {proMonthlyPricing.hasDiscount && proMonthlyPricing.discountReason && (
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-[10px] font-bold px-3.5 py-1 rounded-full shadow-md flex items-center gap-1 uppercase tracking-wider whitespace-nowrap">
+                      <Flame className="w-3.5 h-3.5 fill-white" />
+                      <span>{proMonthlyPricing.discountReason}</span>
+                    </div>
+                  )}
+
                   <div>
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mt-1 mb-2">
                       <h3 className="font-serif text-xl font-bold text-ink-900">{proMonthlyPlan.name}</h3>
                       <span className="text-[10px] font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md uppercase border border-indigo-200">
                         Flexible
@@ -1057,11 +1065,16 @@ export function LandingPage() {
                     ? 'bg-white border-paper-300 shadow-soft hover:shadow-card'
                     : 'bg-[#f6f8f7] border-paper-300 opacity-90'
                 }`}>
-                  {!proYearlyPlan.isActive && (
+                  {proYearlyPricing.hasDiscount && proYearlyPricing.discountReason ? (
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-bold px-3.5 py-1 rounded-full shadow-md flex items-center gap-1 uppercase tracking-wider whitespace-nowrap">
+                      <Flame className="w-3.5 h-3.5 fill-white" />
+                      <span>{proYearlyPricing.discountReason}</span>
+                    </div>
+                  ) : !proYearlyPlan.isActive ? (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-700 text-white text-[10px] font-bold px-3 py-0.5 rounded-full shadow-sm uppercase tracking-wider whitespace-nowrap">
                       Coming Soon
                     </div>
-                  )}
+                  ) : null}
 
                   <div>
                     <div className="flex items-center justify-between mt-1 mb-2">
