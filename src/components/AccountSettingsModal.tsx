@@ -32,6 +32,7 @@ import {
 } from '@/store/appState';
 import { API_BASE_URL } from '@/lib/authClient';
 import type { SubscriptionPlan, InvoiceRecord, CreditTransaction, SessionItem } from '@/types';
+import { calculatePlanPricing } from '@/utils/pricing';
 import { PayPalCheckoutModal } from './PayPalCheckoutModal';
 
 const INITIAL_DEFAULT_PLANS: SubscriptionPlan[] = [
@@ -81,7 +82,7 @@ const INITIAL_DEFAULT_PLANS: SubscriptionPlan[] = [
     name: 'Pro Semester (4 Months)',
     billingCycle: 'semester',
     durationMonths: 4,
-    priceAmount: 29.99,
+    priceAmount: 39.99,
     currency: 'USD',
     discountPercent: 25,
     discountReason: 'Semester Saver • 25% Off',
@@ -103,7 +104,7 @@ const INITIAL_DEFAULT_PLANS: SubscriptionPlan[] = [
     name: 'Pro Yearly',
     billingCycle: 'yearly',
     durationMonths: 12,
-    priceAmount: 79.99,
+    priceAmount: 119.99,
     currency: 'USD',
     discountPercent: 35,
     discountReason: 'Annual Best Value • 35% Off',
@@ -825,10 +826,7 @@ export function AccountSettingsModal() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {plans.map((plan) => {
                       const isCurrent = (isPro && plan.id.startsWith('pro_')) || (!isPro && plan.id === 'free');
-                      const hasDiscount = plan.discountPercent > 0;
-                      const originalPrice = hasDiscount
-                        ? (plan.priceAmount / (1 - plan.discountPercent / 100)).toFixed(2)
-                        : null;
+                      const pricing = calculatePlanPricing(plan);
 
                       return (
                         <div
@@ -842,7 +840,7 @@ export function AccountSettingsModal() {
                           }`}
                         >
                           {/* Top Tag */}
-                          {hasDiscount && plan.discountReason && (
+                          {pricing.hasDiscount && plan.discountReason && (
                             <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-emerald-600 text-white text-[10px] font-bold px-3 py-0.5 rounded-full shadow-sm flex items-center gap-1 uppercase tracking-wider whitespace-nowrap">
                               <Flame className="w-3 h-3" />
                               <span>{plan.discountReason}</span>
@@ -870,13 +868,13 @@ export function AccountSettingsModal() {
                             {/* Price */}
                             <div className="mb-4">
                               <div className="flex items-baseline gap-1.5">
-                                {hasDiscount && originalPrice && (
+                                {pricing.hasDiscount && (
                                   <span className="text-sm font-semibold text-ink-400 line-through">
-                                    ${originalPrice}
+                                    ${pricing.originalPrice.toFixed(2)}
                                   </span>
                                 )}
                                 <span className="font-serif text-2xl sm:text-3xl font-bold text-ink-900">
-                                  ${plan.priceAmount.toFixed(2)}
+                                  ${pricing.effectivePrice.toFixed(2)}
                                 </span>
                                 <span className="text-xs text-ink-500">
                                   {plan.billingCycle === 'once'
@@ -888,9 +886,9 @@ export function AccountSettingsModal() {
                                         : '/ mo'}
                                 </span>
                               </div>
-                              {plan.billingCycle === 'semester' && (
+                              {pricing.monthlyEquivalent !== null && (
                                 <p className="text-[11px] text-emerald-700 font-medium mt-0.5">
-                                  Only ${(plan.priceAmount / 4).toFixed(2)} / month
+                                  Only ${pricing.monthlyEquivalent.toFixed(2)} / month
                                 </p>
                               )}
                             </div>

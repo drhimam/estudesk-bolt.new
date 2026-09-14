@@ -65,7 +65,7 @@ export const DEFAULT_PLANS: PlanData[] = [
     name: 'Pro Semester (4 Months)',
     billingCycle: 'semester',
     durationMonths: 4,
-    priceAmount: 29.99,
+    priceAmount: 39.99,
     currency: 'USD',
     discountPercent: 25,
     discountReason: 'Semester Saver • 25% Off',
@@ -87,7 +87,7 @@ export const DEFAULT_PLANS: PlanData[] = [
     name: 'Pro Yearly',
     billingCycle: 'yearly',
     durationMonths: 12,
-    priceAmount: 79.99,
+    priceAmount: 119.99,
     currency: 'USD',
     discountPercent: 35,
     discountReason: 'Annual Best Value • 35% Off',
@@ -134,6 +134,15 @@ export async function seedSubscriptionPlans(db: any) {
           createdAt: new Date(),
           updatedAt: new Date(),
         });
+      } else if (existing.priceAmount === 29.99 && plan.id === 'pro_semester') {
+        // Migrate legacy stored price to original price
+        await db.update(schema.subscriptionPlans)
+          .set({ priceAmount: plan.priceAmount, discountPercent: plan.discountPercent, discountReason: plan.discountReason, updatedAt: new Date() })
+          .where(eq(schema.subscriptionPlans.id, plan.id));
+      } else if (existing.priceAmount === 79.99 && plan.id === 'pro_yearly') {
+        await db.update(schema.subscriptionPlans)
+          .set({ priceAmount: plan.priceAmount, discountPercent: plan.discountPercent, discountReason: plan.discountReason, updatedAt: new Date() })
+          .where(eq(schema.subscriptionPlans.id, plan.id));
       }
     }
   } catch (err) {

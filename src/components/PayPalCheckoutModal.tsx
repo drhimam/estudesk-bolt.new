@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import type { SubscriptionPlan } from '../types';
 import { API_BASE_URL } from '../lib/authClient';
+import { calculatePlanPricing } from '@/utils/pricing';
 
 declare global {
   interface Window {
@@ -158,6 +159,7 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
           });
         };
       } else {
+        const pricing = calculatePlanPricing(plan);
         buttonConfig.createOrder = function (_data: any, actions: any) {
           return actions.order.create({
             purchase_units: [
@@ -165,7 +167,7 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
                 description: `eStudesk ${plan.name} Subscription`,
                 amount: {
                   currency_code: 'USD',
-                  value: plan.priceAmount.toFixed(2),
+                  value: pricing.effectivePrice.toFixed(2),
                 },
               },
             ],
@@ -217,10 +219,7 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
 
   if (!isOpen || !plan) return null;
 
-  const hasDiscount = plan.discountPercent > 0;
-  const originalPrice = hasDiscount
-    ? (plan.priceAmount / (1 - plan.discountPercent / 100)).toFixed(2)
-    : null;
+  const pricing = calculatePlanPricing(plan);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
@@ -240,10 +239,10 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
               <Sparkles className="w-3 h-3" />
               Upgrade to Pro
             </span>
-            {hasDiscount && plan.discountReason && (
+            {pricing.hasDiscount && pricing.discountReason && (
               <span className="bg-gradient-to-r from-amber-500 to-rose-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 uppercase tracking-wider shadow-sm">
                 <Flame className="w-3 h-3" />
-                {plan.discountReason}
+                {pricing.discountReason}
               </span>
             )}
           </div>
@@ -253,13 +252,13 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
           </h3>
 
           <div className="flex items-baseline gap-2 mt-2">
-            {hasDiscount && originalPrice && (
+            {pricing.hasDiscount && (
               <span className="text-sm font-semibold text-white/50 line-through">
-                ${originalPrice}
+                ${pricing.originalPrice.toFixed(2)}
               </span>
             )}
             <span className="font-serif text-3xl font-bold text-white">
-              ${plan.priceAmount.toFixed(2)}
+              ${pricing.effectivePrice.toFixed(2)}
             </span>
             <span className="text-xs text-white/70">
               {plan.billingCycle === 'semester'

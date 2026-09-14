@@ -41,6 +41,7 @@ import { openAuthModal, setView, useAppState } from '@/store/appState';
 import { ambientAudio, type AmbientSoundType } from '@/utils/ambientAudio';
 import { API_BASE_URL } from '@/lib/authClient';
 import type { SubscriptionPlan } from '@/types';
+import { calculatePlanPricing } from '@/utils/pricing';
 
 const INITIAL_DEFAULT_PLANS: SubscriptionPlan[] = [
   {
@@ -88,7 +89,7 @@ const INITIAL_DEFAULT_PLANS: SubscriptionPlan[] = [
     name: 'Pro Semester',
     billingCycle: 'semester',
     durationMonths: 4,
-    priceAmount: 29.99,
+    priceAmount: 39.99,
     currency: 'USD',
     discountPercent: 25,
     discountReason: 'Semester Saver • 25% Off',
@@ -108,7 +109,7 @@ const INITIAL_DEFAULT_PLANS: SubscriptionPlan[] = [
     name: 'Pro Yearly',
     billingCycle: 'yearly',
     durationMonths: 12,
-    priceAmount: 79.99,
+    priceAmount: 119.99,
     currency: 'USD',
     discountPercent: 35,
     discountReason: 'Annual Best Value • 35% Off',
@@ -164,6 +165,11 @@ export function LandingPage() {
   const proMonthlyPlan = plans.find((p) => p.id === 'pro_monthly') || INITIAL_DEFAULT_PLANS[1];
   const proSemesterPlan = plans.find((p) => p.id === 'pro_semester') || INITIAL_DEFAULT_PLANS[2];
   const proYearlyPlan = plans.find((p) => p.id === 'pro_yearly') || INITIAL_DEFAULT_PLANS[3];
+
+  const freePricing = calculatePlanPricing(freePlan);
+  const proMonthlyPricing = calculatePlanPricing(proMonthlyPlan);
+  const proSemesterPricing = calculatePlanPricing(proSemesterPlan);
+  const proYearlyPricing = calculatePlanPricing(proYearlyPlan);
 
   // Interactive mini-demo state on the landing page
   const [activeTab, setActiveTab] = useState<'flashcard' | 'quiz' | 'ai' | 'audio'>('flashcard');
@@ -856,263 +862,277 @@ export function LandingPage() {
 
           {/* Pricing Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
-            {/* PLAN 1: FREE SCHOLAR */}
-            <div className="rounded-3xl p-6 sm:p-7 bg-white border border-paper-300 shadow-soft hover:shadow-card hover:border-accent-400 transition-all flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-serif text-xl font-bold text-ink-900">{freePlan.name}</h3>
-                  <span className="text-[10px] font-mono font-bold text-ink-600 bg-paper-100 px-2 py-0.5 rounded-md uppercase">
-                    Starter
-                  </span>
-                </div>
-                <p className="text-xs text-ink-500 min-h-[32px]">
-                  Essential study desk with offline local sync and starter AI credits.
-                </p>
-
-                <div className="my-5">
-                  <div className="flex items-baseline gap-1">
-                    <span className="font-serif text-4xl font-bold text-ink-950">
-                      ${freePlan.priceAmount === 0 ? '0' : freePlan.priceAmount.toFixed(2)}
-                    </span>
-                    <span className="text-xs text-ink-500">/ forever</span>
-                  </div>
-                  <p className="text-[11px] text-ink-400 mt-0.5">No credit card required</p>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-accent-50 border border-accent-100 mb-6 flex items-center gap-2">
-                  <Coins className="w-4 h-4 text-accent-700 shrink-0" />
-                  <span className="text-xs font-semibold text-accent-900">
-                    {freePlan.aiCreditsMonthly} Initial AI Credits
-                  </span>
-                </div>
-
-                <ul className="space-y-3 text-xs text-ink-700 mb-8">
-                  {freePlan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <button
-                onClick={() => handleProtectedAction('signup')}
-                className="w-full py-3 px-4 rounded-xl text-xs font-bold text-ink-800 bg-paper-100 hover:bg-paper-200 border border-paper-300 transition-all cursor-pointer shadow-soft hover:shadow-card text-center"
-              >
-                {currentUser ? 'Current Active Base' : 'Get Started Free'}
-              </button>
-            </div>
-
-            {/* PLAN 2: PRO MONTHLY */}
-            <div className={`rounded-3xl p-6 sm:p-7 bg-white border transition-all flex flex-col justify-between ${
-              pricingCycle === 'monthly'
-                ? 'border-indigo-500 ring-4 ring-indigo-500/15 shadow-card scale-[1.02]'
-                : 'border-paper-300 shadow-soft hover:shadow-card hover:border-indigo-400'
-            }`}>
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-serif text-xl font-bold text-ink-900">{proMonthlyPlan.name}</h3>
-                  <span className="text-[10px] font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md uppercase border border-indigo-200">
-                    Flexible
-                  </span>
-                </div>
-                <p className="text-xs text-ink-500 min-h-[32px]">
-                  Full monthly AI academic power with priority router and deadline alerts.
-                </p>
-
-                <div className="my-5">
-                  <div className="flex items-baseline gap-1">
-                    <span className="font-serif text-4xl font-bold text-ink-950">
-                      ${proMonthlyPlan.priceAmount.toFixed(2)}
-                    </span>
-                    <span className="text-xs text-ink-500">/ month</span>
-                  </div>
-                  <p className="text-[11px] text-ink-400 mt-0.5">Auto-renewing • Cancel anytime</p>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-indigo-50 border border-indigo-100 mb-6 flex items-center gap-2">
-                  <Coins className="w-4 h-4 text-indigo-700 shrink-0" />
-                  <span className="text-xs font-semibold text-indigo-900">
-                    {proMonthlyPlan.aiCreditsMonthly.toLocaleString()} Credits / month
-                  </span>
-                </div>
-
-                <ul className="space-y-3 text-xs text-ink-700 mb-8">
-                  {proMonthlyPlan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <button
-                onClick={() => {
-                  if (currentUser) {
-                    setView({ kind: 'account', tab: 'subscription' });
-                  } else {
-                    openAuthModal('signup');
-                  }
-                }}
-                className="w-full py-3 px-4 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all cursor-pointer shadow-soft hover:shadow-card text-center flex items-center justify-center gap-1.5"
-              >
-                <span>{currentUser ? 'Upgrade in Settings' : 'Start Pro Monthly'}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* PLAN 3: PRO SEMESTER (BEST VALUE) */}
-            <div className={`relative rounded-3xl p-6 sm:p-7 bg-gradient-to-b from-white to-[#f4f9f6] border-2 transition-all flex flex-col justify-between ${
-              pricingCycle === 'semester'
-                ? 'border-emerald-500 shadow-glow ring-4 ring-emerald-500/20 scale-[1.03]'
-                : 'border-emerald-400/80 shadow-card hover:shadow-glow'
-            }`}>
-              {/* Top Discount Stamp */}
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-emerald-600 text-white text-[10px] font-bold px-3.5 py-1 rounded-full shadow-md flex items-center gap-1 uppercase tracking-wider whitespace-nowrap">
-                <Flame className="w-3.5 h-3.5 fill-white" />
-                <span>{proSemesterPlan.discountReason || 'SEMESTER SAVER • 25% OFF'}</span>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mt-2 mb-2">
-                  <h3 className="font-serif text-xl font-bold text-ink-900">{proSemesterPlan.name}</h3>
-                  <span className="text-[10px] font-mono font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md uppercase">
-                    BEST VALUE
-                  </span>
-                </div>
-                <p className="text-xs text-ink-500 min-h-[32px]">
-                  Complete 4-month semester uninterrupted suite for serious scholars.
-                </p>
-
-                <div className="my-5">
-                  <div className="flex items-baseline gap-2">
-                    {proSemesterPlan.discountPercent > 0 && (
-                      <span className="text-sm font-semibold text-ink-400 line-through">
-                        ${(proSemesterPlan.priceAmount / (1 - proSemesterPlan.discountPercent / 100)).toFixed(2)}
+                {/* PLAN 1: FREE SCHOLAR */}
+                <div className="rounded-3xl p-6 sm:p-7 bg-white border border-paper-300 shadow-soft hover:shadow-card hover:border-accent-400 transition-all flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-serif text-xl font-bold text-ink-900">{freePlan.name}</h3>
+                      <span className="text-[10px] font-mono font-bold text-ink-600 bg-paper-100 px-2 py-0.5 rounded-md uppercase">
+                        Starter
                       </span>
-                    )}
-                    <span className="font-serif text-4xl font-bold text-ink-950">
-                      ${proSemesterPlan.priceAmount.toFixed(2)}
-                    </span>
-                    <span className="text-xs text-ink-500">
-                      / {proSemesterPlan.durationMonths} months
-                    </span>
+                    </div>
+                    <p className="text-xs text-ink-500 min-h-[32px]">
+                      Essential study desk with offline local sync and starter AI credits.
+                    </p>
+
+                    <div className="my-5">
+                      <div className="flex items-baseline gap-1">
+                        <span className="font-serif text-4xl font-bold text-ink-950">
+                          ${freePricing.effectivePrice === 0 ? '0' : freePricing.effectivePrice.toFixed(2)}
+                        </span>
+                        <span className="text-xs text-ink-500">/ forever</span>
+                      </div>
+                      <p className="text-[11px] text-ink-400 mt-0.5">No credit card required</p>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-accent-50 border border-accent-100 mb-6 flex items-center gap-2">
+                      <Coins className="w-4 h-4 text-accent-700 shrink-0" />
+                      <span className="text-xs font-semibold text-accent-900">
+                        {freePlan.aiCreditsMonthly} Initial AI Credits
+                      </span>
+                    </div>
+
+                    <ul className="space-y-3 text-xs text-ink-700 mb-8">
+                      {freePlan.features.map((feature, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <p className="text-[11px] text-emerald-700 font-semibold mt-0.5">
-                    Only ${(proSemesterPlan.priceAmount / (proSemesterPlan.durationMonths || 4)).toFixed(2)} / month
-                    {proSemesterPlan.discountPercent > 0 && ` (Save $${((proSemesterPlan.priceAmount / (1 - proSemesterPlan.discountPercent / 100)) - proSemesterPlan.priceAmount).toFixed(2)} every semester)`}
-                  </p>
+
+                  <button
+                    onClick={() => handleProtectedAction('signup')}
+                    className="w-full py-3 px-4 rounded-xl text-xs font-bold text-ink-800 bg-paper-100 hover:bg-paper-200 border border-paper-300 transition-all cursor-pointer shadow-soft hover:shadow-card text-center"
+                  >
+                    {currentUser ? 'Current Active Base' : 'Get Started Free'}
+                  </button>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 mb-6 flex items-center gap-2">
-                  <Coins className="w-4 h-4 text-emerald-700 shrink-0" />
-                  <span className="text-xs font-semibold text-emerald-900">
-                    {proSemesterPlan.aiCreditsMonthly.toLocaleString()} Credits / month ({proSemesterPlan.durationMonths} Months Total)
-                  </span>
-                </div>
+                {/* PLAN 2: PRO MONTHLY */}
+                <div className={`rounded-3xl p-6 sm:p-7 bg-white border transition-all flex flex-col justify-between ${
+                  pricingCycle === 'monthly'
+                    ? 'border-indigo-500 ring-4 ring-indigo-500/15 shadow-card scale-[1.02]'
+                    : 'border-paper-300 shadow-soft hover:shadow-card hover:border-indigo-400'
+                }`}>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-serif text-xl font-bold text-ink-900">{proMonthlyPlan.name}</h3>
+                      <span className="text-[10px] font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md uppercase border border-indigo-200">
+                        Flexible
+                      </span>
+                    </div>
+                    <p className="text-xs text-ink-500 min-h-[32px]">
+                      Full monthly AI academic power with priority router and deadline alerts.
+                    </p>
 
-                <ul className="space-y-3 text-xs text-ink-700 mb-8">
-                  {proSemesterPlan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                    <div className="my-5">
+                      <div className="flex items-baseline gap-2">
+                        {proMonthlyPricing.hasDiscount && (
+                          <span className="text-sm font-semibold text-ink-400 line-through">
+                            ${proMonthlyPricing.originalPrice.toFixed(2)}
+                          </span>
+                        )}
+                        <span className="font-serif text-4xl font-bold text-ink-950">
+                          ${proMonthlyPricing.effectivePrice.toFixed(2)}
+                        </span>
+                        <span className="text-xs text-ink-500">/ month</span>
+                      </div>
+                      <p className="text-[11px] text-ink-400 mt-0.5">Auto-renewing • Cancel anytime</p>
+                    </div>
 
-              <button
-                onClick={() => {
-                  if (currentUser) {
-                    setView({ kind: 'account', tab: 'subscription' });
-                  } else {
-                    openAuthModal('signup');
-                  }
-                }}
-                className="w-full py-3.5 px-4 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all cursor-pointer shadow-soft hover:shadow-card text-center flex items-center justify-center gap-1.5"
-              >
-                <span>{currentUser ? 'Switch in Settings' : `Claim ${proSemesterPlan.discountPercent || 25}% Off Semester`}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
+                    <div className="p-3 rounded-2xl bg-indigo-50 border border-indigo-100 mb-6 flex items-center gap-2">
+                      <Coins className="w-4 h-4 text-indigo-700 shrink-0" />
+                      <span className="text-xs font-semibold text-indigo-900">
+                        {proMonthlyPlan.aiCreditsMonthly.toLocaleString()} Credits / month
+                      </span>
+                    </div>
 
-            {/* PLAN 4: PRO YEARLY (COMING SOON OR ACTIVE) */}
-            <div className={`relative rounded-3xl p-6 sm:p-7 border flex flex-col justify-between ${
-              proYearlyPlan.isActive
-                ? 'bg-white border-paper-300 shadow-soft hover:shadow-card'
-                : 'bg-[#f6f8f7] border-paper-300 opacity-90'
-            }`}>
-              {!proYearlyPlan.isActive && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-700 text-white text-[10px] font-bold px-3 py-0.5 rounded-full shadow-sm uppercase tracking-wider whitespace-nowrap">
-                  Coming Soon
-                </div>
-              )}
-
-              <div>
-                <div className="flex items-center justify-between mt-1 mb-2">
-                  <h3 className="font-serif text-xl font-bold text-ink-900">{proYearlyPlan.name}</h3>
-                  <span className="text-[10px] font-mono font-bold text-ink-500 bg-paper-200 px-2 py-0.5 rounded-md uppercase">
-                    {proYearlyPlan.durationMonths} Months
-                  </span>
-                </div>
-                <p className="text-xs text-ink-500 min-h-[32px]">
-                  Annual package for full-year thesis, pre-med, and graduate research.
-                </p>
-
-                <div className="my-5">
-                  <div className="flex items-baseline gap-1">
-                    <span className="font-serif text-4xl font-bold text-ink-900">
-                      ${proYearlyPlan.priceAmount.toFixed(2)}
-                    </span>
-                    <span className="text-xs text-ink-500">/ year</span>
+                    <ul className="space-y-3 text-xs text-ink-700 mb-8">
+                      {proMonthlyPlan.features.map((feature, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <p className="text-[11px] text-ink-400 mt-0.5">
-                    Only ${(proYearlyPlan.priceAmount / (proYearlyPlan.durationMonths || 12)).toFixed(2)} / month (Annual savings)
-                  </p>
+
+                  <button
+                    onClick={() => {
+                      if (currentUser) {
+                        setView({ kind: 'account', tab: 'subscription' });
+                      } else {
+                        openAuthModal('signup');
+                      }
+                    }}
+                    className="w-full py-3 px-4 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all cursor-pointer shadow-soft hover:shadow-card text-center flex items-center justify-center gap-1.5"
+                  >
+                    <span>{currentUser ? 'Upgrade in Settings' : 'Start Pro Monthly'}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-paper-200/80 border border-paper-300 mb-6 flex items-center gap-2">
-                  <Coins className="w-4 h-4 text-ink-600 shrink-0" />
-                  <span className="text-xs font-semibold text-ink-800">
-                    {proYearlyPlan.aiCreditsMonthly.toLocaleString()} Credits / mo ({proYearlyPlan.durationMonths} Months)
-                  </span>
+                {/* PLAN 3: PRO SEMESTER (BEST VALUE) */}
+                <div className={`relative rounded-3xl p-6 sm:p-7 bg-gradient-to-b from-white to-[#f4f9f6] border-2 transition-all flex flex-col justify-between ${
+                  pricingCycle === 'semester'
+                    ? 'border-emerald-500 shadow-glow ring-4 ring-emerald-500/20 scale-[1.03]'
+                    : 'border-emerald-400/80 shadow-card hover:shadow-glow'
+                }`}>
+                  {/* Top Discount Stamp */}
+                  {proSemesterPricing.hasDiscount && (
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-emerald-600 text-white text-[10px] font-bold px-3.5 py-1 rounded-full shadow-md flex items-center gap-1 uppercase tracking-wider whitespace-nowrap">
+                      <Flame className="w-3.5 h-3.5 fill-white" />
+                      <span>{proSemesterPricing.discountReason || `SEMESTER SAVER • ${proSemesterPricing.discountPercent}% OFF`}</span>
+                    </div>
+                  )}
+
+                  <div>
+                    <div className="flex items-center justify-between mt-2 mb-2">
+                      <h3 className="font-serif text-xl font-bold text-ink-900">{proSemesterPlan.name}</h3>
+                      <span className="text-[10px] font-mono font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md uppercase">
+                        BEST VALUE
+                      </span>
+                    </div>
+                    <p className="text-xs text-ink-500 min-h-[32px]">
+                      Complete 4-month semester uninterrupted suite for serious scholars.
+                    </p>
+
+                    <div className="my-5">
+                      <div className="flex items-baseline gap-2">
+                        {proSemesterPricing.hasDiscount && (
+                          <span className="text-sm font-semibold text-ink-400 line-through">
+                            ${proSemesterPricing.originalPrice.toFixed(2)}
+                          </span>
+                        )}
+                        <span className="font-serif text-4xl font-bold text-ink-950">
+                          ${proSemesterPricing.effectivePrice.toFixed(2)}
+                        </span>
+                        <span className="text-xs text-ink-500">
+                          / {proSemesterPlan.durationMonths} months
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-emerald-700 font-semibold mt-0.5">
+                        Only ${proSemesterPricing.monthlyEquivalent.toFixed(2)} / month
+                        {proSemesterPricing.hasDiscount && ` (Save $${proSemesterPricing.savingsAmount.toFixed(2)} every semester)`}
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 mb-6 flex items-center gap-2">
+                      <Coins className="w-4 h-4 text-emerald-700 shrink-0" />
+                      <span className="text-xs font-semibold text-emerald-900">
+                        {proSemesterPlan.aiCreditsMonthly.toLocaleString()} Credits / month ({proSemesterPlan.durationMonths} Months Total)
+                      </span>
+                    </div>
+
+                    <ul className="space-y-3 text-xs text-ink-700 mb-8">
+                      {proSemesterPlan.features.map((feature, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      if (currentUser) {
+                        setView({ kind: 'account', tab: 'subscription' });
+                      } else {
+                        openAuthModal('signup');
+                      }
+                    }}
+                    className="w-full py-3.5 px-4 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all cursor-pointer shadow-soft hover:shadow-card text-center flex items-center justify-center gap-1.5"
+                  >
+                    <span>{currentUser ? 'Switch in Settings' : `Claim ${proSemesterPlan.discountPercent || 25}% Off Semester`}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
 
-                <ul className="space-y-3 text-xs text-ink-700 mb-8">
-                  {proYearlyPlan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-ink-500 shrink-0 mt-0.5" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
+                {/* PLAN 4: PRO YEARLY (COMING SOON OR ACTIVE) */}
+                <div className={`relative rounded-3xl p-6 sm:p-7 border flex flex-col justify-between ${
+                  proYearlyPlan.isActive
+                    ? 'bg-white border-paper-300 shadow-soft hover:shadow-card'
+                    : 'bg-[#f6f8f7] border-paper-300 opacity-90'
+                }`}>
+                  {!proYearlyPlan.isActive && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-700 text-white text-[10px] font-bold px-3 py-0.5 rounded-full shadow-sm uppercase tracking-wider whitespace-nowrap">
+                      Coming Soon
+                    </div>
+                  )}
+
+                  <div>
+                    <div className="flex items-center justify-between mt-1 mb-2">
+                      <h3 className="font-serif text-xl font-bold text-ink-900">{proYearlyPlan.name}</h3>
+                      <span className="text-[10px] font-mono font-bold text-ink-500 bg-paper-200 px-2 py-0.5 rounded-md uppercase">
+                        {proYearlyPlan.durationMonths} Months
+                      </span>
+                    </div>
+                    <p className="text-xs text-ink-500 min-h-[32px]">
+                      Annual package for full-year thesis, pre-med, and graduate research.
+                    </p>
+
+                    <div className="my-5">
+                      <div className="flex items-baseline gap-2">
+                        {proYearlyPricing.hasDiscount && (
+                          <span className="text-sm font-semibold text-ink-400 line-through">
+                            ${proYearlyPricing.originalPrice.toFixed(2)}
+                          </span>
+                        )}
+                        <span className="font-serif text-4xl font-bold text-ink-900">
+                          ${proYearlyPricing.effectivePrice.toFixed(2)}
+                        </span>
+                        <span className="text-xs text-ink-500">/ year</span>
+                      </div>
+                      <p className="text-[11px] text-ink-400 mt-0.5">
+                        Only ${proYearlyPricing.monthlyEquivalent.toFixed(2)} / month
+                        {proYearlyPricing.hasDiscount && ` (Save $${proYearlyPricing.savingsAmount.toFixed(2)} annually)`}
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-paper-200/80 border border-paper-300 mb-6 flex items-center gap-2">
+                      <Coins className="w-4 h-4 text-ink-600 shrink-0" />
+                      <span className="text-xs font-semibold text-ink-800">
+                        {proYearlyPlan.aiCreditsMonthly.toLocaleString()} Credits / mo ({proYearlyPlan.durationMonths} Months)
+                      </span>
+                    </div>
+
+                    <ul className="space-y-3 text-xs text-ink-700 mb-8">
+                      {proYearlyPlan.features.map((feature, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <Check className="w-4 h-4 text-ink-500 shrink-0 mt-0.5" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {proYearlyPlan.isActive ? (
+                    <button
+                      onClick={() => {
+                        if (currentUser) {
+                          setView({ kind: 'account', tab: 'subscription' });
+                        } else {
+                          openAuthModal('signup');
+                        }
+                      }}
+                      className="w-full py-3 px-4 rounded-xl text-xs font-bold text-white bg-ink-900 hover:bg-black transition-all cursor-pointer shadow-soft hover:shadow-card text-center flex items-center justify-center gap-1.5"
+                    >
+                      <span>{currentUser ? 'Upgrade in Settings' : 'Start Pro Yearly'}</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  ) : (
+                    <button
+                      disabled
+                      className="w-full py-3 px-4 rounded-xl text-xs font-bold text-ink-400 bg-paper-200 border border-paper-300 cursor-not-allowed text-center"
+                    >
+                      Coming Soon (Fall 2026)
+                    </button>
+                  )}
+                </div>
               </div>
-
-              {proYearlyPlan.isActive ? (
-                <button
-                  onClick={() => {
-                    if (currentUser) {
-                      setView({ kind: 'account', tab: 'subscription' });
-                    } else {
-                      openAuthModal('signup');
-                    }
-                  }}
-                  className="w-full py-3 px-4 rounded-xl text-xs font-bold text-white bg-accent-600 hover:bg-accent-700 transition-all cursor-pointer shadow-soft hover:shadow-card text-center"
-                >
-                  {currentUser ? 'Upgrade in Settings' : 'Start Pro Yearly'}
-                </button>
-              ) : (
-                <button
-                  disabled
-                  className="w-full py-3 px-4 rounded-xl text-xs font-semibold bg-paper-200 text-ink-400 cursor-not-allowed text-center"
-                >
-                  Coming Soon
-                </button>
-              )}
-            </div>
-          </div>
 
           {/* Trust Guarantees */}
           <div className="mt-14 pt-8 border-t border-paper-200 flex flex-wrap items-center justify-center gap-6 sm:gap-12 text-xs text-ink-500 font-medium">
@@ -1235,7 +1255,7 @@ export function LandingPage() {
               },
               {
                 q: 'What is the Semester Saver plan?',
-                a: `The ${proSemesterPlan.name} plan provides ${proSemesterPlan.durationMonths} full months of continuous Pro coverage through your semester midterms and finals for a one-time charge of $${proSemesterPlan.priceAmount.toFixed(2)} (${proSemesterPlan.discountPercent}% discount, equivalent to $${(proSemesterPlan.priceAmount / (proSemesterPlan.durationMonths || 4)).toFixed(2)}/month).`,
+                a: `The ${proSemesterPlan.name} plan provides ${proSemesterPlan.durationMonths} full months of continuous Pro coverage through your semester midterms and finals for a one-time charge of $${proSemesterPricing.effectivePrice.toFixed(2)} (${proSemesterPricing.discountPercent}% off regular $${proSemesterPricing.originalPrice.toFixed(2)}, equivalent to $${(proSemesterPricing.monthlyEquivalent || 7.50).toFixed(2)}/month).`,
               },
               {
                 q: 'Can I cancel or switch my plan anytime?',
